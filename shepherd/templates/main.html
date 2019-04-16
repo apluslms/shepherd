@@ -4,10 +4,7 @@
 {% endblock %}
 
 {% block body %}
-    <div class="container text-center">
-      {% for message in get_flashed_messages() %}
-    <div class="badge-info">{{ message }}</div>
-  {% endfor %}
+
     <div>Hi:{{ user.display_name }} {{ user.sorting_name }}</div>
     <h1>Here shows the status of all courses</h1>
     </div>

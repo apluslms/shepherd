@@ -1,0 +1,21 @@
+<{% extends 'base.html' %}
+{% block head %}
+    Add New Course
+{% endblock %}
+
+{% block body %}
+    <div class="container text-center">
+{% from "_formhelpers.html" import render_field %}
+<form method=post>
+  <dl>
+    {{ render_field(form.key) }}
+    {{ render_field(form.name) }}
+    {{ render_field(form.git_origin) }}
+    {{ render_field(form.git_branch) }}
+  </dl>
+  <p><input type=submit value=Create>
+</form>
+    </div>
+
+
+{% endblock %}

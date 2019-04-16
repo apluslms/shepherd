@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block head %}
+    All Courses
+{% endblock %}
+
+{% block body %}
+    <div class="container text-center">
+    <div>User id:{{ user.id }}</div>
+    <table>
+    <caption>Courses</caption>
+    <thead>
+        <tr>
+            <th>Key</th>
+            <th>Course Name</th>
+            <th>Course Repo</th>
+            <th>Branch</th>
+            <th>Operations</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for each in courses %}
+        <tr>
+                <td>{{ each.key }}</td>
+        <td>{{ each.name }}</td>
+        <td>{{ each.git_origin }}</td>
+        <td>{{ each.git_branch }}</td>
+            <td>
+                  <input id="del" type="button" value="Delete" onclick="delete_course({{ each.key }})"/>
+        </td>
+        </tr>
+
+    {% endfor %}
+    </tbody>
+
+    </table>
+    </div>
+<script>
+function delete_course(key) {
+    if (confirm('Some message')) {
+    $.get('/courses/delete/'+key+'/', function (data) {
+        console.log(data)
+        alert( "Load was performed." );
+    })
+} else {
+    alert('Why did you press cancel? You should have confirmed');
+}
+}
+</script>
+
+{% endblock %}
