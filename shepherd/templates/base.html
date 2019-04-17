@@ -5,24 +5,37 @@
     href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
     integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
     crossorigin="anonymous">
-  <title>
     {% block head %}
-      Gitmanager
-    {% endblock %} - Shepherd
-  </title>
+  {% endblock %}
+         <title>
+    {% block title %}
+ Gitmanager
+    {% endblock %}
+</title>
   </head>
   <body>
-    <br>
-    <div class="container">
-      <ul class="nav justify-content-center">
-        <li class="nav-item">
-          <a class="nav-link" href="/courses/">Manage courses</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/courses/create/">Create course</a>
-        </li>
-      </ul>
-    </div>
+        <nav class="navbar navbar-expand-lg navbar-light">
+          <a class="navbar-brand" href="#">
+           <img src="https://avatars3.githubusercontent.com/u/29550159?s=200&v=4" width="35" height="35" class="d-inline-block align-top" alt="">
+              <span class="text-center font-weight-bold"> Shepherd</span>
+          </a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/courses/">Courses</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/courses/create/">New Course</a>
+              </li>
+            </ul>
+          </div>
+        </nav>
     <div class="container text-center">
       {% for message in get_flashed_messages() %}
     <div class="badge-info">{{ message }}</div>
