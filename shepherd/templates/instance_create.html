@@ -10,10 +10,14 @@
 <form method=post>
   <dl class="form-group">
     {{ render_field(form.key, class='form-control') }}
+          {{ render_field(form.git_origin,class='form-control' ) }}
     {{ render_field(form.branches,class='form-control' ) }}
+
   </dl>
     {% block button %}
-    <p><input type=submit class="btn-lg btn-outline-primary " value=Create></p>
+    <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
+        <input type="button" onclick="location.href='/courses/'" class="btn-lg btn-outline-secondary " value=Cancel>
+    </p>
         {% endblock %}
 </form>
     </div>

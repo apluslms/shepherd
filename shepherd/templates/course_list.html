@@ -16,6 +16,7 @@
                     <tr>
                         <th scope="col">Course Key</th>
                         <th scope="col">Key</th>
+                          <th scope="col">Instance Repo</th>
                         <th scope="col">Branch</th>
                         <th scope="col">Operations</th>
                     </tr>
@@ -25,6 +26,7 @@
                         <tr>
                             <td>{{ branch.course_key }}</td>
                             <td>{{ branch.key }}</td>
+                            <td>{{ branch.git_origin }}</td>
                             <td>{{ branch.branches }}</td>
                             <td>
                                 <form method="post" action="/courses/delete/{{ each.key }}/{{ branch.key }}/">

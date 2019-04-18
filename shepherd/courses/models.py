@@ -15,6 +15,7 @@ class CourseRepository(db.Model):
 class CourseInstance(db.Model):
     key = db.Column(db.String(50), primary_key=True)
     course_key = db.Column(db.String(255), db.ForeignKey('course_repository.key'), nullable=False)
+    git_origin = db.Column(db.String(255), default='')
     branches = db.Column(db.String, default='master')
 
     def get_branches(self):

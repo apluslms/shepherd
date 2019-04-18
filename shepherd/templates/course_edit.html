@@ -1,4 +1,10 @@
 {% extends 'course_create.html' %}
+{% from "_formhelpers.html" import render_field %}
+{% block additional %}
+    {% if instances_num > 0 %}
+        {{ render_field(form.change_all, class='form-control') }}
+    {% endif %}
+{% endblock %}
 {% block button %}
         <p>
             <input type=submit class="btn-lg btn-outline-primary " value=Submit>
