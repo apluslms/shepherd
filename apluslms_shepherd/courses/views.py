@@ -8,15 +8,15 @@ from apluslms_shepherd.courses.models import CourseRepository, CourseInstance, d
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 
 
-@login_required
 @course_bp.route('', methods=['GET'])
+@login_required
 def list_course():
-    all_courses = CourseRepository.query.all()
+    all_courses = CourseRepository.query.filter_by(owner=current_user.id)
     return render_template('course_list.html', user=current_user, courses=all_courses)
 
 
-@login_required
 @course_bp.route('create/', methods=['GET', 'POST'])
+@login_required
 def add_course():
     form = CourseForm(request.form)
     if form.validate() and request.method == 'POST':
@@ -34,8 +34,8 @@ def add_course():
     return render_template('course_create.html', form=form)
 
 
-@login_required
 @course_bp.route('create/<course_id>/', methods=['GET', 'POST'])
+@login_required
 def add_course_instance(course_id):
     course_repo = CourseRepository.query.filter_by(key=course_id)
     form = InstanceForm(request.form, obj=CourseInstance(git_origin=course_repo.first().git_origin))
@@ -51,8 +51,8 @@ def add_course_instance(course_id):
     return render_template('instance_create.html', form=form, course=course_repo)
 
 
-@login_required
 @course_bp.route('edit/<course_id>/', methods=['GET', 'POST'])
+@login_required
 def edit_course(course_id):
     course = CourseRepository.query.filter_by(key=course_id, owner=current_user.id)
     course_instances = CourseInstance.query.filter_by(course_key=course_id)
@@ -80,8 +80,8 @@ def edit_course(course_id):
     return render_template('course_edit.html', form=form, instances_num=course_instances.count())
 
 
-@login_required
 @course_bp.route('edit/<course_id>/<instance_id>/', methods=['GET', 'POST'])
+@login_required
 def edit_instance(course_id, instance_id):
     instance = CourseInstance.query.filter_by(key=instance_id, course_key=course_id)
     if instance is None:
@@ -101,8 +101,8 @@ def edit_instance(course_id, instance_id):
     return render_template('instance_edit.html', form=form)
 
 
-@login_required
 @course_bp.route('delete/<course_id>/', methods=['POST'])
+@login_required
 def del_course(course_id):
     course = CourseRepository.query.filter_by(key=course_id, owner=current_user.id).first()
     if course is None:
@@ -114,8 +114,8 @@ def del_course(course_id):
     return redirect('/courses/')
 
 
-@login_required
 @course_bp.route('delete/<course_id>/<instance_id>/', methods=['POST'])
+@login_required
 def del_course_instance(course_id, instance_id):
     instance = CourseInstance.query.filter_by(course_key=course_id, key=instance_id).first()
     if instance is None:

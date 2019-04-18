@@ -5,7 +5,8 @@ class Config(object):
     DEBUG = False
     TESTING = False
     DATABASE_URI = 'sqlite:///shepherd.db'
-    LOGIN_REDIRECT_URL = "/auth/success"
+    LOGIN_REDIRECT_URL = "/auth/success/"
+    LOGIN_DISABLED = False
     BASE_CHARACTERS = string.ascii_letters + string.digits
     SAFE_CHARACTERS = frozenset(BASE_CHARACTERS + '-')
     KEY_LENGTH_RANGE = (6, 128)
