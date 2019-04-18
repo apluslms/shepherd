@@ -8,4 +8,3 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth/')
 @auth_bp.route('success/', methods=['GET'])
 def auth_success():
     return render_template('login_success.html', user=current_user)
-

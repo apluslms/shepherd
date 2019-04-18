@@ -5,21 +5,22 @@
 
 {% block body %}
     <div class="container text-center">
-    You are adding new course instance for course {{ course_id }}
-{% from "_formhelpers.html" import render_field %}
-<form method=post>
-  <dl class="form-group">
-    {{ render_field(form.key, class='form-control') }}
-          {{ render_field(form.git_origin,class='form-control' ) }}
-    {{ render_field(form.branches,class='form-control' ) }}
+        You are adding new course instance for course {{ course_id }}
+        {% from "_formhelpers.html" import render_field %}
+        <form method=post>
+            <dl class="form-group">
+                {{ render_field(form.key, class='form-control') }}
+                {{ render_field(form.git_origin,class='form-control' ) }}
+                {{ render_field(form.branches,class='form-control' ) }}
 
-  </dl>
-    {% block button %}
-    <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
-        <input type="button" onclick="location.href='/courses/'" class="btn-lg btn-outline-secondary " value=Cancel>
-    </p>
-        {% endblock %}
-</form>
+            </dl>
+            {% block button %}
+                <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
+                    <input type="button" onclick="location.href='/courses/'" class="btn-lg btn-outline-secondary "
+                           value=Cancel>
+                </p>
+            {% endblock %}
+        </form>
     </div>
 
 
