@@ -1,6 +1,6 @@
 import datetime
 
-from shepherd.auth.models import db
+from apluslms_shepherd.auth.models import db
 from flask import current_app
 
 

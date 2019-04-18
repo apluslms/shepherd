@@ -2,8 +2,8 @@ from flask import Blueprint, render_template, request, flash, redirect
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 
-from shepherd.courses.forms import CourseForm, InstanceForm
-from shepherd.courses.models import CourseRepository, CourseInstance, db
+from apluslms_shepherd.courses.forms import CourseForm, InstanceForm
+from apluslms_shepherd.courses.models import CourseRepository, CourseInstance, db
 
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 

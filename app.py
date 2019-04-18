@@ -1,1 +1,1 @@
-from shepherd import create_app
+from apluslms_shepherd import create_app

@@ -1,5 +1,5 @@
-from shepherd import create_app
-from shepherd.auth.models import db
+from apluslms_shepherd import create_app
+from apluslms_shepherd.auth.models import db
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
 

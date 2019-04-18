@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_lti_login import lti, lti_login_authenticated
 
-from shepherd import config
+from apluslms_shepherd import config
 
 __version__ = '0.1'
 
@@ -10,10 +10,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(config.DevelopmentConfig)
     with app.app_context():
-        from shepherd.auth.models import write_user_to_db, db, login_manager
-        from shepherd.views import main_bp
-        from shepherd.auth.views import auth_bp
-        from shepherd.courses.views import course_bp
+        from apluslms_shepherd.auth.models import write_user_to_db, db, login_manager
+        from apluslms_shepherd.views import main_bp
+        from apluslms_shepherd.auth.views import auth_bp
+        from apluslms_shepherd.courses.views import course_bp
         login_manager.init_app(app=app)
         db.init_app(app=app)
         db.create_all()
