@@ -13,7 +13,6 @@ def load_user(id):
 
 
 def write_user_to_db(*args, **kwargs):
-    current_app.logger.info('Signal get:', **kwargs)
     user_id = kwargs['user_id']
     user = User.query.filter_by(id=user_id).first()
 

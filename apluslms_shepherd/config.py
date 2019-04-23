@@ -4,7 +4,7 @@ import string
 class Config(object):
     DEBUG = False
     TESTING = False
-    DATABASE_URI = 'sqlite:///shepherd.db'
+    DATABASE_URI = 'sqlite:///apluslms_shepherd/shepherd.db'
     LOGIN_REDIRECT_URL = "/auth/success/"
     LOGIN_DISABLED = False
     BASE_CHARACTERS = string.ascii_letters + string.digits
