@@ -18,6 +18,7 @@
                         <th scope="col">Key</th>
                         <th scope="col">Instance Repo</th>
                         <th scope="col">Branch</th>
+                        <th scope="col">Secret Token</th>
                         <th scope="col">Operations</th>
                     </tr>
                     </thead>
@@ -27,7 +28,8 @@
                             <td>{{ branch.course_key }}</td>
                             <td>{{ branch.key }}</td>
                             <td>{{ branch.git_origin }}</td>
-                            <td>{{ branch.branches }}</td>
+                            <td>{{ branch.branch }}</td>
+                            <td>{{ branch.secret_token }}</td>
                             <td>
                                 <form method="post" action="/courses/delete/{{ each.key }}/{{ branch.key }}/">
                                     <button type="button" class="btn btn-outline-primary"
@@ -54,7 +56,6 @@
 
                 <th scope="col">Key</th>
                 <th scope="col">Course Name</th>
-                <th scope="col">Course Repo</th>
                 <th scope="col">Operations</th>
             </tr>
             </thead>
@@ -64,7 +65,6 @@
 
                     <td>{{ each.key }}</td>
                     <td>{{ each.name }}</td>
-                    <td>{{ each.git_origin }}</td>
 
                     <td>
 

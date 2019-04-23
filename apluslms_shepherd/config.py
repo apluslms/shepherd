@@ -4,7 +4,7 @@ import string
 class Config(object):
     DEBUG = False
     TESTING = False
-    DATABASE_URI = 'sqlite:///apluslms_shepherd/shepherd.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////u/18/dingr1/unix/code/shepherd/shepherd.db'
     LOGIN_REDIRECT_URL = "/auth/success/"
     LOGIN_DISABLED = False
     BASE_CHARACTERS = string.ascii_letters + string.digits
@@ -20,7 +20,6 @@ class Config(object):
     EMAIL_LENGTH = 50
     CREATE_UNKNOWN_USER = True
     SECRET_KEY = 'my super secret key'.encode('utf8')
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///app.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     LTI_CONFIG = {
         'secret': {

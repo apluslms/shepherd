@@ -11,8 +11,8 @@
             <dl class="form-group">
                 {{ render_field(form.key, class='form-control') }}
                 {{ render_field(form.git_origin,class='form-control' ) }}
-                {{ render_field(form.branches,class='form-control' ) }}
-
+                {{ render_field(form.secret_token,class='form-control' ) }}
+                {{ render_field(form.branch,class='form-control' ) }}
             </dl>
             {% block button %}
                 <p><input type=submit class="btn-lg btn-outline-primary " value=Create>

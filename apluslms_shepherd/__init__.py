@@ -16,6 +16,7 @@ def create_app():
         from apluslms_shepherd.views import main_bp
         from apluslms_shepherd.auth.views import auth_bp
         from apluslms_shepherd.courses.views import course_bp
+        from apluslms_shepherd.webhooks.view import webhooks_bp
         login_manager.init_app(app=app)
         db.init_app(app=app)
         migrate = Migrate(app, db)
@@ -24,4 +25,5 @@ def create_app():
         app.register_blueprint(course_bp)
         app.register_blueprint(lti)
         app.register_blueprint(auth_bp)
+        app.register_blueprint(webhooks_bp)
     return app

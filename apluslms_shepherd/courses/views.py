@@ -19,17 +19,29 @@ def list_course():
 @login_required
 def add_course():
     form = CourseForm(request.form)
+    form.git_origin.label = "First Instance Git Origin"
     if form.validate() and request.method == 'POST':
         new_course = CourseRepository(key=form.key.data,
-                                      git_origin=form.git_origin.data,
                                       name=form.name.data,
                                       owner=current_user.id)
+
         try:
             db.session.add(new_course)
             db.session.commit()
             flash('New course added.')
         except IntegrityError:
             flash('Course key already exists.')
+        # Part of first instance info provided in the form
+        new_instance = CourseInstance(course_key=form.key.data, branch=form.branch.data, key=form.instance_key.data,
+                                      git_origin=form.git_origin.data)
+        # Also add a new instance with the course, the instance kay and course key is combined primary key of the
+        # CourseInstance model
+        try:
+            db.session.add(new_instance)
+            db.session.commit()
+            flash('New course added with a new instance under this course')
+        except IntegrityError:
+            flash('New course added, but Instance key already exists.')
         return redirect('/courses/')
     return render_template('course_create.html', form=form)
 
@@ -38,9 +50,17 @@ def add_course():
 @login_required
 def add_course_instance(course_id):
     course_repo = CourseRepository.query.filter_by(key=course_id)
-    form = InstanceForm(request.form, obj=CourseInstance(git_origin=course_repo.first().git_origin))
+
+    last_instance = CourseInstance.query.filter_by(course_key=course_id).first()
+    form = InstanceForm(request.form, obj=CourseInstance(git_origin=last_instance.git_origin))
     if form.validate() and request.method == 'POST':
-        new_course_instance = CourseInstance(key=form.key.data, git_origin=form.git_origin.data, branches=form.branches.data, course_key=course_id)
+        # Using the git repo of first instance as the default repo
+        new_course_instance = CourseInstance(key=form.key.data,
+                                             git_origin=form.git_origin.data,
+                                             branch=form.branch.data,
+                                             course_key=course_id,
+                                             secret_token=form.secret_token.data
+                                             )
         try:
             db.session.add(new_course_instance)
             db.session.commit()
@@ -61,17 +81,20 @@ def edit_course(course_id):
         return redirect('/courses/')
     else:
         form = CourseForm(request.form, obj=course.first())
+        # The label is changes according to whether user is edit a course or creating a course,
+        # When editing a course, it should be changed to follows, or it will be "First instance origin"
+        form.git_origin.label = "New Git Origin for all instance"
         form.change_all.label = "Would like to change the git repo of " \
-                                + str(course_instances.count())\
+                                + str(course_instances.count()) \
                                 + " instance(s) belong to this course as well?"
         if form.validate() and request.method == 'POST':
             course.update(dict(
                 key=form.key.data,
-                git_origin=form.git_origin.data,
                 name=form.name.data,
             ))
+            # If checkbox clicked
             if form.change_all.data:
-                course_instances.update(dict(git_origin= form.git_origin.data))
+                course_instances.update(dict(git_origin=form.git_origin.data))
                 flash('Course edited, as well as the instances')
             else:
                 flash('Course edited.')
@@ -93,7 +116,7 @@ def edit_instance(course_id, instance_id):
             instance.update(dict(
                 key=form.key.data,
                 git_origin=form.git_origin.data,
-                branches=form.branches.data
+                branch=form.branch.data
             ))
             db.session.commit()
             flash('Instance edited.')
@@ -108,9 +131,10 @@ def del_course(course_id):
     if course is None:
         flash('There is no such course under this user')
     else:
+        # The delete is cascade, the instance will be deleted as well.
         db.session.delete(course)
         db.session.commit()
-        flash('Course with key: '+course_id+' name: '+course.name+' has been deleted.')
+        flash('Course with key: ' + course_id + ' name: ' + course.name + ' has been deleted.')
     return redirect('/courses/')
 
 
@@ -123,5 +147,6 @@ def del_course_instance(course_id, instance_id):
     else:
         db.session.delete(instance)
         db.session.commit()
-        flash('Instance with key: '+instance_id+' belonging to course with key: '+course_id+' has been deleted.')
+        flash(
+            'Instance with key: ' + instance_id + ' belonging to course with key: ' + course_id + ' has been deleted.')
     return redirect('/courses/')
