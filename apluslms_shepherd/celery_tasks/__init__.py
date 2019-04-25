@@ -6,4 +6,4 @@ app = Celery(
     CelerySettingDev.CELERY_NAME,
     broker=CelerySettingDev.CELERY_BROKER_ADDRESS,
     backend=CelerySettingDev.CELERY_BROKER_ADDRESS,
-    include=['apluslms_shepherd.builder.tasks'])
+    include=['apluslms_shepherd.celery_tasks.tasks'])

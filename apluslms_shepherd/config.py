@@ -26,6 +26,7 @@ class Config(object):
             "Bleks2FiObiMpd5C": "uf7OtOjcCclxGZBzzRoll87vledSK8cK3koL6BRCSwelICYIc8eyG56qxDJKtV6l"
         }
     }
+    USE_SSH_FOR_GIT = False
 
 class ProductionConfig(Config):
     DATABASE_URI = 'mysql://user@localhost/shepherd'

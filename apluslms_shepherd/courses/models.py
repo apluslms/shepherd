@@ -17,6 +17,5 @@ class CourseInstance(db.Model):
     git_origin = db.Column(db.String(255), default='')
     secret_token = db.Column(db.String(127))
     branch = db.Column(db.String, default='master')
-
-    def get_branches(self):
-        return [each for each in self.branches.split(' ')]
+    pull_task_id = db.Column(db.String)
+    build_task_id = db.Column(db.String)

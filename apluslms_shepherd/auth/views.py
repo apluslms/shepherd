@@ -4,7 +4,6 @@ from flask_login import login_required, current_user, logout_user
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth/')
 
 
-
 @auth_bp.route('success/', methods=['GET'])
 @login_required
 def auth_success():
