@@ -4,7 +4,6 @@ from flask import Blueprint, request, abort
 
 from apluslms_shepherd import config
 from apluslms_shepherd.courses.models import CourseInstance
-from apluslms_shepherd.celery_tasks import app
 from apluslms_shepherd.celery_tasks.tasks import pull_repo
 
 
@@ -39,7 +38,7 @@ def pushed():
             use_url = git_http_url
 
             # Run task
-        pull_repo.delay("/u/18/dingr1/unix/code/shepherd_test_clone", use_url, git_branch)
+        pull_repo.delay("/u/18/dingr1/unix/code/shepherd_test_clone/", use_url, git_branch)
     else:
         abort(400, "Invalid payload")
     return 'hi from a+'

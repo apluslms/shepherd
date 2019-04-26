@@ -1,9 +1,9 @@
 from flask import flash
-from flask_sqlalchemy import SQLAlchemy
+from apluslms_shepherd.extensions import db
 from flask_login import UserMixin, login_user, LoginManager
 from apluslms_shepherd.config import DevelopmentConfig
 
-db = SQLAlchemy()
+
 login_manager = LoginManager()
 
 

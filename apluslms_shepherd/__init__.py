@@ -2,8 +2,9 @@ from flask import Flask
 from flask_lti_login import lti, lti_login_authenticated
 from flask_migrate import Migrate
 
-from apluslms_shepherd import config
 
+from apluslms_shepherd import config
+from apluslms_shepherd.extensions import celery, db
 __version__ = '0.1'
 
 
@@ -12,7 +13,7 @@ def create_app():
     app.config.from_object(config.DevelopmentConfig)
 
     with app.app_context():
-        from apluslms_shepherd.auth.models import write_user_to_db, db, login_manager
+        from apluslms_shepherd.auth.models import write_user_to_db, login_manager
         from apluslms_shepherd.views import main_bp
         from apluslms_shepherd.auth.views import auth_bp
         from apluslms_shepherd.courses.views import course_bp
@@ -20,6 +21,7 @@ def create_app():
         login_manager.init_app(app=app)
         db.init_app(app=app)
         migrate = Migrate(app, db)
+        celery.init_app(app)
         lti_login_authenticated.connect(write_user_to_db)
         app.register_blueprint(main_bp)
         app.register_blueprint(course_bp)
