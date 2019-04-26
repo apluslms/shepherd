@@ -50,23 +50,27 @@ def add_course():
 @login_required
 def add_course_instance(course_id):
     course_repo = CourseRepository.query.filter_by(key=course_id)
-
     last_instance = CourseInstance.query.filter_by(course_key=course_id).first()
     form = InstanceForm(request.form, obj=CourseInstance(git_origin=last_instance.git_origin))
+
     if form.validate() and request.method == 'POST':
         # Using the git repo of first instance as the default repo
         new_course_instance = CourseInstance(key=form.key.data,
                                              git_origin=form.git_origin.data,
                                              branch=form.branch.data,
                                              course_key=course_id,
-                                             secret_token=form.secret_token.data
+                                             secret_token=None if form.secret_token.data == '' else form.secret_token.data
                                              )
-        try:
-            db.session.add(new_course_instance)
-            db.session.commit()
-            flash('New course instance added for course ' + course_id + '!')
-        except IntegrityError:
+        print(db.session.query(CourseInstance.key).filter_by(course_key=course_id, key=form.key.data).scalar())
+        if db.session.query(CourseInstance.key).filter_by(course_key=course_id, key=form.key.data).scalar() is not None:
             flash('Course instance already exists.')
+        else:
+            try:
+                db.session.add(new_course_instance)
+                db.session.commit()
+                flash('New course instance added for course ' + course_id + '!')
+            except IntegrityError:
+                flash('Course instance already exists.')
         return redirect('/courses/')
     return render_template('instance_create.html', form=form, course=course_repo)
 

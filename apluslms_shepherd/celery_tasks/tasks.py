@@ -10,9 +10,10 @@ logger = get_task_logger(__name__)
 
 
 @celery_app.task(bind=True, default_retry_delay=10)
-def pull_repo(self, path, url, branch):
+def pull_repo(self, url, branch):
+    folder = url.split('/')[-1]
     logger.info("Pulling from {}".format(url))
-    cmd = ["bash", "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/shell_script/pull.sh", path, url, branch]
+    cmd = ["bash", "shell_script/pull.sh", folder, url, branch]
     proc = subprocess.Popen(cmd)
     logger.info(self.request.id)
     o, e = proc.communicate()
