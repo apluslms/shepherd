@@ -3,7 +3,6 @@ from apluslms_shepherd.extensions import db
 from flask_login import UserMixin, login_user, LoginManager
 from apluslms_shepherd.config import DevelopmentConfig
 
-
 login_manager = LoginManager()
 
 
@@ -21,7 +20,8 @@ def write_user_to_db(*args, **kwargs):
         if not DevelopmentConfig.CREATE_UNKNOWN_USER:
             return None
             # create new
-        user = User(id=user_id, email=kwargs['email'], display_name=kwargs['display_name'], sorting_name=kwargs['sorting_name'], is_active=True)
+        user = User(id=user_id, email=kwargs['email'], display_name=kwargs['display_name'],
+                    sorting_name=kwargs['sorting_name'], is_active=True)
     # if exist, update
     else:
         user.sorting_name = kwargs['sorting_name']

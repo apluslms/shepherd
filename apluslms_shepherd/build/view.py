@@ -18,7 +18,7 @@ def build_state(course_key, instance_key):
                 {
                     'state': state_pull.status,
                     'result': state_pull.result
-                 },
+                },
 
             'build':
                 {
@@ -27,4 +27,3 @@ def build_state(course_key, instance_key):
                 }
         }
     )
-

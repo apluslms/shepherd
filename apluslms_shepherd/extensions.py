@@ -37,5 +37,5 @@ class FlaskCelery(Celery):
         self.config_from_object(app.config)
 
 
-celery = FlaskCelery(include=['apluslms_shepherd.celery_tasks.tasks'])
+celery = FlaskCelery()
 db = SQLAlchemy()

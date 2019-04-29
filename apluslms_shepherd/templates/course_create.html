@@ -5,28 +5,29 @@
 
 {% block body %}
     <div class="container text-center">
-{% from "_formhelpers.html" import render_field %}
-<form method=post>
-  <dl class="form-group">
-    {{ render_field(form.key, class='form-control') }}
-    {{ render_field(form.name,class='form-control' ) }}
+        {% from "_formhelpers.html" import render_field %}
+        <form method=post>
+            <dl class="form-group">
+                {{ render_field(form.key, class='form-control') }}
+                {{ render_field(form.name,class='form-control' ) }}
 
-      {% block additional %}
-          {% from "_formhelpers.html" import render_field %}
-          {{ render_field(form.instance_key, class='form-control') }}
+                {% block additional %}
+                    {% from "_formhelpers.html" import render_field %}
+                    {{ render_field(form.instance_key, class='form-control') }}
 
-          {{ render_field(form.branch, class='form-control') }}
+                    {{ render_field(form.branch, class='form-control') }}
 
-          {% endblock %}
-            {{ render_field(form.git_origin, class='form-control') }}
-  </dl>
-    {% block button %}
-    <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
-    <input type="button" onclick="location.href='/courses/'" class="btn-lg btn-outline-secondary " value=Cancel>
-    </p>
+                {% endblock %}
+                {{ render_field(form.git_origin, class='form-control') }}
+            </dl>
+            {% block button %}
+                <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
+                    <input type="button" onclick="location.href='/courses/'" class="btn-lg btn-outline-secondary "
+                           value=Cancel>
+                </p>
 
-        {% endblock %}
-</form>
+            {% endblock %}
+        </form>
     </div>
 
 

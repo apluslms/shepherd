@@ -2,9 +2,9 @@ from flask import Flask
 from flask_lti_login import lti, lti_login_authenticated
 from flask_migrate import Migrate
 
-
 from apluslms_shepherd import config
 from apluslms_shepherd.extensions import celery, db
+
 __version__ = '0.1'
 
 

@@ -16,7 +16,7 @@ if [ -d $dir ]; then
   fi
   git reset -q --hard origin/$branch
   git submodule update --init --recursive
-  git --no-pager log --pretty=format:"------------;Commit metadata;;Hash:;%H;Subject:;%s;Body:;%b;Committer:;%ai;%ae;Author:;%ci;%cn;%ce;------------;" -1 | tr ';' '\n'
+  #git --no-pager log --pretty=format:"------------;Commit metadata;;Hash:;%H;Subject:;%s;Body:;%b;Committer:;%ai;%ae;Author:;%ci;%cn;%ce;------------;" -1 | tr ';' '\n'
 else
   git clone -b $branch --recursive $git_origin $dir
   cd $dir
