@@ -1,17 +1,19 @@
 import json
 
+from celery import group
 from flask import Blueprint, request, abort
 from datetime import datetime
 from apluslms_shepherd import config
 from apluslms_shepherd.courses.models import CourseInstance
 
-from apluslms_shepherd.celery_tasks.tasks import pull_repo
+from apluslms_shepherd.celery_tasks.tasks import pull_repo, build_repo
 
 webhooks_bp = Blueprint('webhooks', __name__, url_prefix='/hooks/')
 
 
 @webhooks_bp.route('pushed/', methods=['POST'])
 def pushed():
+    base_path = config.DevelopmentConfig.COURSE_REPO_BASEPATH
     update_type = request.headers.get('X-Gitlab-Event')
     gitlab_token = request.headers.get('X-GitLab-Token')
     data = json.loads(request.data.decode('utf-8'))
@@ -37,8 +39,9 @@ def pushed():
             use_url = git_http_url
 
             # Run task
-        pull_repo.delay("/u/18/dingr1/unix/code/shepherd_test_clone/", use_url, git_branch, instance.course_key,
-                        instance.key)
+        # pull_repo.delay(base_path, use_url, git_branch, instance.course_key, instance.key)
+        pull_repo.apply_async(args=[base_path, use_url, git_branch, instance.course_key, instance.key])
+
 
     else:
         abort(400, "Invalid payload")
