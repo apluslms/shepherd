@@ -1,8 +1,10 @@
 import subprocess
 from datetime import datetime
 
+from celery.result import AsyncResult
 from celery.signals import before_task_publish
 from celery.utils.log import get_task_logger
+from celery.worker import request
 
 from apluslms_shepherd.build.models import Build, BuildLog, States, Action
 from apluslms_shepherd.courses.models import CourseInstance
@@ -29,9 +31,9 @@ def pull_repo(self, base_path, url, branch, course_key, instance_key):
 
 
 @celery.task(bind=True, default_retry_delay=10)
-def build_repo(self, result, base_path, course_key, branch):
+def build_repo(self, pull_result, base_path, course_key, branch):
     # build the material
-    print("pull_repo result:" + result)
+    print("pull_repo result:" + pull_result)
     print("The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, branch))
 
 # For some reason this func is not working if in signal.py. Other signal handling functions works fine
@@ -65,6 +67,14 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
         status=States.PUBLISH,
         action=Action.CLONE
     )
-    print('build_log')
+    print('clone_log')
     db.session.add(new_log_entry)
     db.session.commit()
+
+
+@celery.task
+def error_handler(uuid):
+    result = AsyncResult(uuid)
+    exc = result.get(propagate=False)
+    print('Task {0} raised exception: {1!r}\n{2!r}'.format(
+        uuid, exc, result.traceback))

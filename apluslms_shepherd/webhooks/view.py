@@ -6,7 +6,7 @@ from datetime import datetime
 from apluslms_shepherd import config
 from apluslms_shepherd.courses.models import CourseInstance
 
-from apluslms_shepherd.celery_tasks.tasks import pull_repo, build_repo
+from apluslms_shepherd.celery_tasks.tasks import pull_repo, build_repo, error_handler
 
 webhooks_bp = Blueprint('webhooks', __name__, url_prefix='/hooks/')
 
@@ -39,8 +39,11 @@ def pushed():
             use_url = git_http_url
 
             # Run task
-        # pull_repo.delay(base_path, use_url, git_branch, instance.course_key, instance.key)
-        pull_repo.apply_async(args=[base_path, use_url, git_branch, instance.course_key, instance.key])
+        # pull_s = pull_repo.s(base_path, use_url, git_branch, instance.course_key, instance.key)
+        build_s = build_repo.s(base_path, instance.course_key, git_branch)
+        pull_repo.apply_async(args=[base_path, use_url, git_branch, instance.course_key, instance.key],
+                              link=build_s,
+                              link_error=error_handler.s())
 
 
     else:

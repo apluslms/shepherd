@@ -11,10 +11,10 @@ logger = get_task_logger(__name__)
 
 
 @task_prerun.connect
-def clone_task_prerun(task_id=None, sender=None, *args, **kwargs):
+def task_prerun(task_id=None, sender=None, *args, **kwargs):
     # information about task are located in headers for task messages
     # using the task protocol version 2.
-    print('pre_run')
+    print(sender.__name__  + 'pre_run')
     now = datetime.utcnow()
     instance_key = kwargs['args'][-1]
     course_key = kwargs['args'][-2]
@@ -27,8 +27,10 @@ def clone_task_prerun(task_id=None, sender=None, *args, **kwargs):
             task_id=task_id+'-PUBLISH',
             action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD
         ).first()
-        print(old_log_entry)
-        old_log_entry.end_time = now
+        if old_log_entry is None:
+            print('Cannot find the log entry of last step, no end time will be recorded')
+        else:
+            old_log_entry.end_time = now
         new_log_entry = BuildLog(
             task_id=task_id+'-RUNNING',
             course_key=course_key,
@@ -51,10 +53,10 @@ def clone_task_prerun(task_id=None, sender=None, *args, **kwargs):
 
 
 @task_postrun.connect
-def clone_task_postrun(task_id=None, sender=None, *args, **kwargs):
+def task_postrun(task_id=None, sender=None, *args, **kwargs):
     # information about task are located in headers for task messages
     # using the task protocol version 2.
-    print('post_run')
+    print(sender.__name__ + 'post_run')
     now = datetime.utcnow()
     instance_key = kwargs['args'][-1]
     course_key = kwargs['args'][-2]
@@ -67,7 +69,10 @@ def clone_task_postrun(task_id=None, sender=None, *args, **kwargs):
             task_id=task_id+'-RUNNING',
             action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD
         ).first()
-        old_log_entry.end_time = now
+        if old_log_entry is None:
+            print('Cannot find the log entry of last step, no end time will be recorded')
+        else:
+            old_log_entry.end_time = now
         new_log_entry = BuildLog(
             task_id=task_id+'-FINISHED',
             course_key=course_key,
@@ -79,15 +84,16 @@ def clone_task_postrun(task_id=None, sender=None, *args, **kwargs):
         print('finished')
         build = Build.query.filter_by(course_key=course_key, instance_key=instance_key).first()
         build.status = States.FINISHED
+        build.action = Action.BUILD
         db.session.add(new_log_entry)
         db.session.commit()
 
 
 @task_failure.connect
-def clone_task_failure(task_id=None, sender=None, *args, **kwargs):
+def task_failure(task_id=None, sender=None, *args, **kwargs):
     # information about task are located in headers for task messages
     # using the task protocol version 2.
-    print('task_failure')
+    print(sender.__name__  + 'task_failure')
     now = datetime.utcnow()
     logger.info('task_failure for task id {}'.format(
         task_id
@@ -97,7 +103,10 @@ def clone_task_failure(task_id=None, sender=None, *args, **kwargs):
             task_id=task_id+'-RUNNING',
             action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD
         ).first()
-        old_log_entry.end_time = now
+        if old_log_entry is None:
+            print('Cannot find the log entry of last step, no end time will be recorded')
+        else:
+            old_log_entry.end_time = now
         new_log_entry = BuildLog(
             task_id=task_id+'-FAILURE',
             course_key=old_log_entry.course_key,
