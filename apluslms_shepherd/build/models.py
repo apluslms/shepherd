@@ -19,7 +19,7 @@ class Build(db.Model):
     course_key = db.Column(db.String(50), primary_key=True)
     instance_key = db.Column(db.String(50), primary_key=True)
     start_time = db.Column(db.DateTime)
-    status = db.Column(db.Enum(States))
+    state = db.Column(db.Enum(States))
     action = db.Column(db.Enum(Action))
 
 
@@ -29,6 +29,6 @@ class BuildLog(db.Model):
     instance_key = db.Column(db.String(50))
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
-    status = db.Column(db.Enum(States))
+    state = db.Column(db.Enum(States))
     action = db.Column(db.Enum(Action))
     log_text = db.Column(db.Text)

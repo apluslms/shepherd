@@ -5,6 +5,7 @@ from celery.signals import before_task_publish, task_prerun, after_task_publish,
 from datetime import datetime
 
 from apluslms_shepherd.build.models import Build, BuildLog, States, Action
+from apluslms_shepherd.celery_tasks.tasks import build_repo
 from apluslms_shepherd.extensions import celery, db
 
 logger = get_task_logger(__name__)
@@ -16,6 +17,7 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
     # using the task protocol version 2.
     print(sender.__name__  + 'pre_run')
     now = datetime.utcnow()
+    print(kwargs)
     instance_key = kwargs['args'][-1]
     course_key = kwargs['args'][-2]
     logger.info('task_prerun for task id {}'.format(
@@ -36,16 +38,16 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
             course_key=course_key,
             instance_key=instance_key,
             start_time=now,
-            status=States.RUNNING,
+            state=States.RUNNING,
             action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD
         )
         build = Build.query.filter_by(course_key=course_key, instance_key=instance_key).first()
         if build is None:
-            build = Build(course_key=course_key, instance_key=instance_key, start_time=now, status=States.RUNNING,
+            build = Build(course_key=course_key, instance_key=instance_key, start_time=now, state=States.RUNNING,
                           action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD.CLONE)
             db.session.add(build)
         else:
-            build.status = States.RUNNING
+            build.state = States.RUNNING
         db.session.add(new_log_entry)
         db.session.commit()
 
@@ -53,7 +55,7 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
 
 
 @task_postrun.connect
-def task_postrun(task_id=None, sender=None, *args, **kwargs):
+def task_postrun(task_id=None, sender=None, state=None, retval=None,  *args, **kwargs):
     # information about task are located in headers for task messages
     # using the task protocol version 2.
     print(sender.__name__ + 'post_run')
@@ -78,12 +80,18 @@ def task_postrun(task_id=None, sender=None, *args, **kwargs):
             course_key=course_key,
             instance_key=instance_key,
             start_time=now,
-            status=States.FINISHED,
+            state=States.FINISHED,
             action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD
         )
         print('finished')
+
         build = Build.query.filter_by(course_key=course_key, instance_key=instance_key).first()
-        build.status = States.FINISHED
+        build.state = States.FINISHED
+        if sender.__name__ is 'pull_repo':
+            pass
+        else:
+            if retval.split('|')[0] is not '0':
+                build.state = States.FAILED
         build.action = Action.BUILD
         db.session.add(new_log_entry)
         db.session.commit()
@@ -93,7 +101,7 @@ def task_postrun(task_id=None, sender=None, *args, **kwargs):
 def task_failure(task_id=None, sender=None, *args, **kwargs):
     # information about task are located in headers for task messages
     # using the task protocol version 2.
-    print(sender.__name__  + 'task_failure')
+    print(sender.__name__ + 'task_failure')
     now = datetime.utcnow()
     logger.info('task_failure for task id {}'.format(
         task_id
@@ -112,11 +120,11 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
             course_key=old_log_entry.course_key,
             instance_key=old_log_entry.instance_key,
             start_time=now,
-            status=States.FAILED,
+            state=States.FAILED,
             action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD,
             log_text=kwargs['result']
         )
         build = Build.query.filter_by(course_key=old_log_entry.course_key, instance_key=old_log_entry.instance_key).first()
-        build.status = States.FAILED
+        build.state = States.FAILED
         db.session.add(new_log_entry)
         db.session.commit()

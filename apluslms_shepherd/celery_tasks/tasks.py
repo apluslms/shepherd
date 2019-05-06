@@ -4,7 +4,6 @@ from datetime import datetime
 from celery.result import AsyncResult
 from celery.signals import before_task_publish
 from celery.utils.log import get_task_logger
-from celery.worker import request
 
 from apluslms_shepherd.build.models import Build, BuildLog, States, Action
 from apluslms_shepherd.courses.models import CourseInstance
@@ -26,15 +25,21 @@ def pull_repo(self, base_path, url, branch, course_key, instance_key):
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
-    # Store current task id in db
-    return o.decode('ascii')
+    return str(proc.returncode) + '|' + o.decode('ascii')
 
 
 @celery.task(bind=True, default_retry_delay=10)
 def build_repo(self, pull_result, base_path, course_key, branch):
     # build the material
-    print("pull_repo result:" + pull_result)
-    print("The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, branch))
+    logger.info("pull_repo result:" + pull_result)
+    logger.info("The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, branch))
+    cmd = ["bash", "apluslms_shepherd/celery_tasks/shell_script/build_roman.sh", base_path, course_key, branch]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    o, e = proc.communicate()
+    logger.info('Output: ' + o.decode('ascii'))
+    logger.info('code: ' + str(proc.returncode))
+    return str(proc.returncode) + '|' + o.decode('ascii')
+
 
 # For some reason this func is not working if in signal.py. Other signal handling functions works fine
 @before_task_publish.connect(sender='apluslms_shepherd.celery_tasks.tasks.pull_repo')
