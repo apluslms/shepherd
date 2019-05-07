@@ -19,7 +19,7 @@ def create_app():
         from apluslms_shepherd.webhooks.view import webhooks_bp
         login_manager.init_app(app=app)
         db.init_app(app=app)
-        migrate = Migrate(app, db)
+        migrate = Migrate(app, db, render_as_batch=True)
         lti_login_authenticated.connect(write_user_to_db)
         app.register_blueprint(main_bp)
         app.register_blueprint(course_bp)

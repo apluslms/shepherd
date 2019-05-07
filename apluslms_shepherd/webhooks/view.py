@@ -40,7 +40,7 @@ def pushed():
 
             # Run task
         # pull_s = pull_repo.s(base_path, use_url, git_branch, instance.course_key, instance.key)
-        build_s = build_repo.s(base_path, instance.course_key, git_branch)
+        build_s = build_repo.s(base_path, instance.course_key, instance.key)
         pull_repo.apply_async(args=[base_path, use_url, git_branch, instance.course_key, instance.key],
                               link=build_s,
                               link_error=error_handler.s())

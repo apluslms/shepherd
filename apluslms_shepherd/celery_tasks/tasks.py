@@ -4,6 +4,7 @@ from datetime import datetime
 from celery.result import AsyncResult
 from celery.signals import before_task_publish
 from celery.utils.log import get_task_logger
+from celery.worker.control import revoke
 
 from apluslms_shepherd.build.models import Build, BuildLog, States, Action
 from apluslms_shepherd.courses.models import CourseInstance
@@ -15,7 +16,6 @@ logger = get_task_logger(__name__)
 @celery.task(bind=True, default_retry_delay=10)
 def pull_repo(self, base_path, url, branch, course_key, instance_key):
     logger.info('url:{}, branch:{} course_key:{} instance_key{}'.format(url, branch, course_key, instance_key))
-    ins = CourseInstance.query.filter_by(git_origin=url, branch=branch).first()
     folder = url.split('/')[-1]
     logger.info(folder)
     logger.info("Pulling from {}".format(url))
@@ -29,11 +29,11 @@ def pull_repo(self, base_path, url, branch, course_key, instance_key):
 
 
 @celery.task(bind=True, default_retry_delay=10)
-def build_repo(self, pull_result, base_path, course_key, branch):
+def build_repo(self, pull_result, base_path, course_key, instance_key):
     # build the material
     logger.info("pull_repo result:" + pull_result)
-    logger.info("The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, branch))
-    cmd = ["bash", "apluslms_shepherd/celery_tasks/shell_script/build_roman.sh", base_path, course_key, branch]
+    logger.info("The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, instance_key))
+    cmd = ["bash", "apluslms_shepherd/celery_tasks/shell_script/build_roman.sh", base_path, course_key, instance_key]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
@@ -54,27 +54,30 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     course_key = res[-2]
     instance_key = res[-1]
     print('course_key:{}, instance_key:{}'.format(course_key, instance_key))
-    # Change build status
     now = datetime.utcnow()
-    build = Build.query.filter_by(course_key=course_key, instance_key=instance_key).first()
-    if build is None:
-        build = Build(course_key=course_key, instance_key=instance_key, start_time=now, status=States.PUBLISH,
-                      action=Action.PUBLISH if sender.__name__ is 'pull_repo' else Action.BUILD.CLONE)
-        db.session.add(build)
-    else:
-        build.status = States.RUNNING
-    print('build')
+    ins = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first()
+    if ins is None:
+        print('No such course instance inthe database')
+        revoke(info["id"], terminate=True)
+        return
+    current_build_number = Build.query.filter_by(instance_id=ins.id).count()
+    # Create new build entry and buildlog entry
+    build = Build(instance_id=ins.id, course_key=course_key, instance_key=instance_key, start_time=now,
+                  state=States.PUBLISH,
+                  action=Action.CLONE, number=current_build_number+1)
     new_log_entry = BuildLog(
-        task_id=info["id"] + '-PUBLISH',
+        instance_id=ins.id,
         course_key=course_key,
         instance_key=instance_key,
         start_time=now,
-        status=States.PUBLISH,
+        number=current_build_number+1,
         action=Action.CLONE
     )
     print('clone_log')
     db.session.add(new_log_entry)
+    db.session.add(build)
     db.session.commit()
+    print('Task sent')
 
 
 @celery.task
