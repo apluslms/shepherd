@@ -4,6 +4,8 @@ from celery.signals import before_task_publish, task_prerun, after_task_publish,
 from datetime import datetime
 
 from celery.worker.control import revoke
+from sqlalchemy import desc
+from sqlalchemy.orm import session
 
 from apluslms_shepherd.build.models import Build, BuildLog, States, Action
 from apluslms_shepherd.celery_tasks.tasks import build_repo
@@ -31,7 +33,8 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
             logger.error('No such course instance inthe database')
             revoke(task_id, terminate=True)
             return
-        current_build_number = Build.query.filter_by(instance_id=ins.id).count()
+        current_build_number = 0 if Build.query.filter_by(instance_id=ins.id) is None \
+            else Build.query.filter_by(instance_id=ins.id).order_by(desc(Build.number)).first().number
         print(current_build_number)
         build = Build.query.filter_by(instance_id=ins.id, number=current_build_number).first()
         if sender.__name__ is 'build_repo':
@@ -64,7 +67,8 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
     logger.info('course_key:{}, instance_key:{}'.format(course_key, instance_key))
     with celery.app.app_context():
         # Get the build number
-        current_build_number = Build.query.filter_by(course_key=course_key, instance_key=instance_key).count()
+        current_build_number = 0 if Build.query.filter_by(course_key=course_key, instance_key=instance_key) is None \
+            else Build.query.filter_by(course_key=course_key, instance_key=instance_key).order_by(desc(Build.number)).first().number
         # add end time for build entry and buildlog entry, change build state
         print('finished')
         now = datetime.utcnow()
@@ -92,7 +96,9 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
     instance_key = kwargs['args'][-1]
     course_key = kwargs['args'][-2]
     with celery.app.app_context():
-        current_build_number = Build.query.filter_by(course_key=course_key, instance_key=instance_key).count()
+        current_build_number = 0 if Build.query.filter_by(course_key=course_key, instance_key=instance_key) is None \
+            else Build.query.filter_by(course_key=course_key, instance_key=instance_key).order_by(desc(Build.number))\
+            .first().number
         # add end time for build entry and buildlog entry, change build state
         print('failed')
         now = datetime.utcnow()
