@@ -18,4 +18,4 @@ class CourseInstance(db.Model):
     git_origin = db.Column(db.String(255), default='')
     secret_token = db.Column(db.String(127))
     branch = db.Column(db.String, default='master')
-    build = db.relationship('Build', backref='course_instance', cascade="all,delete")
+    build = db.relationship('Build', backref='course_instance')

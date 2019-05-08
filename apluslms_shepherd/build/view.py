@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify
 from apluslms_shepherd.courses.models import CourseInstance
 from celery.result import AsyncResult
-from apluslms_shepherd.celery_tasks import app
+
 
 build_bp = Blueprint('result', __name__, url_prefix='/build/')
 
