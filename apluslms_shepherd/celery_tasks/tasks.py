@@ -21,7 +21,7 @@ def pull_repo(self, base_path, url, branch, course_key, instance_key):
     logger.info(folder)
     logger.info("Pulling from {}".format(url))
     cmd = ["bash", "apluslms_shepherd/celery_tasks/shell_script/pull_bare.sh", base_path, folder, url, branch,
-           course_key]
+           course_key, instance_key]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
@@ -64,7 +64,7 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
         return
     # current_build_number = 0 if Build.query.filter_by(instance_id=ins.id) is None \
     #     else Build.query.filter_by(instance_key=ins.id).order_by(desc(Build.number)).first().number
-    current_build_number = 0 if Build.query.filter_by(instance_id=ins.id) is None \
+    current_build_number = 0 if Build.query.filter_by(instance_id=ins.id).count() is 0 \
         else Build.query.filter_by(instance_id=ins.id).order_by(
         desc(Build.number)).first().number
     print(current_build_number)
