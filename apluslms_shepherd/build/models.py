@@ -16,10 +16,7 @@ class Action(enum.Enum):
 
 
 class Build(db.Model):
-    # id = db.Column(db.Integer, autoincrement=True)
-    instance_id = db.Column(db.Integer, db.ForeignKey('course_instance.id'), primary_key=True)
-    course_key = db.Column(db.String(50))
-    instance_key = db.Column(db.String(50))
+    instance_id = db.Column(db.Integer, db.ForeignKey('course_instance.key'), primary_key=True)
     number = db.Column(db.Integer, primary_key=True)
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
@@ -29,11 +26,8 @@ class Build(db.Model):
 
 
 class BuildLog(db.Model):
-    # id = db.Column(db.Integer, db.ForeignKey('build.id'))
     instance_id = db.Column(db.Integer, db.ForeignKey('build.instance_id'), primary_key=True)
     number = db.Column(db.Integer, db.ForeignKey('build.number'), primary_key=True)
-    course_key = db.Column(db.String(50))
-    instance_key = db.Column(db.String(50))
     action = db.Column(db.Enum(Action), primary_key=True)
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
