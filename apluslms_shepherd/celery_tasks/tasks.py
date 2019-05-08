@@ -5,6 +5,7 @@ from celery.result import AsyncResult
 from celery.signals import before_task_publish
 from celery.utils.log import get_task_logger
 from celery.worker.control import revoke
+from sqlalchemy import desc
 
 from apluslms_shepherd.build.models import Build, BuildLog, States, Action
 from apluslms_shepherd.courses.models import CourseInstance
@@ -32,7 +33,8 @@ def pull_repo(self, base_path, url, branch, course_key, instance_key):
 def build_repo(self, pull_result, base_path, course_key, instance_key):
     # build the material
     logger.info("pull_repo result:" + pull_result)
-    logger.info("The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, instance_key))
+    logger.info(
+        "The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, instance_key))
     cmd = ["bash", "apluslms_shepherd/celery_tasks/shell_script/build_roman.sh", base_path, course_key, instance_key]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     o, e = proc.communicate()
@@ -60,17 +62,22 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
         print('No such course instance inthe database')
         revoke(info["id"], terminate=True)
         return
-    current_build_number = Build.query.filter_by(instance_id=ins.id).count()
+    # current_build_number = 0 if Build.query.filter_by(instance_id=ins.id) is None \
+    #     else Build.query.filter_by(instance_key=ins.id).order_by(desc(Build.number)).first().number
+    current_build_number = 0 if Build.query.filter_by(instance_id=ins.id) is None \
+        else Build.query.filter_by(instance_id=ins.id).order_by(
+        desc(Build.number)).first().number
+    print(current_build_number)
     # Create new build entry and buildlog entry
     build = Build(instance_id=ins.id, course_key=course_key, instance_key=instance_key, start_time=now,
                   state=States.PUBLISH,
-                  action=Action.CLONE, number=current_build_number+1)
+                  action=Action.CLONE, number=current_build_number + 1)
     new_log_entry = BuildLog(
         instance_id=ins.id,
         course_key=course_key,
         instance_key=instance_key,
         start_time=now,
-        number=current_build_number+1,
+        number=current_build_number + 1,
         action=Action.CLONE
     )
     print('clone_log')
