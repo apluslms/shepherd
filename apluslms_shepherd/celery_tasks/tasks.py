@@ -52,6 +52,7 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     print('before_task_publish for task id {info[id]}'.format(
         info=info,
     ))
+    # Get course key and instance_key from the header
     res = eval(headers['argsrepr'])
     course_key = res[-2]
     instance_key = res[-1]
@@ -62,20 +63,16 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
         print('No such course instance inthe database')
         revoke(info["id"], terminate=True)
         return
-    # current_build_number = 0 if Build.query.filter_by(instance_id=ins.id) is None \
-    #     else Build.query.filter_by(instance_key=ins.id).order_by(desc(Build.number)).first().number
+    # Get the current biggest build number for this instance
     current_build_number = 0 if Build.query.filter_by(instance_id=ins.id).count() is 0 \
         else Build.query.filter_by(instance_id=ins.id).order_by(
         desc(Build.number)).first().number
-    print(current_build_number)
     # Create new build entry and buildlog entry
-    build = Build(instance_id=ins.id, course_key=course_key, instance_key=instance_key, start_time=now,
+    build = Build(instance_id=ins.id, start_time=now,
                   state=States.PUBLISH,
                   action=Action.CLONE, number=current_build_number + 1)
     new_log_entry = BuildLog(
         instance_id=ins.id,
-        course_key=course_key,
-        instance_key=instance_key,
         start_time=now,
         number=current_build_number + 1,
         action=Action.CLONE
