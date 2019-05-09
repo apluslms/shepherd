@@ -25,8 +25,9 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
     # using the task protocol version 2.
     print(sender.__name__ + 'pre_run')
     now = datetime.utcnow()
-    instance_key = kwargs['args'][-1]
-    course_key = kwargs['args'][-2]
+    current_build_number = kwargs['args'][-1]
+    instance_key = kwargs['args'][-2]
+    course_key = kwargs['args'][-3]
     logger.info('task_prerun for task id {}'.format(
         task_id
     ))
@@ -39,10 +40,7 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
             logger.error('No such course instance inthe database')
             revoke(task_id, terminate=True)
             return
-        # Get the current biggest build number for current instance.
-        current_build_number = 0 if Build.query.filter_by(instance_id=ins.id).count() is 0 is None \
-            else Build.query.filter_by(instance_id=ins.id).order_by(desc(Build.number)).first().number
-        print(current_build_number)
+        # Get the current build.
         build = Build.query.filter_by(instance_id=ins.id, number=current_build_number).first()
         if sender.__name__ is 'build_repo':
             new_log_entry = BuildLog(
@@ -71,31 +69,33 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
     # using the task protocol version 2.
     print(sender.__name__ + 'post_run')
     now = datetime.utcnow()
-    instance_key = kwargs['args'][-1]
-    course_key = kwargs['args'][-2]
+    current_build_number = kwargs['args'][-1]
+    instance_key = kwargs['args'][-2]
+    course_key = kwargs['args'][-3]
     logger.info('task_postrun for task id {}'.format(
         task_id
     ))
     logger.info('course_key:{}, instance_key:{}'.format(course_key, instance_key))
     with celery.app.app_context():
-        # Get the build number
+        # Get the instance id
         instance_id = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first().id
-        current_build_number = 0 if Build.query.filter_by(instance_id=instance_id).count() is 0 \
-            else Build.query.filter_by(instance_id=instance_id).order_by(
-            desc(Build.number)).first().number
         # add end time for build entry and buildlog entry, change build state
         print('finished')
         now = datetime.utcnow()
         build = Build.query.filter_by(instance_id=instance_id,
                                       number=current_build_number).first()
-        # Get current build_log
+        # Get current build_log, filter condition "action" is different according to the task
         build_log = BuildLog.query.filter_by(instance_id=instance_id,
                                              number=current_build_number,
                                              action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD).first()
         # Write output to db
         build_log.log_text = retval
+        # The state code is in the beginning, divided with main part by "|"
         build.state = States.FINISHED if retval.split('|')[0] is '0' else States.FAILED
+        # If this is the end of clone task, no need to set end time for Build entry, because the whole task is not
+        # done yet(Still have Build and Deployment left)
         build.end_time = now if sender.__name__ is 'build_repo' else None
+        # Set end time for current build phrase
         build_log.end_time = now
         db.session.commit()
 
@@ -108,26 +108,26 @@ Triggered when task is failed
 @task_failure.connect
 def task_failure(task_id=None, sender=None, *args, **kwargs):
     print(sender.__name__ + 'task_failure')
-    now = datetime.utcnow()
     logger.info('task_failure for task id {}'.format(
         task_id
     ))
-    instance_key = kwargs['args'][-1]
-    course_key = kwargs['args'][-2]
+    current_build_number = kwargs['args'][-1]
+    instance_key = kwargs['args'][-2]
+    course_key = kwargs['args'][-3]
     with celery.app.app_context():
         instance_id = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first().id
-        current_build_number = 0 if Build.query.filter_by(instance_id=instance_id).count() is 0 \
-            else Build.query.filter_by(instance_id=instance_id).order_by(
-            desc(Build.number)).first().number
+
         # add end time for build entry and buildlog entry, change build state
         print('finished')
         now = datetime.utcnow()
         # get current build and build_log from db
-        build = Build.query.filter_by(course_key=course_key, instance_key=instance_key,
+        build = Build.query.filter_by(instance_id=instance_id,
                                       number=current_build_number).first()
-        build_log = BuildLog.query.filter_by(course_key=course_key, instance_key=instance_key,
+        build_log = BuildLog.query.filter_by(instance_id=instance_id,
                                              number=current_build_number,
-                                             action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD).first()
+                                             action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD)\
+            .first()
+        # Change the state to failed, set the end time
         build.state = States.FAILED
         build.end_time = now
         build_log.end_time = now

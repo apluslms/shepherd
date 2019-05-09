@@ -1,4 +1,10 @@
+import os
+from os.path import dirname
 import subprocess
+try:
+    from subprocess import DEVNULL # Python 3
+except ImportError:
+    DEVNULL = open(os.devnull, 'r+b', 0)
 from datetime import datetime
 
 from celery.result import AsyncResult
@@ -10,37 +16,51 @@ from sqlalchemy import desc
 from apluslms_shepherd.build.models import Build, BuildLog, States, Action
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery, db
+from apluslms_shepherd.config import DevelopmentConfig
 
 logger = get_task_logger(__name__)
 
 
-@celery.task(bind=True, default_retry_delay=10)
-def pull_repo(self, base_path, url, branch, course_key, instance_key):
+@celery.task
+def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     logger.info('url:{}, branch:{} course_key:{} instance_key{}'.format(url, branch, course_key, instance_key))
     folder = url.split('/')[-1]
     logger.info(folder)
     logger.info("Pulling from {}".format(url))
-    cmd = ["bash", "apluslms_shepherd/celery_tasks/shell_script/pull_bare.sh", base_path, folder, url, branch,
-           course_key, instance_key]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/pull_bare.sh')
+    cmd = [shell_script_path, base_path, folder, url, branch,
+           course_key, instance_key, build_number]
+    print(cmd)
+    proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            env=dict(os.environ, SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0"))
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
     return str(proc.returncode) + '|' + o.decode('ascii')
 
 
-@celery.task(bind=True, default_retry_delay=10)
-def build_repo(self, pull_result, base_path, course_key, instance_key):
+@celery.task
+def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     # build the material
     logger.info("pull_repo result:" + pull_result)
+    # Check the result of last step
+    if pull_result.split('|')[0] is not '0':
+        logger.error('The clone task was failed, aborting the build task')
+        return '-1|The clone task was failed, aborting the build task'
     logger.info(
         "The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, instance_key))
-    cmd = ["bash", "apluslms_shepherd/celery_tasks/shell_script/build_roman.sh", base_path, course_key, instance_key]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/build_roman.sh')
+    cmd = [shell_script_path, base_path, course_key, instance_key, build_number]
+    proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
     return str(proc.returncode) + '|' + o.decode('ascii')
+
+
+@celery.task
+def deploy(build_result, base_path, course_key, instance_key, build_id):
+    pass
 
 
 # For some reason this func is not working if in signal.py. Other signal handling functions works fine
@@ -54,8 +74,9 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     ))
     # Get course key and instance_key from the header
     res = eval(headers['argsrepr'])
-    course_key = res[-2]
-    instance_key = res[-1]
+    course_key = res[-3]
+    instance_key = res[-2]
+    current_build_number = res[-1]
     print('course_key:{}, instance_key:{}'.format(course_key, instance_key))
     now = datetime.utcnow()
     ins = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first()
@@ -63,18 +84,14 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
         print('No such course instance inthe database')
         revoke(info["id"], terminate=True)
         return
-    # Get the current biggest build number for this instance
-    current_build_number = 0 if Build.query.filter_by(instance_id=ins.id).count() is 0 \
-        else Build.query.filter_by(instance_id=ins.id).order_by(
-        desc(Build.number)).first().number
     # Create new build entry and buildlog entry
     build = Build(instance_id=ins.id, start_time=now,
                   state=States.PUBLISH,
-                  action=Action.CLONE, number=current_build_number + 1)
+                  action=Action.CLONE, number=current_build_number)
     new_log_entry = BuildLog(
         instance_id=ins.id,
         start_time=now,
-        number=current_build_number + 1,
+        number=current_build_number,
         action=Action.CLONE
     )
     print('clone_log')
@@ -82,7 +99,6 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     db.session.add(build)
     db.session.commit()
     print('Task sent')
-
 
 @celery.task
 def error_handler(uuid):
