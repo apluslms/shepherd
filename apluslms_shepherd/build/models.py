@@ -13,8 +13,11 @@ class States(enum.Enum):
 class Action(enum.Enum):
     CLONE = 1
     BUILD = 2
+    DEPLOY = 3
+    CLEAN = 4
 
 
+# A complete build process for a instance, include 4 steps
 class Build(db.Model):
     instance_id = db.Column(db.Integer, db.ForeignKey('course_instance.key'), primary_key=True)
     number = db.Column(db.Integer, primary_key=True)
@@ -25,6 +28,7 @@ class Build(db.Model):
     # log = db.relationship('BuildLog', backref='build', cascade="all,delete")
 
 
+# A single step in Build, i.e.: clone
 class BuildLog(db.Model):
     instance_id = db.Column(db.Integer, db.ForeignKey('build.instance_id'), primary_key=True)
     number = db.Column(db.Integer, db.ForeignKey('build.number'), primary_key=True)
