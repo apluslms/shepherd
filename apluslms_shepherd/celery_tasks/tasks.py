@@ -1,5 +1,5 @@
 import os
-from os.path import dirname
+import shutil
 import subprocess
 try:
     from subprocess import DEVNULL # Python 3
@@ -11,12 +11,14 @@ from celery.result import AsyncResult
 from celery.signals import before_task_publish
 from celery.utils.log import get_task_logger
 from celery.worker.control import revoke
-from sqlalchemy import desc
+
 
 from apluslms_shepherd.build.models import Build, BuildLog, States, Action
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery, db
 from apluslms_shepherd.config import DevelopmentConfig
+
+from .helper import get_current_build_number_list
 
 logger = get_task_logger(__name__)
 
@@ -25,18 +27,17 @@ logger = get_task_logger(__name__)
 def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     logger.info('url:{}, branch:{} course_key:{} instance_key{}'.format(url, branch, course_key, instance_key))
     folder = url.split('/')[-1]
-    logger.info(folder)
     logger.info("Pulling from {}".format(url))
     shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/pull_bare.sh')
     cmd = [shell_script_path, base_path, folder, url, branch,
            course_key, instance_key, build_number]
-    print(cmd)
     proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             env=dict(os.environ, SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0"))
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
-    return str(proc.returncode) + '|' + o.decode('ascii')
+
+    return str(proc.returncode)
 
 
 @celery.task
@@ -49,18 +50,61 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
         return '-1|The clone task was failed, aborting the build task'
     logger.info(
         "The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, instance_key))
+    number_list = get_current_build_number_list()
+    try:
+        if int(build_number) < max(number_list):
+            print("Already have newer version in the task queue, task with build number {} aborted.".format(build_number))
+            print("Current build numbers:{}".format(number_list))
+            return "-1|Already have newer version in the task queue, task with build number {} aborted.".format(build_number)
+    except (ValueError, TypeError):
+        logger.error("Cannot compare current  build number with max number in the queue")
     shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/build_roman.sh')
     cmd = [shell_script_path, base_path, course_key, instance_key, build_number]
     proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
-    return str(proc.returncode) + '|' + o.decode('ascii')
+    return str(proc.returncode)
 
 
 @celery.task
-def deploy(build_result, base_path, course_key, instance_key, build_id):
-    pass
+def deploy(build_result, deploy_base_path , base_path, course_key, instance_key, build_number):
+    # Check the last step
+    logger.info("build_repo result{}".format(build_result))
+    if build_result.split('|')[0] is not '0':
+        logger.error('The build task was failed, aborting the deployment task')
+        return '-1|The clone task was failed or aborted, aborting the build task'
+    # Check is there has a newer version in the queue.If true, cancel the task and start cleaning
+    number_list = get_current_build_number_list()
+    if int(build_number) < max(number_list):
+        print("Already have newer version in the task queue, task with build number {} aborted.".format(build_number))
+        print("Current build numbers:{}".format(number_list))
+        return "-1|Newer version in the task queue, task with build number {} aborted. Cleaning the local repo"\
+            .format(build_number)
+    logger.info(
+        "The repo has been build, deploying the course, course key:{}, branch:{}".format(course_key, instance_key))
+    try:
+        build_path = os.path.join(base_path, 'builds', course_key, instance_key, build_number, "_build")
+        # deploy_files = os.listdir(build_path)
+        deploy_path = os.path.join(deploy_base_path, course_key, instance_key, build_number)
+        shutil.move(build_path, deploy_path)
+    except (FileNotFoundError, OSError, IOError) as why:
+        logger.info('Error:'+why.strerror)
+        return '-1|Error when deploying files'
+    return '0'
+
+
+@celery.task
+def clean(res, base_path, course_key, instance_key, build_number):
+    print('Cleaning repo')
+    path = os.path.join(base_path, 'builds', course_key, instance_key, build_number)
+    try:
+        print("Local work tree of build number {} deleted".format(build_number))
+        shutil.rmtree(path)
+        return "0"
+    except (FileNotFoundError, IOError, OSError) as why:
+        logger.info('Error:' + why.strerror)
+        return '-1|Error when cleaning local worktree files,'
 
 
 # For some reason this func is not working if in signal.py. Other signal handling functions works fine
@@ -99,6 +143,7 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     db.session.add(build)
     db.session.commit()
     print('Task sent')
+
 
 @celery.task
 def error_handler(uuid):

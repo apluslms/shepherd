@@ -14,6 +14,10 @@ from apluslms_shepherd.extensions import celery, db
 
 logger = get_task_logger(__name__)
 
+task_action_mapping = {'build_repo': Action.BUILD,
+                       'pull_repo': Action.CLONE,
+                       'clean': Action.CLEAN,
+                       'deploy': Action.DEPLOY}
 '''
 Triggered when take is about to run
 '''
@@ -42,18 +46,19 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
             return
         # Get the current build.
         build = Build.query.filter_by(instance_id=ins.id, number=current_build_number).first()
-        if sender.__name__ is 'build_repo':
+        # Build log of 'pull_repo' is already created in the publish signal handler.
+        if sender.__name__ is not 'pull_repo':
             new_log_entry = BuildLog(
                 instance_id=ins.id,
                 start_time=now,
                 number=current_build_number,
-                action=Action.BUILD
+                action=task_action_mapping[sender.__name__]
             )
             db.session.add(new_log_entry)
         # We don't catch the task publish signal of Build. That's because even this two tasks run in sequence, the build
         # will be published before clone task runs, so the state in of Build table will be changed too early.
         # In this case, we create the BuildLog and change the state in the Build table of Build task in this function
-        build.action = Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD
+        build.action = task_action_mapping[sender.__name__]
         build.state = States.RUNNING
         db.session.commit()
 
@@ -87,14 +92,18 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
         # Get current build_log, filter condition "action" is different according to the task
         build_log = BuildLog.query.filter_by(instance_id=instance_id,
                                              number=current_build_number,
-                                             action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD).first()
+                                             action=task_action_mapping[sender.__name__]).first()
         # Write output to db
-        build_log.log_text = retval
         # The state code is in the beginning, divided with main part by "|"
-        build.state = States.FINISHED if retval.split('|')[0] is '0' else States.FAILED
+        if isinstance(retval, str):
+            build_log.log_text = retval
+            build.state = States.FINISHED if retval.split('|')[0] is '0' else States.FAILED
+        else:
+            build.state = States.FAILED
+            build_log.log_text = str(retval)
         # If this is the end of clone task, no need to set end time for Build entry, because the whole task is not
         # done yet(Still have Build and Deployment left)
-        build.end_time = now if sender.__name__ is 'build_repo' else None
+        build.end_time = now if sender.__name__ is 'clean' else None
         # Set end time for current build phrase
         build_log.end_time = now
         db.session.commit()
@@ -125,7 +134,7 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
                                       number=current_build_number).first()
         build_log = BuildLog.query.filter_by(instance_id=instance_id,
                                              number=current_build_number,
-                                             action=Action.CLONE if sender.__name__ is 'pull_repo' else Action.BUILD)\
+                                             action=task_action_mapping[sender.__name__])\
             .first()
         # Change the state to failed, set the end time
         build.state = States.FAILED

@@ -40,6 +40,7 @@ class Config(object):
     BUILD_WEBHOOK_URL=""
 
 
+
 class ProductionConfig(Config):
     DATABASE_URI = 'mysql://user@localhost/shepherd'
 
@@ -47,6 +48,7 @@ class ProductionConfig(Config):
 class DevelopmentConfig(Config):
     DEBUG = True
     BUILD_WEBHOOK_URL_TOKEN=""
+    COURSE_DEPLOYMENT_PATH = Config.BASE_DIR+"/../../shepherd_deploy/"
 
 
 class TestingConfig(Config):
