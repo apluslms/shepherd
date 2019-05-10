@@ -1,6 +1,6 @@
 import json
 
-from celery import group
+from celery import group, chain
 from flask import Blueprint, request, abort
 from datetime import datetime
 
@@ -10,7 +10,7 @@ from apluslms_shepherd import config
 from apluslms_shepherd.build.models import Build
 from apluslms_shepherd.courses.models import CourseInstance
 
-from apluslms_shepherd.celery_tasks.tasks import pull_repo, build_repo, error_handler
+from apluslms_shepherd.celery_tasks.tasks import pull_repo, build_repo, error_handler, clean, deploy
 
 webhooks_bp = Blueprint('webhooks', __name__, url_prefix='/hooks/')
 
@@ -53,11 +53,18 @@ def gitlab():
             else Build.query.filter_by(instance_id=instance.id).order_by(
             desc(Build.number)).first().number
 
-        build_s = build_repo.s(base_path, instance.course_key, instance.key, str(current_build_number+1))
-        pull_repo.apply_async(args=[base_path, use_url, git_branch, instance.course_key, instance.key,
-                                    str(current_build_number+1)],
-                              retry=False,
-                              link=build_s)
+        pull_s = pull_repo.s(base_path, use_url, git_branch, instance.course_key, instance.key,
+                             str(current_build_number + 1))
+        build_s = build_repo.s(base_path, instance.course_key, instance.key, str(current_build_number + 1))
+        deploy_s = deploy.s(config.DevelopmentConfig.COURSE_DEPLOYMENT_PATH, base_path, instance.course_key,
+                            instance.key, str(current_build_number + 1))
+        clean_s = clean.s(base_path, instance.course_key,
+                          instance.key, str(current_build_number + 1))
+        # pull_repo.apply_async(args=[base_path, use_url, git_branch, instance.course_key, instance.key,
+        #                             str(current_build_number + 1)],
+        #                       retry=False,
+        #                       link=build_s)
+        res = chain(pull_s, build_s, deploy_s, clean_s)()
     else:
         abort(400, "Invalid payload")
     return 'hi from a+'
