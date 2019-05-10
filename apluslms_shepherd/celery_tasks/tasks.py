@@ -101,7 +101,7 @@ def clean(res, base_path, course_key, instance_key, build_number):
     try:
         print("Local work tree of build number {} deleted".format(build_number))
         shutil.rmtree(path)
-        return "0"
+        return res
     except (FileNotFoundError, IOError, OSError) as why:
         logger.info('Error:' + why.strerror)
         return '-1|Error when cleaning local worktree files,'
