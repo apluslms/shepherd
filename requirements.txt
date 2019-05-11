@@ -4,3 +4,7 @@ flask-sqlalchemy
 flask-login
 flask-migrate
 apluslms-roman
+sqlalchemy-mptt==0.2.4
+python-slugify==3.0.2
+WTForms==2.2.1
+git+https://github.com/JohnDing1995/flask-lti-login.git
