@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block head %}
+    <script src="../static/are_you_sure.js"></script>
+{% endblock %}
+{% block title %}
+    Group list
+{% endblock %}
+
+{% block body %}
+<h1 style = "font-size:50px;">
+        <strong>Group list</strong>
+</h1>
+    
+    <div  style = "font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
+        <ul>
+            {%- for group in roots recursive %}
+            <li>
+            {{ '-' * (group.level-1) }}{{group.name}} 
+            <form method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}">
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
+                </button>
+                <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
+            </form>
+           
+            </li>
+            {%- if group.children -%}
+                {{ loop(group.children) }}
+            {%- endif %}
+            {%- endfor %}
+        </ul>
+    </div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}
+    Edit group
+{% endblock %}
+
+{% block body %}
+    <div class="container text-center">
+        {% from "_formhelpers.html" import render_field %}
+        <div>Group: <strong>{{ group_slug }}</strong></div>
+        <form method="POST">
+        <dl class="form-group">
+                {{ render_field(form.parent_path, class='form-control') }}
+        </dl>
+            {% block button %}
+                <p><input type=submit class="btn-lg btn-outline-primary " value=Edit>
+                    <input type="button" onclick="location.href='/groups/'" class="btn-lg btn-outline-secondary "
+                           value=Cancel>
+                </p>
+
+            {% endblock %}
+        </form>
+    </div>
+
+
+{% endblock %}
