@@ -37,7 +37,6 @@ def query_group_id(group_path):
 
 
 @groups_bp.route('/', methods=['GET'])
-@login_required
 def list_groups():
     title = "Group list"
     roots = Group.query.filter_by(parent_id=None).all()
@@ -49,7 +48,6 @@ def list_groups():
 
 
 @groups_bp.route('create/', methods=['GET','POST'])
-@login_required
 def create_group():
 
     form = GroupForm(request.form)
@@ -80,7 +78,6 @@ def create_group():
 
 
 @groups_bp.route('delete/<group_id>/', methods=['POST'])
-@login_required
 def delete_group(group_id):
 
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
@@ -88,7 +85,7 @@ def delete_group(group_id):
         flash('There is no such group')
     else:
         try:
-            group_slug = slugify(group.name,group.parent_id)
+            group_slug = group_slugify(group.name,group.parent_id)
             group.delete()
             flash('The group '+group_slug+' has been deleted')
         except:
@@ -97,7 +94,6 @@ def delete_group(group_id):
 
 
 @groups_bp.route('edit/<group_id>/', methods=['GET','POST'])
-@login_required
 def edit_group(group_id):
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
     if group is None:

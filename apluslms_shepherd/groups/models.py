@@ -6,7 +6,7 @@ from sqlalchemy_mptt.mixins import BaseNestedSets
 from saexttype import SlugType, ChoiceType
 from slugify import slugify
 
-
+# db.metadata.clear()
 
 class CRUD():
     def save(self):
@@ -36,11 +36,8 @@ class Group(db.Model, BaseNestedSets, CRUD):
                                                                     self.parent.name)
 
 
-# class User(db.Model, UserMixin):
-#     id = db.Column(db.String(DevelopmentConfig.USER_NAME_LENGTH), primary_key=True, unique=True)
-#     email = db.Column(db.String(DevelopmentConfig.EMAIL_LENGTH), unique=True, nullable=False)
-#     display_name = db.Column(db.String(DevelopmentConfig.FIRST_NAME_LENGTH))
-#     sorting_name = db.Column(db.String(DevelopmentConfig.LAST_NAME_LENGTH))
-#     full_name = db.Column(db.String(DevelopmentConfig.LAST_NAME_LENGTH + DevelopmentConfig.FIRST_NAME_LENGTH))
+
+    
+    
 
 
