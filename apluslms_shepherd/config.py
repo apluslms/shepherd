@@ -37,7 +37,6 @@ class Config(object):
                       "apluslms_shepherd.celery_tasks.signals"
                       )
     COURSE_REPO_BASEPATH = BASE_DIR+"/../../shepherd_test_clone/"
-    BUILD_WEBHOOK_URL=""
 
 
 
@@ -47,7 +46,8 @@ class ProductionConfig(Config):
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    BUILD_WEBHOOK_URL_TOKEN=""
+    BUILD_WEBHOOK_TOKEN = "Secret"
+    BUILD_WEBHOOK_URL = "http://127.0.0.1:5000/webhooks/state/"
     COURSE_DEPLOYMENT_PATH = Config.BASE_DIR+"/../../shepherd_deploy/"
 
 

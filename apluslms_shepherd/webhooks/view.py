@@ -111,8 +111,6 @@ def github_pushed():
         pull_repo.apply_async(args=[base_path, use_url, git_branch, instance.course_key, instance.key],
                               link=build_s,
                               link_error=error_handler.s())
-
-
     else:
         abort(400, "Invalid payload")
     return 'hi from a+'

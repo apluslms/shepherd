@@ -1,9 +1,9 @@
 from flask import Flask
 from flask_lti_login import lti, lti_login_authenticated
 from flask_migrate import Migrate
-
+from flask_socketio import SocketIO
 from apluslms_shepherd import config
-from apluslms_shepherd.extensions import celery, db, make_celery
+from apluslms_shepherd.extensions import db
 
 __version__ = '0.1'
 

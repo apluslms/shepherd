@@ -7,5 +7,33 @@
 
     <div>Hi:{{ user.display_name }} {{ user.sorting_name }}</div>
     <h1>Here shows the status of all courses</h1>
+                    <table class="text-center table">
+                    <thead>
+                    <tr>
+                        <th scope="col">Course Key</th>
+                        <th scope="col">Instance Key</th>
+                        <th scope="col">Build Number</th>
+                         <th scope="col">Action</th>
+                         <th scope="col">State</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for ins in instances %}
+                        <tr>
+                            <td>{{ ins.course_key }}</td>
+                            <td>{{ ins.instance_key }}</td>
+                            <td class="table-number" id="{{ ins.instance_id }}">{{ ins.number }}</td>
+                            <td class="table-acton" id="{{ ins.instance_id }}">{{ ins.current_action }}</td>
+                            <td class="table-state" id="{{ ins.instance_id }}">{{ ins.current_state }}</td>
+                        </tr>
 
+                    {% endfor %}
+                    </tbody>
+                </table>
+
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+    <script src="../static/socketio.js"></script>
 {% endblock %}
