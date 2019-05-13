@@ -3,7 +3,7 @@ import enum
 from apluslms_shepherd.extensions import db
 
 
-class States(enum.Enum):
+class State(enum.Enum):
     PUBLISH = 1
     RUNNING = 2
     FINISHED = 3
@@ -23,7 +23,7 @@ class Build(db.Model):
     number = db.Column(db.Integer, primary_key=True)
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
-    state = db.Column(db.Enum(States))
+    state = db.Column(db.Enum(State))
     action = db.Column(db.Enum(Action))
     # log = db.relationship('BuildLog', backref='build', cascade="all,delete")
 

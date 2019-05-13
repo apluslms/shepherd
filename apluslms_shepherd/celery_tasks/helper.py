@@ -1,4 +1,10 @@
-from apluslms_shepherd.extensions import celery
+from flask_socketio import send
+
+from apluslms_shepherd.extensions import celery, socketio
+from apluslms_shepherd.config import DevelopmentConfig
+from flask import jsonify
+
+import requests
 
 
 def get_current_build_number_list():
@@ -10,3 +16,32 @@ def get_current_build_number_list():
         print(task_build_number_list)
     return task_build_number_list
 
+
+def update_frontend(instance_id, build_number, action, state):
+    socketio.emit('update', {'instance_id': instance_id,
+                             'build_number': build_number,
+                             'current_action': action.name,
+                             'current_state': state.name})
+
+
+class WebHook(object):
+    def __init__(self, course_key, instance_key, build_number, action, state):
+        self.action = action.name
+        self.state = state.name
+        self.course_key = course_key
+        self.instance_key = instance_key
+        self.build_number = build_number
+
+    def send_to_slack(self):
+        """
+        Send json request to slack webhook
+        """
+        pass
+
+    def send_to_frontend(self):
+        """
+        Send json request to frontend webhook, for updating state display
+        """
+        requests.post(DevelopmentConfig.BUILD_WEBHOOK_URL,
+                      headers={'Webhook-Token': DevelopmentConfig.BUILD_WEBHOOK_TOKEN},
+                      json=jsonify(self.course_key, self.instance_key, self.build_number, self.action, self.state))

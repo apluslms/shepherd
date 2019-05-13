@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import flask
 from celery import Celery
+from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 
@@ -60,3 +61,4 @@ class FlaskCelery(Celery):
 
 celery = FlaskCelery()
 db = SQLAlchemy(metadata=MetaData(naming_convention=naming_convention))
+socketio = SocketIO()

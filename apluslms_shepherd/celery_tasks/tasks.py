@@ -13,18 +13,21 @@ from celery.utils.log import get_task_logger
 from celery.worker.control import revoke
 
 
-from apluslms_shepherd.build.models import Build, BuildLog, States, Action
+from apluslms_shepherd.build.models import Build, BuildLog, State, Action
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery, db
 from apluslms_shepherd.config import DevelopmentConfig
 
-from .helper import get_current_build_number_list
+from .helper import get_current_build_number_list, WebHook, update_frontend
 
 logger = get_task_logger(__name__)
 
 
 @celery.task
 def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
+    """
+    Clone bear repo to local, or update local one, generate working tree.
+    """
     logger.info('url:{}, branch:{} course_key:{} instance_key{}'.format(url, branch, course_key, instance_key))
     folder = url.split('/')[-1]
     logger.info("Pulling from {}".format(url))
@@ -42,7 +45,9 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
 
 @celery.task
 def build_repo(pull_result, base_path, course_key, instance_key, build_number):
-    # build the material
+    """
+    build the material
+    """
     logger.info("pull_repo result:" + pull_result)
     # Check the result of last step
     if pull_result.split('|')[0] is not '0':
@@ -69,6 +74,10 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
 
 @celery.task
 def deploy(build_result, deploy_base_path , base_path, course_key, instance_key, build_number):
+    """
+    Copy the build filed to deploy folder
+    TODO: Support remote deploy location(Cloud .etc)
+    """
     # Check the last step
     logger.info("build_repo result{}".format(build_result))
     if build_result.split('|')[0] is not '0':
@@ -96,6 +105,9 @@ def deploy(build_result, deploy_base_path , base_path, course_key, instance_key,
 
 @celery.task
 def clean(res, base_path, course_key, instance_key, build_number):
+    """
+    Clean the generated working tree.
+    """
     print('Cleaning repo')
     path = os.path.join(base_path, 'builds', course_key, instance_key, build_number)
     try:
@@ -110,7 +122,10 @@ def clean(res, base_path, course_key, instance_key, build_number):
 # For some reason this func is not working if in signal.py. Other signal handling functions works fine
 @before_task_publish.connect(sender='apluslms_shepherd.celery_tasks.tasks.pull_repo')
 def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
-    # information about task are located in headers for task messages
+    """
+    information about task are located in headers for task messages
+    Only be triggered when publish the "pull_repo" task
+    """
     # using the task protocol version 2.
     info = headers if 'task' in headers else body
     print('before_task_publish for task id {info[id]}'.format(
@@ -130,7 +145,7 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
         return
     # Create new build entry and buildlog entry
     build = Build(instance_id=ins.id, start_time=now,
-                  state=States.PUBLISH,
+                  state=State.PUBLISH,
                   action=Action.CLONE, number=current_build_number)
     new_log_entry = BuildLog(
         instance_id=ins.id,
@@ -143,6 +158,8 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     db.session.add(build)
     db.session.commit()
     print('Task sent')
+    update_frontend(ins.id, current_build_number, Action.CLONE, State.PUBLISH)
+    print('Current state sent to frontend')
 
 
 @celery.task
