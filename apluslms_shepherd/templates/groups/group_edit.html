@@ -2,24 +2,33 @@
 {% block title %}
     Edit group
 {% endblock %}
+{% block head %}
+    <script src="../../../static/are_you_sure.js"></script>
+{% endblock %}
 
 {% block body %}
     <div class="container text-center">
         {% from "_formhelpers.html" import render_field %}
         <div>Group: <strong>{{ group_slug }}</strong></div>
         <form method="POST">
-        <dl class="form-group">
-                {{ render_field(form.parent_path, class='form-control') }}
-        </dl>
-            {% block button %}
-                <p><input type=submit class="btn-lg btn-outline-primary " value=Edit>
-                    <input type="button" onclick="location.href='/groups/'" class="btn-lg btn-outline-secondary "
-                           value=Cancel>
-                </p>
-
-            {% endblock %}
-        </form>
+                <dl class="form-group">
+                    <dd>
+                        {{ form.name.label }} {{ form.name }} 
+                        {% if form.name.errors %}
+                            <ul class="errors">{% for error in form.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        {% endif %}
+                        <button type="submit" class="btn btn-outline-danger are-you-sure" 
+                        name="edit" value="rename"> Rename </buttton>
+                    </dd>
+                    <dd>
+                        {{ form.parent_path.label }} {{ form.parent_path}} 
+                        {% if form.parent_path.errors %}
+                            <ul class="errors">{% for error in form.parent_path.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                        {% endif %}
+                        <button type="submit" class="btn btn-outline-danger are-you-sure" 
+                        name="edit" value="update parent path"> Update parent path </buttton>
+                    </dd>
+                </dl>
+            </form>
     </div>
-
-
 {% endblock %}

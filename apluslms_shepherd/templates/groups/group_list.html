@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block head %}
-    <script src="../static/are_you_sure.js"></script>
+    <script src="../../../static/are_you_sure.js"></script>
 {% endblock %}
 {% block title %}
     Group list
@@ -8,15 +8,29 @@
 
 {% block body %}
 <h1 style = "font-size:50px;">
-        <strong>Group list</strong>
+        <strong>{{title}}</strong>
+        {%if group %}
+            {% if not group.parent %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/'">Return 
+                </button>
+            {% else %}
+                <button type="button" class="btn btn-outline-primary"
+                        onclick="location.href='/groups/{{ group.parent_id }}/subgroups/'">Return 
+                </button>
+            {% endif %}
+        {% endif %}
 </h1>
     
     <div  style = "font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
         <ul>
             {%- for group in roots recursive %}
             <li>
-            {{ '-' * (group.level-1) }}{{group.name}} 
+            {{ '-' * (loop.depth-1) }}{{group.name}} 
             <form method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}">
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
+                </button>
                 <button type="button" class="btn btn-outline-primary"
                 onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
                 </button>

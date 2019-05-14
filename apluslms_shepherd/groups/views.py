@@ -44,15 +44,31 @@ def list_groups():
     # for root in roots:
     #     full_tree.append(root.drilldown_tree()[0])
     # return render_template('test.html', title=title, groups=full_tree)
-    return render_template('groups/group_list.html', title=title, roots=roots)
+    return render_template('groups/group_list.html', title=title, roots=roots,group=None)
+
+
+@groups_bp.route('<group_id>/subgroups/', methods=['GET'])
+def list_subgroups(group_id):
+    
+    group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+    if group is None:
+        flash('There is no such group')
+        return redirect(url_for('.list_groups'))
+    else:
+        title = 'Group: ' + group_slugify(group.name,group.parent_id)
+        roots = Group.query.filter_by(parent_id=group.id).all()
+    # full_tree = []
+    # for root in roots:
+    #     full_tree.append(root.drilldown_tree()[0])
+    # return render_template('test.html', title=title, groups=full_tree)
+    return render_template('groups/group_list.html', title=title, roots=roots,group=group)
 
 
 @groups_bp.route('create/', methods=['GET','POST'])
 def create_group():
-
     form = GroupForm(request.form)
     if form.validate() and request.method == 'POST':
-
+       
         group_name = slugify(form.name.data,separator='_')
         parent_id = query_group_id(form.parent_path.data)
 
@@ -90,6 +106,8 @@ def delete_group(group_id):
             flash('The group '+group_slug+' has been deleted')
         except:
             flash('Error occurs when trying to remove the group')
+            return redirect(url_for('.list_groups'))  
+                
     return redirect(url_for('.list_groups'))  
 
 
@@ -97,33 +115,62 @@ def delete_group(group_id):
 def edit_group(group_id):
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
     if group is None:
-        group_slug = None
-    else:
-        group_slug = group_slugify(group.name,group.parent_id)
-
-    if group is None:
         flash('There is no such group')
         return redirect(url_for('.list_groups'))
     else:
-        form = GroupForm(request.form,obj=group)
+        group_slug = group_slugify(group.name,group.parent_id)
+        form = GroupForm(request.form)
+        form.name.label = "New group name"
         form.parent_path.label = "New parent path"
         if form.validate() and request.method == 'POST':
-            new_parent_id = query_group_id(form.parent_path.data)
+            if request.form['edit'] == 'update parent path':
 
-            if new_parent_id == group.parent_id:
-                flash('No changes to make for the group')
-                return redirect(url_for('.edit_group',group_id=group.id))  
+                new_parent_id = query_group_id(form.parent_path.data)
 
-            q = db.session.query(Group).filter_by(name=group.name,parent_id=new_parent_id).one_or_none()
-            if q:
-                flash('A group with the same name has been under the same parent')
-                return redirect(url_for('.edit_group',group_id=group.id))  
-            else:
-                group.parent_id = new_parent_id
-                try: 
-                    group.save()
-                    flash('The group '+group_slugify(group.name,group.parent_id)+' is edited successfully')
-                except:
-                    flash('The group edit failed')  
+                if new_parent_id == -1:
+                    flash('No such parent path!')
+                    return redirect(url_for('.edit_group',group_id=group.id)) 
+
+                elif new_parent_id == group.parent_id:
+                    flash('No changes to make for the group')
                     return redirect(url_for('.edit_group',group_id=group.id))  
+                else:
+                    q = db.session.query(Group).filter_by(name=group.name,parent_id=new_parent_id).one_or_none()
+                    if q:
+                        flash('A group with the same name has been under the same parent')
+                        return redirect(url_for('.edit_group',group_id=group.id))  
+                    else:
+                        group.parent_id = new_parent_id
+                        try: 
+                            group.save()
+                            flash('The group '+group_slugify(group.name,group.parent_id)+' is edited successfully')
+                            return redirect(url_for('.list_subgroups',group_id=group.id))  
+                        except:
+                            flash('The group edit failed')  
+                            return redirect(url_for('.edit_group',group_id=group.id))  
+
+            elif request.form['edit'] == 'rename':
+                new_name = slugify(form.name.data,separator='_')
+                if new_name == '':
+                    flash('The name could not be empty!')
+                    return redirect(url_for('.edit_group',group_id=group.id))  
+                elif new_name == group.name:
+                    flash('No changes to make for the group')
+                    return redirect(url_for('.edit_group',group_id=group.id))  
+                else:
+                    q = db.session.query(Group).filter_by(name=new_name,parent_id=group.parent_id).one_or_none()
+
+                    if q:
+                        flash('A group with the same name has been under the same parent')
+                        return redirect(url_for('.edit_group',group_id=group.id))  
+                    else:
+                        group.name = new_name
+                        try: 
+                            group.save()
+                            flash('The group '+group_slugify(group.name,group.parent_id)+' is edited successfully')
+                            return redirect(url_for('.list_subgroups',group_id=group.id))  
+                        except:
+                            flash('The group edit failed')  
+                            return redirect(url_for('.edit_group',group_id=group.id))  
+
     return render_template('groups/group_edit.html', form=form,group_slug=group_slug) 
