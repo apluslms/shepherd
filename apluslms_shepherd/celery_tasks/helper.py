@@ -1,9 +1,6 @@
-from flask_socketio import send
-
-from apluslms_shepherd.extensions import celery, socketio
+from apluslms_shepherd.extensions import celery
 from apluslms_shepherd.config import DevelopmentConfig
 from flask import jsonify
-
 import requests
 
 
@@ -18,10 +15,8 @@ def get_current_build_number_list():
 
 
 def update_frontend(instance_id, build_number, action, state):
-    socketio.emit('update', {'instance_id': instance_id,
-                             'build_number': build_number,
-                             'current_action': action.name,
-                             'current_state': state.name})
+    celery.send_task('apluslms_shepherd.celery_tasks.tasks.update_state', queue='celery_state',
+                     args=[instance_id, build_number, action.name, state.name])
 
 
 class WebHook(object):

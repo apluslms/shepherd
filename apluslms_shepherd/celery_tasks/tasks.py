@@ -24,6 +24,19 @@ logger = get_task_logger(__name__)
 
 
 @celery.task
+def update_state(instance_id, build_number, state, action):
+    print("Sending state to frontend")
+    """
+    Take the updated state to MQ, this task is not going to the worker
+    :param instance_id:
+    :param build_number:
+    :param state:
+    :param action:
+    :return:
+    """
+
+
+@celery.task
 def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     """
     Clone bear repo to local, or update local one, generate working tree.
@@ -140,7 +153,7 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     now = datetime.utcnow()
     ins = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first()
     if ins is None:
-        print('No such course instance inthe database')
+        print('No such course instance in the database')
         revoke(info["id"], terminate=True)
         return
     # Create new build entry and buildlog entry

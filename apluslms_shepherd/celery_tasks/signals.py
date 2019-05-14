@@ -28,6 +28,8 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
     """
     # information about task are located in headers for task messages
     # using the task protocol version 2.
+    if sender.__name__ is 'update_state':
+        return
     print(sender.__name__ + 'pre_run')
     now = datetime.utcnow()
     current_build_number = kwargs['args'][-1]
@@ -63,7 +65,6 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
         build.state = State.RUNNING
         db.session.commit()
         # Send the state to frontend
-        print("updating frontend:", ins.id, current_build_number, task_action_mapping[sender.__name__], State.RUNNING)
         update_frontend(ins.id, current_build_number, task_action_mapping[sender.__name__], State.RUNNING)
 
 
@@ -74,6 +75,8 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
     """
     # information about task are located in headers for task messages
     # using the task protocol version 2.
+    if sender.__name__ is 'update_state':
+        return
     print(sender.__name__ + 'post_run')
     now = datetime.utcnow()
     current_build_number = kwargs['args'][-1]
@@ -99,8 +102,10 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
         # The state code is in the beginning, divided with main part by "|"
         if isinstance(retval, str):
             build_log.log_text = retval
-            build.state = State.FINISHED if retval.split('|')[0] is '0' else State.FAILED
+            build.state = State.FINISHED if str(retval).split('|')[0] is '0' or int(retval) is 0 else State.FAILED
+            print(build.state)
         else:
+            print('return is not str or int')
             build.state = State.FAILED
             build_log.log_text = str(retval)
         # If this is the end of clone task, no need to set end time for Build entry, because the whole task is not
@@ -109,7 +114,6 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
         # Set end time for current build phrase
         build_log.end_time = now
         db.session.commit()
-        print("updating frontend:", instance_id, current_build_number, task_action_mapping[sender.__name__], State.RUNNING)
         update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], build.state)
 
 
@@ -118,6 +122,8 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
     """
     Triggered when task is failed
     """
+    if sender.__name__ is 'update_state':
+        return
     print(sender.__name__ + 'task_failure')
     logger.info('task_failure for task id {}'.format(
         task_id
@@ -142,6 +148,5 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
         build.end_time = now
         build_log.end_time = now
         db.session.commit()
-        print("updating frontend:", instance_id, current_build_number, task_action_mapping[sender.__name__], State.RUNNING)
         update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], State.FAILED)
 
