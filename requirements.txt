@@ -9,4 +9,5 @@ flask-socketio
 aiohttp
 aio_pika
 celery
+asynqp
 wtforms
