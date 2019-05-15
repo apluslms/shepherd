@@ -16,16 +16,18 @@ def write_user_to_db(*args, **kwargs):
     user_id = kwargs['user_id']
     user = User.query.filter_by(id=user_id).first()
     if user is None:
+        print('No such user')
         if not DevelopmentConfig.CREATE_UNKNOWN_USER:
             return None
-            # create new
+        # create new
         user = User(id=user_id, email=kwargs['email'], display_name=kwargs['display_name'],
-                    sorting_name=kwargs['sorting_name'], is_active=True)
+                    sorting_name=kwargs['sorting_name'], roles=kwargs['roles'], is_active=True)
     # if exist, update
     else:
         user.sorting_name = kwargs['sorting_name']
         user.display_name = kwargs['display_name']
         user.email = kwargs['email']
+        user.roles = kwargs['roles']
     # user.is_staff = staff_roles and not roles.isdisjoint(staff_roles) or False
     db.session.add(user)
     db.session.commit()
@@ -39,4 +41,5 @@ class User(db.Model, UserMixin):
     display_name = db.Column(db.String(DevelopmentConfig.FIRST_NAME_LENGTH))
     sorting_name = db.Column(db.String(DevelopmentConfig.LAST_NAME_LENGTH))
     full_name = db.Column(db.String(DevelopmentConfig.LAST_NAME_LENGTH + DevelopmentConfig.FIRST_NAME_LENGTH))
+    roles = db.Column(db.String(30))
     is_active = db.Column(db.Boolean, default=True)
