@@ -10,6 +10,9 @@
 <h1 style = "font-size:50px;">
         <strong>{{title}}</strong>
         {%if group %}
+            <button type="button" class="btn btn-outline-primary"
+            onclick="location.href='/groups/{{ group.id }}/create/'">Create subgroup 
+            </button>
             {% if not group.parent %}
                 <button type="button" class="btn btn-outline-primary"
                 onclick="location.href='/groups/'">Return 
@@ -19,6 +22,10 @@
                         onclick="location.href='/groups/{{ group.parent_id }}/subgroups/'">Return 
                 </button>
             {% endif %}
+        {% else %}
+        <button type="button" class="btn btn-outline-primary"
+        onclick="location.href='/groups/create/'">Create group 
+        </button>
         {% endif %}
 </h1>
     

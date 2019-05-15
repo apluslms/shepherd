@@ -90,7 +90,42 @@ def create_group():
 
         return redirect(url_for('.create_group'))
 
-    return render_template('groups/group_create.html', form=form)
+    return render_template('groups/group_create.html', form=form,parent=None)
+
+
+@groups_bp.route('<group_id>/create/', methods=['GET','POST'])
+def create_subgroup(group_id):
+
+    parent = Group.query.filter_by(id=group_id).one_or_none()
+    if parent is None:
+        flash('No such a group')
+        return redirect(url_for('.create_group'))
+
+    form = GroupForm(request.form)
+    if form.validate() and request.method == 'POST':
+       
+        group_name = slugify(form.name.data,separator='_')
+        parent_id = group_id
+
+        q = Group.query.filter_by(name=group_name,parent_id=parent_id).one_or_none()
+
+        if q is not None:
+            flash('The group '+ group_slugify(group_name,parent_id) +' already exists')
+            return redirect(url_for('.create_subgroup',group_id=parent_id))
+        else:
+            new_group = Group(name=group_name,parent_id=parent_id)
+            try:
+                new_group.save()
+                flash('The new group '+ group_slugify(new_group.name,parent_id) +' is created successfully')
+            except:
+                flash('Could not create the group '+ group_slugify(group_name,parent_id) )
+                return redirect(url_for('.create_subgroup',group_id=parent_id))
+
+        return redirect(url_for('.list_subgroups',group_id=parent_id))
+
+    return render_template('groups/group_create.html', form=form,parent=parent)
+
+
 
 
 @groups_bp.route('delete/<group_id>/', methods=['POST'])
@@ -102,13 +137,17 @@ def delete_group(group_id):
     else:
         try:
             group_slug = group_slugify(group.name,group.parent_id)
+            group_parent = group.parent
             group.delete()
             flash('The group '+group_slug+' has been deleted')
         except:
             flash('Error occurs when trying to remove the group')
             return redirect(url_for('.list_groups'))  
-                
-    return redirect(url_for('.list_groups'))  
+            
+    if group_parent is None:
+        return redirect(url_for('.list_groups'))  
+    else:
+        return redirect(url_for('.list_subgroups',group_id=group_parent.id))  
 
 
 @groups_bp.route('edit/<group_id>/', methods=['GET','POST'])

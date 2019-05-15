@@ -9,7 +9,9 @@
         <form method=post>
             <dl class="form-group">
                 {{ render_field(form.name, class='form-control') }}
+                {% if not parent %}
                 {{ render_field(form.parent_path,class='form-control' ) }}
+                {% endif %}
             </dl>
             {% block button %}
                 <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
