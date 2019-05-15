@@ -4,3 +4,10 @@ flask-sqlalchemy
 flask-login
 flask-migrate
 apluslms-roman
+git+https://github.com/apluslms/flask-lti-login.git
+flask-socketio
+aiohttp
+aio_pika
+celery
+asynqp
+wtforms

@@ -7,7 +7,8 @@ from celery.worker.control import revoke
 from sqlalchemy import desc
 from sqlalchemy.orm import session
 
-from apluslms_shepherd.build.models import Build, BuildLog, States, Action
+from apluslms_shepherd.build.models import Build, BuildLog, State, Action
+from apluslms_shepherd.celery_tasks.helper import WebHook, update_frontend
 from apluslms_shepherd.celery_tasks.tasks import build_repo
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery, db
@@ -18,15 +19,17 @@ task_action_mapping = {'build_repo': Action.BUILD,
                        'pull_repo': Action.CLONE,
                        'clean': Action.CLEAN,
                        'deploy': Action.DEPLOY}
-'''
-Triggered when take is about to run
-'''
 
 
 @task_prerun.connect
 def task_prerun(task_id=None, sender=None, *args, **kwargs):
+    """
+    Triggered when take is about to run
+    """
     # information about task are located in headers for task messages
     # using the task protocol version 2.
+    if sender.__name__ is 'update_state':
+        return
     print(sender.__name__ + 'pre_run')
     now = datetime.utcnow()
     current_build_number = kwargs['args'][-1]
@@ -59,19 +62,21 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
         # will be published before clone task runs, so the state in of Build table will be changed too early.
         # In this case, we create the BuildLog and change the state in the Build table of Build task in this function
         build.action = task_action_mapping[sender.__name__]
-        build.state = States.RUNNING
+        build.state = State.RUNNING
         db.session.commit()
-
-
-'''
-Triggered when task is finished
-'''
+        # Send the state to frontend
+        update_frontend(ins.id, current_build_number, task_action_mapping[sender.__name__], State.RUNNING)
 
 
 @task_postrun.connect
 def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kwargs):
+    """
+    Triggered when task is finished
+    """
     # information about task are located in headers for task messages
     # using the task protocol version 2.
+    if sender.__name__ is 'update_state':
+        return
     print(sender.__name__ + 'post_run')
     now = datetime.utcnow()
     current_build_number = kwargs['args'][-1]
@@ -97,9 +102,11 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
         # The state code is in the beginning, divided with main part by "|"
         if isinstance(retval, str):
             build_log.log_text = retval
-            build.state = States.FINISHED if retval.split('|')[0] is '0' else States.FAILED
+            build.state = State.FINISHED if str(retval).split('|')[0] is '0' or int(retval) is 0 else State.FAILED
+            print(build.state)
         else:
-            build.state = States.FAILED
+            print('return is not str or int')
+            build.state = State.FAILED
             build_log.log_text = str(retval)
         # If this is the end of clone task, no need to set end time for Build entry, because the whole task is not
         # done yet(Still have Build and Deployment left)
@@ -107,15 +114,16 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
         # Set end time for current build phrase
         build_log.end_time = now
         db.session.commit()
-
-
-'''
-Triggered when task is failed
-'''
+        update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], build.state)
 
 
 @task_failure.connect
 def task_failure(task_id=None, sender=None, *args, **kwargs):
+    """
+    Triggered when task is failed
+    """
+    if sender.__name__ is 'update_state':
+        return
     print(sender.__name__ + 'task_failure')
     logger.info('task_failure for task id {}'.format(
         task_id
@@ -134,10 +142,11 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
                                       number=current_build_number).first()
         build_log = BuildLog.query.filter_by(instance_id=instance_id,
                                              number=current_build_number,
-                                             action=task_action_mapping[sender.__name__])\
-            .first()
+                                             action=task_action_mapping[sender.__name__]).first()
         # Change the state to failed, set the end time
-        build.state = States.FAILED
+        build.state = State.FAILED
         build.end_time = now
         build_log.end_time = now
         db.session.commit()
+        update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], State.FAILED)
+
