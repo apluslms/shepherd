@@ -14,17 +14,11 @@
                 <dl class="form-group">
                     <dd>
                         {{ form.name.label }} {{ form.name }} 
-                        {% if form.name.errors %}
-                            <ul class="errors">{% for error in form.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-                        {% endif %}
                         <button type="submit" class="btn btn-outline-danger are-you-sure" 
                         name="edit" value="rename"> Rename </buttton>
                     </dd>
                     <dd>
                         {{ form.parent_path.label }} {{ form.parent_path}} 
-                        {% if form.parent_path.errors %}
-                            <ul class="errors">{% for error in form.parent_path.errors %}<li>{{ error }}</li>{% endfor %}</ul>
-                        {% endif %}
                         <button type="submit" class="btn btn-outline-danger are-you-sure" 
                         name="edit" value="update parent path"> Update parent path </buttton>
                     </dd>
