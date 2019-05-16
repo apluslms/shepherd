@@ -1,0 +1,260 @@
+[2019-05-16 14:23:47,834: INFO/MainProcess] Connected to amqp://guest:**@127.0.0.1:5672//
+[2019-05-16 14:23:47,844: INFO/MainProcess] mingle: searching for neighbors
+[2019-05-16 14:23:48,871: INFO/MainProcess] mingle: all alone
+[2019-05-16 14:23:48,904: INFO/MainProcess] celery@t31300-lr121 ready.
+[2019-05-16 14:39:20,149: INFO/MainProcess] Connected to amqp://guest:**@127.0.0.1:5672//
+[2019-05-16 14:39:20,159: INFO/MainProcess] mingle: searching for neighbors
+[2019-05-16 14:39:21,181: INFO/MainProcess] mingle: all alone
+[2019-05-16 14:39:21,205: INFO/MainProcess] celery@t31300-lr121 ready.
+[2019-05-16 14:43:35,556: INFO/MainProcess] Received task: apluslms_shepherd.celery_tasks.tasks.pull_repo[c3917a8a-9728-4245-bb24-060cb7af195e]  
+[2019-05-16 14:43:35,558: WARNING/ForkPoolWorker-1] pull_repopre_run
+[2019-05-16 14:43:35,558: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[c3917a8a-9728-4245-bb24-060cb7af195e]: task_prerun for task id c3917a8a-9728-4245-bb24-060cb7af195e
+[2019-05-16 14:43:35,558: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[c3917a8a-9728-4245-bb24-060cb7af195e]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:43:35,605: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[c3917a8a-9728-4245-bb24-060cb7af195e]: url:git@version.aalto.fi:dingr1/shepherdwebhookstesting.git, branch:master course_key:ew32ew instance_keygitlab
+[2019-05-16 14:43:35,605: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[c3917a8a-9728-4245-bb24-060cb7af195e]: Pulling from git@version.aalto.fi:dingr1/shepherdwebhookstesting.git
+[2019-05-16 14:43:36,288: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[c3917a8a-9728-4245-bb24-060cb7af195e]: Output: Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/9 (identifier 9)
+HEAD is now at b5c5769 update
+
+[2019-05-16 14:43:36,289: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[c3917a8a-9728-4245-bb24-060cb7af195e]: code: 0
+[2019-05-16 14:43:36,293: INFO/MainProcess] Received task: apluslms_shepherd.celery_tasks.tasks.build_repo[f0e43cd4-0cf0-404f-b605-8ef358b3c7bc]  
+[2019-05-16 14:43:36,294: WARNING/ForkPoolWorker-2] build_repopre_run
+[2019-05-16 14:43:36,295: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[f0e43cd4-0cf0-404f-b605-8ef358b3c7bc]: task_prerun for task id f0e43cd4-0cf0-404f-b605-8ef358b3c7bc
+[2019-05-16 14:43:36,295: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[f0e43cd4-0cf0-404f-b605-8ef358b3c7bc]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:43:36,317: INFO/ForkPoolWorker-1] Task apluslms_shepherd.celery_tasks.tasks.pull_repo[c3917a8a-9728-4245-bb24-060cb7af195e] succeeded in 0.7594244030042319s: '0|Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/9 (identifier 9)
+HEAD is now at b5c5769 update
+'
+[2019-05-16 14:43:36,317: WARNING/ForkPoolWorker-1] pull_repopost_run
+[2019-05-16 14:43:36,317: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[c3917a8a-9728-4245-bb24-060cb7af195e]: task_postrun for task id c3917a8a-9728-4245-bb24-060cb7af195e
+[2019-05-16 14:43:36,317: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[c3917a8a-9728-4245-bb24-060cb7af195e]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:43:36,320: WARNING/ForkPoolWorker-1] finished
+[2019-05-16 14:43:36,325: WARNING/ForkPoolWorker-1] State.FINISHED
+[2019-05-16 14:43:36,391: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[f0e43cd4-0cf0-404f-b605-8ef358b3c7bc]: pull_repo result:0|Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/9 (identifier 9)
+HEAD is now at b5c5769 update
+
+[2019-05-16 14:43:36,392: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[f0e43cd4-0cf0-404f-b605-8ef358b3c7bc]: The repo has been pulled, Building the course, course key:ew32ew, branch:gitlab
+[2019-05-16 14:43:37,451: WARNING/ForkPoolWorker-2] build_repotask_failure
+[2019-05-16 14:43:37,451: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[f0e43cd4-0cf0-404f-b605-8ef358b3c7bc]: task_failure for task id f0e43cd4-0cf0-404f-b605-8ef358b3c7bc
+[2019-05-16 14:43:37,453: WARNING/ForkPoolWorker-2] finished
+[2019-05-16 14:43:37,464: ERROR/ForkPoolWorker-2] Task apluslms_shepherd.celery_tasks.tasks.build_repo[f0e43cd4-0cf0-404f-b605-8ef358b3c7bc] raised unexpected: SyntaxError('EOL while scanning string literal', ('<string>', 1, 39, "('0|Local repo found, fetching updates\n"))
+Traceback (most recent call last):
+  File "/u/18/dingr1/unix/code/shepherd/venv/lib/python3.6/site-packages/celery/app/trace.py", line 385, in trace_task
+    R = retval = fun(*args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/extensions.py", line 52, in __call__
+    return TaskBase.__call__(self, *args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/venv/lib/python3.6/site-packages/celery/app/trace.py", line 648, in __protected_call__
+    return self.run(*args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/tasks.py", line 66, in build_repo
+    number_list = get_current_build_number_list()
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/helper.py", line 12, in get_current_build_number_list
+    task_build_number_list = [int(eval(each_task['args'])[-1]) for each_task in each_worker]
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/helper.py", line 12, in <listcomp>
+    task_build_number_list = [int(eval(each_task['args'])[-1]) for each_task in each_worker]
+  File "<string>", line 1
+    ('0|Local repo found, fetching updates
+                                         ^
+SyntaxError: EOL while scanning string literal
+[2019-05-16 14:43:37,464: WARNING/ForkPoolWorker-2] build_repopost_run
+[2019-05-16 14:43:37,464: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[f0e43cd4-0cf0-404f-b605-8ef358b3c7bc]: task_postrun for task id f0e43cd4-0cf0-404f-b605-8ef358b3c7bc
+[2019-05-16 14:43:37,464: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[f0e43cd4-0cf0-404f-b605-8ef358b3c7bc]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:43:37,466: WARNING/ForkPoolWorker-2] finished
+[2019-05-16 14:43:37,470: WARNING/ForkPoolWorker-2] return is not str or int
+[2019-05-16 14:43:47,969: INFO/MainProcess] Connected to amqp://guest:**@127.0.0.1:5672//
+[2019-05-16 14:43:47,979: INFO/MainProcess] mingle: searching for neighbors
+[2019-05-16 14:43:49,007: INFO/MainProcess] mingle: all alone
+[2019-05-16 14:43:49,037: INFO/MainProcess] celery@t31300-lr121 ready.
+[2019-05-16 14:43:52,407: INFO/MainProcess] Received task: apluslms_shepherd.celery_tasks.tasks.pull_repo[e1687818-44a3-4ca6-832b-4a954c532559]  
+[2019-05-16 14:43:52,411: WARNING/ForkPoolWorker-1] pull_repopre_run
+[2019-05-16 14:43:52,412: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[e1687818-44a3-4ca6-832b-4a954c532559]: task_prerun for task id e1687818-44a3-4ca6-832b-4a954c532559
+[2019-05-16 14:43:52,413: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[e1687818-44a3-4ca6-832b-4a954c532559]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:43:52,464: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[e1687818-44a3-4ca6-832b-4a954c532559]: url:git@version.aalto.fi:dingr1/shepherdwebhookstesting.git, branch:master course_key:ew32ew instance_keygitlab
+[2019-05-16 14:43:52,464: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[e1687818-44a3-4ca6-832b-4a954c532559]: Pulling from git@version.aalto.fi:dingr1/shepherdwebhookstesting.git
+[2019-05-16 14:43:53,145: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[e1687818-44a3-4ca6-832b-4a954c532559]: Output: Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/10 (identifier 10)
+HEAD is now at b5c5769 update
+
+[2019-05-16 14:43:53,145: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[e1687818-44a3-4ca6-832b-4a954c532559]: code: 0
+[2019-05-16 14:43:53,149: INFO/MainProcess] Received task: apluslms_shepherd.celery_tasks.tasks.build_repo[0d339d06-500d-4b6e-8774-1c52b03662c0]  
+[2019-05-16 14:43:53,151: WARNING/ForkPoolWorker-2] build_repopre_run
+[2019-05-16 14:43:53,151: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[0d339d06-500d-4b6e-8774-1c52b03662c0]: task_prerun for task id 0d339d06-500d-4b6e-8774-1c52b03662c0
+[2019-05-16 14:43:53,151: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[0d339d06-500d-4b6e-8774-1c52b03662c0]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:43:53,163: INFO/ForkPoolWorker-1] Task apluslms_shepherd.celery_tasks.tasks.pull_repo[e1687818-44a3-4ca6-832b-4a954c532559] succeeded in 0.7523055740020936s: '0|Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/10 (identifier 10)
+HEAD is now at b5c5769 update
+'
+[2019-05-16 14:43:53,164: WARNING/ForkPoolWorker-1] pull_repopost_run
+[2019-05-16 14:43:53,164: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[e1687818-44a3-4ca6-832b-4a954c532559]: task_postrun for task id e1687818-44a3-4ca6-832b-4a954c532559
+[2019-05-16 14:43:53,164: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[e1687818-44a3-4ca6-832b-4a954c532559]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:43:53,166: WARNING/ForkPoolWorker-1] finished
+[2019-05-16 14:43:53,172: WARNING/ForkPoolWorker-1] State.FINISHED
+[2019-05-16 14:43:53,203: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[0d339d06-500d-4b6e-8774-1c52b03662c0]: pull_repo result:0|Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/10 (identifier 10)
+HEAD is now at b5c5769 update
+
+[2019-05-16 14:43:53,203: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[0d339d06-500d-4b6e-8774-1c52b03662c0]: The repo has been pulled, Building the course, course key:ew32ew, branch:gitlab
+[2019-05-16 14:43:54,263: WARNING/ForkPoolWorker-2] build_repotask_failure
+[2019-05-16 14:43:54,263: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[0d339d06-500d-4b6e-8774-1c52b03662c0]: task_failure for task id 0d339d06-500d-4b6e-8774-1c52b03662c0
+[2019-05-16 14:43:54,267: WARNING/ForkPoolWorker-2] finished
+[2019-05-16 14:43:54,281: ERROR/ForkPoolWorker-2] Task apluslms_shepherd.celery_tasks.tasks.build_repo[0d339d06-500d-4b6e-8774-1c52b03662c0] raised unexpected: SyntaxError('EOL while scanning string literal', ('<string>', 1, 39, "('0|Local repo found, fetching updates\n"))
+Traceback (most recent call last):
+  File "/u/18/dingr1/unix/code/shepherd/venv/lib/python3.6/site-packages/celery/app/trace.py", line 385, in trace_task
+    R = retval = fun(*args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/extensions.py", line 52, in __call__
+    return TaskBase.__call__(self, *args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/venv/lib/python3.6/site-packages/celery/app/trace.py", line 648, in __protected_call__
+    return self.run(*args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/tasks.py", line 66, in build_repo
+    number_list = get_current_build_number_list()
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/helper.py", line 12, in get_current_build_number_list
+    task_build_number_list = [int(eval(each_task['args'])[-1]) for each_task in each_worker]
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/helper.py", line 12, in <listcomp>
+    task_build_number_list = [int(eval(each_task['args'])[-1]) for each_task in each_worker]
+  File "<string>", line 1
+    ('0|Local repo found, fetching updates
+                                         ^
+SyntaxError: EOL while scanning string literal
+[2019-05-16 14:43:54,282: WARNING/ForkPoolWorker-2] build_repopost_run
+[2019-05-16 14:43:54,282: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[0d339d06-500d-4b6e-8774-1c52b03662c0]: task_postrun for task id 0d339d06-500d-4b6e-8774-1c52b03662c0
+[2019-05-16 14:43:54,282: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[0d339d06-500d-4b6e-8774-1c52b03662c0]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:43:54,286: WARNING/ForkPoolWorker-2] finished
+[2019-05-16 14:43:54,290: WARNING/ForkPoolWorker-2] return is not str or int
+[2019-05-16 14:44:33,367: INFO/MainProcess] Received task: apluslms_shepherd.celery_tasks.tasks.pull_repo[9ce3e89b-1d5f-4596-8baa-62dfef8771ed]  
+[2019-05-16 14:44:33,368: WARNING/ForkPoolWorker-1] pull_repopre_run
+[2019-05-16 14:44:33,368: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[9ce3e89b-1d5f-4596-8baa-62dfef8771ed]: task_prerun for task id 9ce3e89b-1d5f-4596-8baa-62dfef8771ed
+[2019-05-16 14:44:33,368: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[9ce3e89b-1d5f-4596-8baa-62dfef8771ed]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:44:33,382: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[9ce3e89b-1d5f-4596-8baa-62dfef8771ed]: url:git@version.aalto.fi:dingr1/shepherdwebhookstesting.git, branch:master course_key:ew32ew instance_keygitlab
+[2019-05-16 14:44:33,382: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[9ce3e89b-1d5f-4596-8baa-62dfef8771ed]: Pulling from git@version.aalto.fi:dingr1/shepherdwebhookstesting.git
+[2019-05-16 14:44:33,956: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[9ce3e89b-1d5f-4596-8baa-62dfef8771ed]: Output: Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/11 (identifier 11)
+HEAD is now at b5c5769 update
+
+[2019-05-16 14:44:33,957: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[9ce3e89b-1d5f-4596-8baa-62dfef8771ed]: code: 0
+[2019-05-16 14:44:33,960: INFO/MainProcess] Received task: apluslms_shepherd.celery_tasks.tasks.build_repo[ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8]  
+[2019-05-16 14:44:33,961: WARNING/ForkPoolWorker-2] build_repopre_run
+[2019-05-16 14:44:33,963: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8]: task_prerun for task id ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8
+[2019-05-16 14:44:33,963: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:44:33,980: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8]: pull_repo result:0|Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/11 (identifier 11)
+HEAD is now at b5c5769 update
+
+[2019-05-16 14:44:33,980: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8]: The repo has been pulled, Building the course, course key:ew32ew, branch:gitlab
+[2019-05-16 14:44:33,981: INFO/ForkPoolWorker-1] Task apluslms_shepherd.celery_tasks.tasks.pull_repo[9ce3e89b-1d5f-4596-8baa-62dfef8771ed] succeeded in 0.6134993320010835s: '0|Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/11 (identifier 11)
+HEAD is now at b5c5769 update
+'
+[2019-05-16 14:44:33,982: WARNING/ForkPoolWorker-1] pull_repopost_run
+[2019-05-16 14:44:33,982: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[9ce3e89b-1d5f-4596-8baa-62dfef8771ed]: task_postrun for task id 9ce3e89b-1d5f-4596-8baa-62dfef8771ed
+[2019-05-16 14:44:33,982: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[9ce3e89b-1d5f-4596-8baa-62dfef8771ed]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:44:33,988: WARNING/ForkPoolWorker-1] finished
+[2019-05-16 14:44:34,017: WARNING/ForkPoolWorker-1] State.FINISHED
+[2019-05-16 14:44:35,028: WARNING/ForkPoolWorker-2] build_repotask_failure
+[2019-05-16 14:44:35,028: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8]: task_failure for task id ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8
+[2019-05-16 14:44:35,031: WARNING/ForkPoolWorker-2] finished
+[2019-05-16 14:44:35,043: ERROR/ForkPoolWorker-2] Task apluslms_shepherd.celery_tasks.tasks.build_repo[ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8] raised unexpected: SyntaxError('EOL while scanning string literal', ('<string>', 1, 39, "('0|Local repo found, fetching updates\n"))
+Traceback (most recent call last):
+  File "/u/18/dingr1/unix/code/shepherd/venv/lib/python3.6/site-packages/celery/app/trace.py", line 385, in trace_task
+    R = retval = fun(*args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/extensions.py", line 52, in __call__
+    return TaskBase.__call__(self, *args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/venv/lib/python3.6/site-packages/celery/app/trace.py", line 648, in __protected_call__
+    return self.run(*args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/tasks.py", line 66, in build_repo
+    number_list = get_current_build_number_list()
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/helper.py", line 12, in get_current_build_number_list
+    task_build_number_list = [int(eval(each_task['args'])[-1]) for each_task in each_worker]
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/helper.py", line 12, in <listcomp>
+    task_build_number_list = [int(eval(each_task['args'])[-1]) for each_task in each_worker]
+  File "<string>", line 1
+    ('0|Local repo found, fetching updates
+                                         ^
+SyntaxError: EOL while scanning string literal
+[2019-05-16 14:44:35,044: WARNING/ForkPoolWorker-2] build_repopost_run
+[2019-05-16 14:44:35,044: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8]: task_postrun for task id ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8
+[2019-05-16 14:44:35,044: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[ee6f41da-dbb4-4c18-99b4-86ae9f76d3c8]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:44:35,046: WARNING/ForkPoolWorker-2] finished
+[2019-05-16 14:44:35,050: WARNING/ForkPoolWorker-2] return is not str or int
+[2019-05-16 14:46:44,936: INFO/MainProcess] Connected to amqp://guest:**@127.0.0.1:5672//
+[2019-05-16 14:46:44,948: INFO/MainProcess] mingle: searching for neighbors
+[2019-05-16 14:46:45,976: INFO/MainProcess] mingle: all alone
+[2019-05-16 14:46:46,020: INFO/MainProcess] celery@t31300-lr121 ready.
+[2019-05-16 14:46:56,507: INFO/MainProcess] Received task: apluslms_shepherd.celery_tasks.tasks.pull_repo[36283649-bfce-410d-9267-f6fe7a92a06e]  
+[2019-05-16 14:46:56,509: WARNING/ForkPoolWorker-1] pull_repopre_run
+[2019-05-16 14:46:56,510: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[36283649-bfce-410d-9267-f6fe7a92a06e]: task_prerun for task id 36283649-bfce-410d-9267-f6fe7a92a06e
+[2019-05-16 14:46:56,510: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[36283649-bfce-410d-9267-f6fe7a92a06e]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:46:56,573: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[36283649-bfce-410d-9267-f6fe7a92a06e]: url:git@version.aalto.fi:dingr1/shepherdwebhookstesting.git, branch:master course_key:ew32ew instance_keygitlab
+[2019-05-16 14:46:56,574: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[36283649-bfce-410d-9267-f6fe7a92a06e]: Pulling from git@version.aalto.fi:dingr1/shepherdwebhookstesting.git
+[2019-05-16 14:46:57,400: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[36283649-bfce-410d-9267-f6fe7a92a06e]: Output: Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/12 (identifier 12)
+HEAD is now at b5c5769 update
+
+[2019-05-16 14:46:57,401: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[36283649-bfce-410d-9267-f6fe7a92a06e]: code: 0
+[2019-05-16 14:46:57,410: INFO/MainProcess] Received task: apluslms_shepherd.celery_tasks.tasks.build_repo[fff6171a-9197-4ac6-be2a-542b9173e7ef]  
+[2019-05-16 14:46:57,413: WARNING/ForkPoolWorker-2] build_repopre_run
+[2019-05-16 14:46:57,413: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[fff6171a-9197-4ac6-be2a-542b9173e7ef]: task_prerun for task id fff6171a-9197-4ac6-be2a-542b9173e7ef
+[2019-05-16 14:46:57,413: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[fff6171a-9197-4ac6-be2a-542b9173e7ef]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:46:57,467: INFO/ForkPoolWorker-1] Task apluslms_shepherd.celery_tasks.tasks.pull_repo[36283649-bfce-410d-9267-f6fe7a92a06e] succeeded in 0.957659938998404s: '0|Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/12 (identifier 12)
+HEAD is now at b5c5769 update
+'
+[2019-05-16 14:46:57,467: WARNING/ForkPoolWorker-1] pull_repopost_run
+[2019-05-16 14:46:57,467: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[36283649-bfce-410d-9267-f6fe7a92a06e]: task_postrun for task id 36283649-bfce-410d-9267-f6fe7a92a06e
+[2019-05-16 14:46:57,468: INFO/ForkPoolWorker-1] apluslms_shepherd.celery_tasks.tasks.pull_repo[36283649-bfce-410d-9267-f6fe7a92a06e]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:46:57,472: WARNING/ForkPoolWorker-1] finished
+[2019-05-16 14:46:57,480: WARNING/ForkPoolWorker-1] State.FINISHED
+[2019-05-16 14:46:57,552: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[fff6171a-9197-4ac6-be2a-542b9173e7ef]: pull_repo result:0|Local repo found, fetching updates
+X11 forwarding request failed on channel 0
+Generating worktree
+Preparing ../builds/ew32ew/gitlab/12 (identifier 12)
+HEAD is now at b5c5769 update
+
+[2019-05-16 14:46:57,552: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[fff6171a-9197-4ac6-be2a-542b9173e7ef]: The repo has been pulled, Building the course, course key:ew32ew, branch:gitlab
+[2019-05-16 14:46:58,621: WARNING/ForkPoolWorker-2] build_repotask_failure
+[2019-05-16 14:46:58,622: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[fff6171a-9197-4ac6-be2a-542b9173e7ef]: task_failure for task id fff6171a-9197-4ac6-be2a-542b9173e7ef
+[2019-05-16 14:46:58,629: WARNING/ForkPoolWorker-2] finished
+[2019-05-16 14:46:58,648: ERROR/ForkPoolWorker-2] Task apluslms_shepherd.celery_tasks.tasks.build_repo[fff6171a-9197-4ac6-be2a-542b9173e7ef] raised unexpected: SyntaxError('EOL while scanning string literal', ('<string>', 1, 39, "('0|Local repo found, fetching updates\n"))
+Traceback (most recent call last):
+  File "/u/18/dingr1/unix/code/shepherd/venv/lib/python3.6/site-packages/celery/app/trace.py", line 385, in trace_task
+    R = retval = fun(*args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/extensions.py", line 52, in __call__
+    return TaskBase.__call__(self, *args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/venv/lib/python3.6/site-packages/celery/app/trace.py", line 648, in __protected_call__
+    return self.run(*args, **kwargs)
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/tasks.py", line 66, in build_repo
+    number_list = get_current_build_number_list()
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/helper.py", line 12, in get_current_build_number_list
+    task_build_number_list = [int(eval(each_task['args'])[-1]) for each_task in each_worker]
+  File "/u/18/dingr1/unix/code/shepherd/apluslms_shepherd/celery_tasks/helper.py", line 12, in <listcomp>
+    task_build_number_list = [int(eval(each_task['args'])[-1]) for each_task in each_worker]
+  File "<string>", line 1
+    ('0|Local repo found, fetching updates
+                                         ^
+SyntaxError: EOL while scanning string literal
+[2019-05-16 14:46:58,649: WARNING/ForkPoolWorker-2] build_repopost_run
+[2019-05-16 14:46:58,649: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[fff6171a-9197-4ac6-be2a-542b9173e7ef]: task_postrun for task id fff6171a-9197-4ac6-be2a-542b9173e7ef
+[2019-05-16 14:46:58,649: INFO/ForkPoolWorker-2] apluslms_shepherd.celery_tasks.tasks.build_repo[fff6171a-9197-4ac6-be2a-542b9173e7ef]: course_key:ew32ew, instance_key:gitlab
+[2019-05-16 14:46:58,651: WARNING/ForkPoolWorker-2] finished
+[2019-05-16 14:46:58,657: WARNING/ForkPoolWorker-2] return is not str or int

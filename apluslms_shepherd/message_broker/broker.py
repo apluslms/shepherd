@@ -33,13 +33,14 @@ async def get_state():
         received_message = await queue.get()
         try:
             print(received_message.json())  # get JSON from incoming messages easily
-
             received_message.ack()
             await sio.emit('update', {
                 'instance_id': received_message.json()[0][0],
                 'build_number': received_message.json()[0][1],
                 'current_action': received_message.json()[0][2],
                 'current_state': received_message.json()[0][3]})
+
+            await sio.emit(received_message.json()[0][0], {'log': received_message.json()[0][4]+'\n'})
         except AttributeError:
             pass
 

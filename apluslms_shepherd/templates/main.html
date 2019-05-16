@@ -1,13 +1,15 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}    <div class="container text-center">
+        <div>User id:{{ user.id }}</div>
 {% block title %}
     Welcome to Shepherd
 {% endblock %}
 
 {% block body %}
-
-    <div>Hi:{{ user.display_name }} {{ user.sorting_name }}</div>
-    <h1>Here shows the status of all courses</h1>
+    <div class="container text-center">
+    <div>Hi, {{ user.display_name }} {{ user.sorting_name }}!</div>
+            <div>Your user ID is :{{ user.id }}</div>
                     <table class="text-center table">
+                                <caption>Instances Build State</caption>
                     <thead>
                     <tr>
                         <th scope="col">Course Key</th>
@@ -19,7 +21,7 @@
                     </thead>
                     <tbody>
                     {% for ins in instances %}
-                        <tr>
+                        <tr onclick="window.location.href='/logs/{{ ins.instance_id }}/'">
                             <td>{{ ins.course_key }}</td>
                             <td>{{ ins.instance_key }}</td>
                             <td class="table-number" id="{{ ins.instance_id }}">{{ ins.number }}</td>
@@ -30,7 +32,7 @@
                     {% endfor %}
                     </tbody>
                 </table>
-
+    </div>
 {% endblock %}
 
 {% block scripts %}
