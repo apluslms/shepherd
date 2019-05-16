@@ -1,8 +1,9 @@
 import os
 import shutil
 import subprocess
+
 try:
-    from subprocess import DEVNULL # Python 3
+    from subprocess import DEVNULL  # Python 3
 except ImportError:
     DEVNULL = open(os.devnull, 'r+b', 0)
 from datetime import datetime
@@ -11,7 +12,6 @@ from celery.result import AsyncResult
 from celery.signals import before_task_publish
 from celery.utils.log import get_task_logger
 from celery.worker.control import revoke
-
 
 from apluslms_shepherd.build.models import Build, BuildLog, State, Action
 from apluslms_shepherd.courses.models import CourseInstance
@@ -24,15 +24,10 @@ logger = get_task_logger(__name__)
 
 
 @celery.task
-def update_state(instance_id, build_number, state, action):
+def update_state(instance_id, build_number, state, action, log):
     print("Sending state to frontend")
     """
     Take the updated state to MQ, this task is not going to the worker
-    :param instance_id:
-    :param build_number:
-    :param state:
-    :param action:
-    :return:
     """
 
 
@@ -53,7 +48,7 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
 
-    return str(proc.returncode)
+    return str(proc.returncode) + "|" + o.decode('ascii').rstrip('\n\r')
 
 
 @celery.task
@@ -71,9 +66,11 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     number_list = get_current_build_number_list()
     try:
         if int(build_number) < max(number_list):
-            print("Already have newer version in the task queue, task with build number {} aborted.".format(build_number))
+            print(
+                "Already have newer version in the task queue, task with build number {} aborted.".format(build_number))
             print("Current build numbers:{}".format(number_list))
-            return "-1|Already have newer version in the task queue, task with build number {} aborted.".format(build_number)
+            return "-1|Already have newer version in the task queue, task with build number {} aborted.".format(
+                build_number)
     except (ValueError, TypeError):
         logger.error("Cannot compare current  build number with max number in the queue")
     shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/build_roman.sh')
@@ -82,11 +79,11 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
-    return str(proc.returncode)
+    return str(proc.returncode) + "|" + "Build Succeed"
 
 
 @celery.task
-def deploy(build_result, deploy_base_path , base_path, course_key, instance_key, build_number):
+def deploy(build_result, deploy_base_path, base_path, course_key, instance_key, build_number):
     """
     Copy the build filed to deploy folder
     TODO: Support remote deploy location(Cloud .etc)
@@ -101,7 +98,7 @@ def deploy(build_result, deploy_base_path , base_path, course_key, instance_key,
     if int(build_number) < max(number_list):
         print("Already have newer version in the task queue, task with build number {} aborted.".format(build_number))
         print("Current build numbers:{}".format(number_list))
-        return "-1|Newer version in the task queue, task with build number {} aborted. Cleaning the local repo"\
+        return "-1|Newer version in the task queue, task with build number {} aborted. Cleaning the local repo" \
             .format(build_number)
     logger.info(
         "The repo has been build, deploying the course, course key:{}, branch:{}".format(course_key, instance_key))
@@ -111,9 +108,9 @@ def deploy(build_result, deploy_base_path , base_path, course_key, instance_key,
         deploy_path = os.path.join(deploy_base_path, course_key, instance_key, build_number)
         shutil.move(build_path, deploy_path)
     except (FileNotFoundError, OSError, IOError) as why:
-        logger.info('Error:'+why.strerror)
+        logger.info('Error:' + why.strerror)
         return '-1|Error when deploying files'
-    return '0'
+    return '0' + '|File successfully moved to deployment folder.'
 
 
 @celery.task
@@ -126,7 +123,7 @@ def clean(res, base_path, course_key, instance_key, build_number):
     try:
         print("Local work tree of build number {} deleted".format(build_number))
         shutil.rmtree(path)
-        return res
+        return res + '. Repo cleaned.'
     except (FileNotFoundError, IOError, OSError) as why:
         logger.info('Error:' + why.strerror)
         return '-1|Error when cleaning local worktree files,'
@@ -171,7 +168,12 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     db.session.add(build)
     db.session.commit()
     print('Task sent')
-    update_frontend(ins.id, current_build_number, Action.CLONE, State.PUBLISH)
+    update_frontend(ins.id, current_build_number, Action.CLONE, State.PUBLISH,
+                    "Instance with course_key:{}, instance_key:{} entering task queue, this is build No.{}".format(
+                        sender.__name__,
+                        course_key,
+                        instance_key,
+                        current_build_number))
     print('Current state sent to frontend')
 
 

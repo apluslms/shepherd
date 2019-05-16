@@ -46,11 +46,11 @@ def add_course():
     return render_template('course_create.html', form=form)
 
 
-@course_bp.route('create/<course_id>/', methods=['GET', 'POST'])
+@course_bp.route('create/<course_key>/', methods=['GET', 'POST'])
 @login_required
-def add_course_instance(course_id):
-    course_repo = CourseRepository.query.filter_by(key=course_id)
-    last_instance = CourseInstance.query.filter_by(course_key=course_id).first()
+def add_course_instance(course_key):
+    course_repo = CourseRepository.query.filter_by(key=course_key)
+    last_instance = CourseInstance.query.filter_by(course_key=course_key).first()
     form = InstanceForm(request.form, obj=CourseInstance(git_origin=last_instance.git_origin))
 
     if form.validate() and request.method == 'POST':
@@ -58,28 +58,28 @@ def add_course_instance(course_id):
         new_course_instance = CourseInstance(key=form.key.data,
                                              git_origin=form.git_origin.data,
                                              branch=form.branch.data,
-                                             course_key=course_id,
+                                             course_key=course_key,
                                              secret_token=None if form.secret_token.data == '' else form.secret_token.data
                                              )
-        print(db.session.query(CourseInstance.key).filter_by(course_key=course_id, key=form.key.data).scalar())
-        if db.session.query(CourseInstance.key).filter_by(course_key=course_id, key=form.key.data).scalar() is not None:
+        print(db.session.query(CourseInstance.key).filter_by(course_key=course_key, key=form.key.data).scalar())
+        if db.session.query(CourseInstance.key).filter_by(course_key=course_key, key=form.key.data).scalar() is not None:
             flash('Course instance already exists.')
         else:
             try:
                 db.session.add(new_course_instance)
                 db.session.commit()
-                flash('New course instance added for course ' + course_id + '!')
+                flash('New course instance added for course ' + course_key + '!')
             except IntegrityError:
                 flash('Course instance already exists.')
         return redirect('/courses/')
     return render_template('instance_create.html', form=form, course=course_repo)
 
 
-@course_bp.route('edit/<course_id>/', methods=['GET', 'POST'])
+@course_bp.route('edit/<course_key>/', methods=['GET', 'POST'])
 @login_required
-def edit_course(course_id):
-    course = CourseRepository.query.filter_by(key=course_id, owner=current_user.id)
-    course_instances = CourseInstance.query.filter_by(course_key=course_id)
+def edit_course(course_key):
+    course = CourseRepository.query.filter_by(key=course_key, owner=current_user.id)
+    course_instances = CourseInstance.query.filter_by(course_key=course_key)
     if course is None:
         flash('There is no such course under this user')
         return redirect('/courses/')
@@ -107,10 +107,10 @@ def edit_course(course_id):
     return render_template('course_edit.html', form=form, instances_num=course_instances.count())
 
 
-@course_bp.route('edit/<course_id>/<instance_id>/', methods=['GET', 'POST'])
+@course_bp.route('edit/<course_key>/<instance_key>/', methods=['GET', 'POST'])
 @login_required
-def edit_instance(course_id, instance_id):
-    instance = CourseInstance.query.filter_by(key=instance_id, course_key=course_id)
+def edit_instance(course_key, instance_key):
+    instance = CourseInstance.query.filter_by(key=instance_key, course_key=course_key)
     if instance is None:
         flash('There is no such instance under this course')
         return redirect('/courses/')
@@ -128,29 +128,39 @@ def edit_instance(course_id, instance_id):
     return render_template('instance_edit.html', form=form)
 
 
-@course_bp.route('delete/<course_id>/', methods=['POST'])
+@course_bp.route('delete/<course_key>/', methods=['POST'])
 @login_required
-def del_course(course_id):
-    course = CourseRepository.query.filter_by(key=course_id, owner=current_user.id).first()
+def del_course(course_key):
+    course = CourseRepository.query.filter_by(key=course_key, owner=current_user.id).first()
     if course is None:
         flash('There is no such course under this user')
     else:
         # The delete is cascade, the instance will be deleted as well.
         db.session.delete(course)
         db.session.commit()
-        flash('Course with key: ' + course_id + ' name: ' + course.name + ' has been deleted.')
+        flash('Course with key: ' + course_key + ' name: ' + course.name + ' has been deleted.')
     return redirect('/courses/')
 
 
-@course_bp.route('delete/<course_id>/<instance_id>/', methods=['POST'])
+@course_bp.route('delete/<course_key>/<instance_key>/', methods=['POST'])
 @login_required
-def del_course_instance(course_id, instance_id):
-    instance = CourseInstance.query.filter_by(course_key=course_id, key=instance_id).first()
+def del_course_instance(course_key, instance_key):
+    instance = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first()
     if instance is None:
         flash('There is no such course under this user')
     else:
         db.session.delete(instance)
         db.session.commit()
         flash(
-            'Instance with key: ' + instance_id + ' belonging to course with key: ' + course_id + ' has been deleted.')
+            'Instance with key: ' + instance_key + ' belonging to course with key: ' + course_key + ' has been deleted.')
     return redirect('/courses/')
+
+
+@course_bp.route('logs/<instance_id>/', methods=['GET'])
+@login_required
+def instance_log(instance_id):
+    instance = CourseInstance.query.filter_by(id=instance_id).first()
+    if instance is None:
+        flash('No such instance in the database, please refresh the page.')
+        redirect('')
+    render_template('instance_log.html', instance=instance)

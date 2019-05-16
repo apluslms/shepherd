@@ -65,7 +65,9 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
         build.state = State.RUNNING
         db.session.commit()
         # Send the state to frontend
-        update_frontend(ins.id, current_build_number, task_action_mapping[sender.__name__], State.RUNNING)
+        update_frontend(ins.id, current_build_number, task_action_mapping[sender.__name__], State.RUNNING,
+                        'Task {} for course_key:{}, instance_key:{} starts running'.format(sender.__name__, course_key,
+                                                                                           instance_key))
 
 
 @task_postrun.connect
@@ -114,7 +116,8 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
         # Set end time for current build phrase
         build_log.end_time = now
         db.session.commit()
-        update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], build.state)
+        update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], build.state,
+                        str(retval).replace('\\r', '\r').replace('\\n', '\n'))
 
 
 @task_failure.connect
@@ -148,5 +151,5 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
         build.end_time = now
         build_log.end_time = now
         db.session.commit()
-        update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], State.FAILED)
-
+        update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], State.FAILED,
+                        'Task' + sender.__name__ + 'is Failed')
