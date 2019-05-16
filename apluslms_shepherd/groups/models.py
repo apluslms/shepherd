@@ -6,7 +6,14 @@ from sqlalchemy_mptt.mixins import BaseNestedSets
 from saexttype import SlugType, ChoiceType
 from slugify import slugify
 
+from apluslms_shepherd.auth.models import User
+
 # db.metadata.clear()
+
+association_table = db.Table('groups_members',db.Model.metadata,
+    db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
+)
 
 class CRUD():
     def save(self):
@@ -21,7 +28,7 @@ class CRUD():
 class Group(db.Model, BaseNestedSets, CRUD):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), index=True,nullable=False)
-    #members = db.relationship("User", secondary=association_table,backref='groups')
+    members = db.relationship("User", secondary=association_table,backref='group')
 
     def __init__(self,name,parent_id=None):
         self.name = name
