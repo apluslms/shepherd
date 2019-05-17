@@ -1,15 +1,9 @@
 from celery.utils.log import get_task_logger
-from celery.signals import before_task_publish, task_prerun, after_task_publish, task_postrun, task_success, \
-    task_failure
+from celery.signals import task_prerun, task_postrun, task_failure
 from datetime import datetime
-
 from celery.worker.control import revoke
-from sqlalchemy import desc
-from sqlalchemy.orm import session
-
 from apluslms_shepherd.build.models import Build, BuildLog, State, Action
-from apluslms_shepherd.celery_tasks.helper import WebHook, update_frontend
-from apluslms_shepherd.celery_tasks.tasks import build_repo
+from apluslms_shepherd.celery_tasks.helper import update_frontend
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery, db
 
