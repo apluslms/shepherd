@@ -28,7 +28,8 @@ class CRUD():
 class Group(db.Model, BaseNestedSets, CRUD):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), index=True,nullable=False)
-    members = db.relationship("User", secondary=association_table,backref='group')
+    members = db.relationship("User", secondary=association_table,
+                            backref= db.backref('groups',lazy='dynamic'))
 
     def __init__(self,name,parent_id=None):
         self.name = name
