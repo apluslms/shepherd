@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block head %}
-    <script src="../../../static/are_you_sure.js"></script>
+    <!-- <script src="../../../static/are_you_sure.js"></script>
+    <script type="text/javascript" src="../../../static/helpers.js"></script> -->
+    <script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
+    <script src="{{ url_for('static', filename='helpers.js') }}"></script>
 {% endblock %}
 {% block title %}
     Group list
@@ -11,17 +14,20 @@
         <strong>{{title}}</strong>
         {%if group %}
             <button type="button" class="btn btn-outline-primary"
+            onclick="goBack()">Return 
+            </button>
+            <button type="button" class="btn btn-outline-primary"
             onclick="location.href='/groups/{{ group.id }}/create/'">Create subgroup 
             </button>
-            {% if not group.parent %}
+            <!-- {% if not group.parent %}
                 <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/'">Return 
+                onclick="goBack()">Return 
                 </button>
             {% else %}
                 <button type="button" class="btn btn-outline-primary"
-                        onclick="location.href='/groups/{{ group.parent_id }}/subgroups/'">Return 
+                        onclick="goBack()">Return 
                 </button>
-            {% endif %}
+            {% endif %} -->
         {% else %}
         <button type="button" class="btn btn-outline-primary"
         onclick="location.href='/groups/create/'">Create group 
@@ -33,16 +39,19 @@
         <ul>
             {%- for group in roots recursive %}
             <li>
-            {{ '-' * (loop.depth-1) }}{{group.name}} 
-            <form method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}">
+            {{ '-' * (loop.depth-1) }}{{group.name}} <br>
+            <!-- <form method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}"> -->
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{ group.id }}/members/'">Members
+                </button>
                 <button type="button" class="btn btn-outline-primary"
                 onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
                 </button>
-                <button type="button" class="btn btn-outline-primary"
+                <!-- <button type="button" class="btn btn-outline-primary"
                 onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
                 </button>
-                <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
-            </form>
+                <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>  -->
+            <!-- </form> -->
            
             </li>
             {%- if group.children -%}

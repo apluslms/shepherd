@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block head %}
+    <!-- <script type="text/javascript" src="../../../static/helpers.js"></script> --> -->
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> -->
+    <script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
+    <script src="{{ url_for('static', filename='helpers.js') }}"></script>
+{% endblock %}
+{% block title %}
+    Member list
+{% endblock %}
+
+{% block body %}
+<h1 style = "font-size:50px;">
+    <strong>{{title}}</strong>
+    <button type="button" class="btn btn-outline-primary"
+    onclick="location.href='/groups/{{ group.id }}/add_members/'">Add members
+    </button>
+    <button type="button" class="btn btn-outline-primary"
+    onclick="goBack()">Return 
+    </button>
+</h1>
+    
+<div  style = "font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
+    <ul>
+        {%- for member in members  %}   
+        <li class="form-inline">
+        {{member.sorting_name}} &nbsp; &nbsp;
+        <form method="post" action="{{ url_for('groups.delete_member', group_id=group.id,user_id=member.id) }}">
+                <button type="submit" name="user" value= {{member.id}} class="btn btn-outline-danger are-you-sure">Delete</button>
+        </form>
+        </li>
+
+        {%- endfor %}
+    </ul>
+</div>
+{% endblock %}

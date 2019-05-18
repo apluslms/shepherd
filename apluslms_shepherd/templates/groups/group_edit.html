@@ -3,7 +3,8 @@
     Edit group
 {% endblock %}
 {% block head %}
-    <script src="../../../static/are_you_sure.js"></script>
+    <!-- <script src="../../../static/are_you_sure.js"></script> -->
+    <script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
 {% endblock %}
 
 {% block body %}
@@ -23,6 +24,6 @@
                         name="edit" value="update parent path"> Update parent path </buttton>
                     </dd>
                 </dl>
-            </form>
+        </form>
     </div>
 {% endblock %}

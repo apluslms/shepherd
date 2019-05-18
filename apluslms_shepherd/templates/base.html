@@ -38,9 +38,12 @@
             <li class="nav-item">
                     <a class="nav-link" href="/groups/">Groups</a>
             </li>
-            <li class="nav-item">
+            <!-- <li class="nav-item">
                     <a class="nav-link" href="/groups/create/">Create group</a>
-            </li>
+            </li> -->
+            <li class="nav-item">
+                <a class="nav-link" href="{{url_for('groups.list_my_groups')}}">My groups</a>
+        </li>
         </ul>
     </div>
     <button class="btn btn-outline-danger" onclick="location.href='/auth/logout/'">Logout</button>
