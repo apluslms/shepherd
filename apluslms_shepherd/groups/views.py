@@ -6,6 +6,10 @@ from apluslms_shepherd.auth.models import User
 from sqlalchemy.exc import IntegrityError
 from slugify import slugify
 
+import sys
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 groups_bp = Blueprint('groups', __name__, url_prefix='/groups')
 
 
@@ -287,7 +291,7 @@ def list_users(group_id):
     if group is None:
         flash('There is no such group')
         return redirect(request.referrer)
-    if current_user not in group.members:
+    if (group.parent is None) or (current_user not in group.parent.members):
         flash("You don't have the permission to manage members")
         return redirect(request.referrer)
     
@@ -305,10 +309,13 @@ def add_member(group_id):
     if group is None:
         flash('There is no such group')
         return redirect(url_for('.list_my_groups'))
-    if current_user not in group.parent.members:
+   
+    if (group.parent is None) or (current_user not in group.parent.members):
         flash("You don't have the permission to manage members")
+        
         return redirect(url_for('.list_my_groups'))
     try:
+        print(current_user, group.parent.members,file=sys.stderr)
         user_id = request.form['user']
         new_member = db.session.query(User).filter(User.id==user_id,\
                                             User.roles.in_(['Instructor','Teacher','TA'])).one_or_none()
@@ -334,7 +341,7 @@ def delete_member(group_id):
     if group is None:
         flash('There is no such group')
         return redirect(url_for('.list_my_groups'))
-    if current_user not in group.parent.members:
+    if (group.parent is None) or (current_user not in group.parent.members):
         flash("You don't have the permission to manage members")
         return redirect(request.referrer)
     try:
