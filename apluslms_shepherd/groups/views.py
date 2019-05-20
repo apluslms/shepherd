@@ -291,7 +291,7 @@ def list_users(group_id):
         flash("You don't have the permission to manage members")
         return redirect(request.referrer)
     
-    available_users = db.session.query(User).filter(User.roles.in_(['Instructor','Teacher','Assistant']),\
+    available_users = db.session.query(User).filter(User.roles.in_(['Instructor','Teacher','TA']),\
                             db.not_(User.groups.any(Group.id==group.id))).all()
             
     return render_template('members/members_add.html', group=group, users=available_users) 
@@ -305,13 +305,13 @@ def add_member(group_id):
     if group is None:
         flash('There is no such group')
         return redirect(url_for('.list_my_groups'))
-    if current_user not in group.members:
+    if current_user not in group.parent.members:
         flash("You don't have the permission to manage members")
         return redirect(url_for('.list_my_groups'))
     try:
         user_id = request.form['user']
         new_member = db.session.query(User).filter(User.id==user_id,\
-                                            User.roles.in_(['Instructor','Teacher','Assistant'])).one_or_none()
+                                            User.roles.in_(['Instructor','Teacher','TA'])).one_or_none()
         if new_member is None:
             flash('No such a user')
             return redirect(request.referrer)
@@ -334,7 +334,7 @@ def delete_member(group_id):
     if group is None:
         flash('There is no such group')
         return redirect(url_for('.list_my_groups'))
-    if current_user not in group.members:
+    if current_user not in group.parent.members:
         flash("You don't have the permission to manage members")
         return redirect(request.referrer)
     try:
