@@ -59,7 +59,8 @@ def add_course_instance(course_key):
                                              git_origin=form.git_origin.data,
                                              branch=form.branch.data,
                                              course_key=course_key,
-                                             secret_token=None if form.secret_token.data == '' else form.secret_token.data
+                                             secret_token=None if form.secret_token.data == '' else form.secret_token.data,
+                                             config_filename=None if form.config_filename.data == '' else form.config_filename.data
                                              )
         print(db.session.query(CourseInstance.key).filter_by(course_key=course_key, key=form.key.data).scalar())
         if db.session.query(CourseInstance.key).filter_by(course_key=course_key, key=form.key.data).scalar() is not None:
@@ -120,7 +121,8 @@ def edit_instance(course_key, instance_key):
             instance.update(dict(
                 key=form.key.data,
                 git_origin=form.git_origin.data,
-                branch=form.branch.data
+                branch=form.branch.data,
+                config_filename=form.config_filename.data
             ))
             db.session.commit()
             flash('Instance edited.')

@@ -98,8 +98,7 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
         # The state code is in the beginning, divided with main part by "|"
         if isinstance(retval, str):
             build_log.log_text = retval
-            build.state = State.FINISHED if str(retval).split('|')[0] is '0' or int(retval) is 0 else State.FAILED
-            print(build.state)
+            build.state = State.FINISHED if str(retval).split('|')[0] == '0' else State.FAILED
         else:
             print('return is not str or int')
             build.state = State.FAILED

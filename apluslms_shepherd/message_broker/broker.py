@@ -10,18 +10,9 @@ app = web.Application()
 sio.attach(app)
 
 
-async def background_task():
-    """Example of how to send server generated events to clients."""
-    count = 0
-    while True:
-        await sio.sleep(10)
-        count += 1
-        await sio.emit('my response', {'data': 'Server generated event'}, namespace='/test')
-
-
 async def get_state():
     # connect to the RabbitMQ broker
-    connection = await asynqp.connect('localhost', 5672, username='guest', password='guest')
+    connection = await asynqp.connect('172.17.0.2', 5672, username='guest', password='guest')
 
     # Open a communications channel
     channel = await connection.open_channel()
@@ -46,7 +37,5 @@ async def get_state():
 
 
 if __name__ == "__main__":
-    # loop = asyncio.get_event_loop()
-    # loop.create_task(get_state())
     sio.start_background_task(get_state)
     web.run_app(app, port=5001)

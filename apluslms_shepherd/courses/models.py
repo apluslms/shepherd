@@ -1,5 +1,3 @@
-from apluslms_shepherd.build.models import Build
-
 from apluslms_shepherd.extensions import db
 from apluslms_shepherd.config import DevelopmentConfig
 
@@ -17,5 +15,6 @@ class CourseInstance(db.Model):
     course_key = db.Column(db.String(50), db.ForeignKey('course_repository.key'), nullable=False)
     git_origin = db.Column(db.String(255), default='')
     secret_token = db.Column(db.String(127))
+    config_filename = db.Column(db.String(127))
     branch = db.Column(db.String, default='master')
     builds = db.relationship('Build', lazy='select', backref=db.backref('instance', lazy='joined'))

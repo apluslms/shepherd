@@ -1,19 +1,24 @@
-#!/bin/sh
+#!/bin/bash
 # Update from git origin and move to dir.
 base=$1
 course=$2
 branch=$3
 build_number=$4
+file_name=$5
 
 cd ${base}builds/${course}/${branch}/${build_number}
-res=$?
-if [ $res -ne 0 ] ; then
-    echo "Roman Error. Folder not found"
-    exit $res
+retVal=$?
+if [ $retVal -ne 0 ]; then
+    echo "Error"
 fi
-roman
-res=$?
-if [ $res -ne 0 ] ; then
-    echo "Roman Error."
-    exit $res
+if [ -z $file_name ] || [ $file_name -e "course.yml" ]; then
+    roman
+else
+    echo "Roman with file name"
+    roman -f $file_name
 fi
+retVal=$?
+if [ $retVal -ne 0 ]; then
+    echo "Error"
+fi
+exit $retVal

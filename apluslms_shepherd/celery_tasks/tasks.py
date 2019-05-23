@@ -56,7 +56,7 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
 @celery.task
 def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     """
-    build the material
+    build the course material with roman
     """
     logger.info("pull_repo result:" + pull_result)
     # Check the result of last step
@@ -82,14 +82,14 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     except (ValueError, TypeError):
         logger.error("Cannot compare current  build number with max number in the queue")
     shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/build_roman.sh')
-    cmd = [shell_script_path, base_path, course_key, instance_key, build_number]
+    cmd = [shell_script_path, base_path, course_key, instance_key, build_number, ins.config_filename]
     proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     o, e = proc.communicate()
     update_frontend(ins.id, build_number, task_action_mapping['build_repo'], State.RUNNING,
                     o.decode('ascii'))
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
-    return str(proc.returncode) + "|" + "Build Succeed"
+    return str(proc.returncode) + "|" + "Build Succeed" if proc.returncode == 0 else str(proc.returncode) + "|" + "Build Failed"
 
 
 @celery.task
@@ -179,8 +179,8 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     db.session.commit()
     print('Task sent')
     update_frontend(ins.id, current_build_number, Action.CLONE, State.PUBLISH,
+                    "-------------------------------------------------New Build Start-------------------------------------------------\n"
                     "Instance with course_key:{}, instance_key:{} entering task queue, this is build No.{}".format(
-                        sender.__name__,
                         course_key,
                         instance_key,
                         current_build_number))
