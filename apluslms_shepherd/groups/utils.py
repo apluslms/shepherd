@@ -44,24 +44,25 @@ def query_parent_id(group_path):
 role_permission = Permission(RoleNeed('Instructor'),RoleNeed('Mentor'),
                 RoleNeed('Teacher'),RoleNeed('TA'),RoleNeed('TeachingAssistant'))
 
+
 GroupNeed = namedtuple('GroupNeed', ['action', 'group_id'])
 CourseNeed = namedtuple('CourseNeed', ['action', 'group_id'])
 
-CreateGroupNeed = partial(GroupNeed, 'create')
-CreateCourseNeed = partial(CourseNeed, 'create')
+GroupManageNeed = partial(GroupNeed, 'manage')
+CourseManageNeed = partial(CourseNeed, 'manage')
 
 
-class CreateGroupPermission(Permission):
+class GroupManagePermission(Permission):
     """Extend Permission to take a group_id and action as arguments"""
-    def __init__(self, action, group_id=None):
-        need = CreateGroupNeed(action, group_id)
-        super(CreateGroupPermission, self).__init__(need)
-
-class CreateCoursePermission(Permission):
     def __init__(self, group_id):
-        need = CreateCourseNeed(group_id)
-        super(CreateCoursePermission, self).__init__(need)
+        need = GroupManageNeed(str(group_id))
+        super(GroupManagePermission, self).__init__(need)
 
+
+class CourseManagePermission(Permission):
+    def __init__(self, group_id):
+        need = CourseManageNeed(str(group_id))
+        super(CourseManagePermission, self).__init__(need)
 
 def group_create_perm(func):
 
@@ -70,14 +71,16 @@ def group_create_perm(func):
         allowed = False
         if "group_id" in request.view_args:
             group_id = request.view_args['group_id']
-            group = db.session.query(Group).filter(Group.id==group_id,
-                                            Group.permissions.any(GroupPermission.type==PermType.groups),
-                                            Group.members.any(User.id==current_user.id)).one_or_none()
+            group = db.session.query(Group).filter_by(id=group_id).one_or_none()
             if group:
-                allowed = True
+                permission = GroupManagePermission(group_id=group.id)
+                if permission.can():
+                    allowed = True
+
         if not allowed:
             flash('Permission denied')
             return redirect(request.referrer)
+
         return func(*args, **kwargs)
     return wrapper
 
@@ -89,21 +92,18 @@ def group_edit_del_perm(func):
         allowed = False
         if "group_id" in request.view_args:
             group_id = request.view_args['group_id']
-            group = db.session.query(Group).filter(Group.id==group_id).one_or_none()
-            if group:
-                parent_group = group = db.session.query(Group).filter(Group.id==group.parent_id,
-                                            Group.members.any(User.id==current_user.id)).one_or_none()
-                if parent_group:
-                    for perm in parent_group.permissions:
-                        if perm.type == PermType.groups:
-                            allowed = True
-                            break
+            group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+            if group and group.parent:
+                permission = GroupManagePermission(group_id=group.parent.id)
+                if permission.can():
+                    allowed = True
+
         if not allowed:
             flash('Permission denied')
             return redirect(request.referrer)
+
         return func(*args, **kwargs)
     return wrapper
-
 
 def course_perm(func):
 
@@ -112,16 +112,79 @@ def course_perm(func):
         allowed = False
         if "group_id" in request.view_args:
             group_id = request.view_args['group_id']
-            group = db.session.query(Group).filter(Group.id==group_id,
-                                            Group.members.any(User.id==current_user.id)).one_or_none()
+            group = db.session.query(Group).filter(Group.id==group_id).one_or_none()
             if group:
-                for perm in group.permissions:
-                    if perm.type == PermType.groups:
-                        allowed = True
-                        break
+                permission = CourseManagePermission(group_id=group.id)
+                if permission.can():
+                    allowed = True
+
         if not allowed:
             flash('Permission denied')
             return redirect(request.referrer)
+            
         return func(*args, **kwargs)
     return wrapper
+
+#------------------------------------------------------------------------------------------------------------#
+# def group_create_perm(func):
+
+#     @wraps(func)
+#     def wrapper(*args, **kwargs):
+#         allowed = False
+#         if "group_id" in request.view_args:
+#             group_id = request.view_args['group_id']
+#             group = db.session.query(Group).filter(Group.id==group_id,
+#                                             Group.permissions.any(GroupPermission.type==PermType.groups),
+#                                             Group.members.any(User.id==current_user.id)).one_or_none()
+#             if group:
+#                 allowed = True
+#         if not allowed:
+#             flash('Permission denied')
+#             return redirect(request.referrer)
+#         return func(*args, **kwargs)
+#     return wrapper
+
+
+# def group_edit_del_perm(func):
+
+#     @wraps(func)
+#     def wrapper(*args, **kwargs):
+#         allowed = False
+#         if "group_id" in request.view_args:
+#             group_id = request.view_args['group_id']
+#             group = db.session.query(Group).filter(Group.id==group_id).one_or_none()
+#             if group:
+#                 parent_group = db.session.query(Group).filter(Group.id==group.parent_id,
+#                                             Group.members.any(User.id==current_user.id)).one_or_none()
+#                 if parent_group:
+#                     for perm in parent_group.permissions:
+#                         if perm.type == PermType.groups:
+#                             allowed = True
+#                             break
+#         if not allowed:
+#             flash('Permission denied')
+#             return redirect(request.referrer)
+#         return func(*args, **kwargs)
+#     return wrapper
+
+
+# def course_perm(func):
+
+#     @wraps(func)
+#     def wrapper(*args, **kwargs):
+#         allowed = False
+#         if "group_id" in request.view_args:
+#             group_id = request.view_args['group_id']
+#             group = db.session.query(Group).filter(Group.id==group_id,
+#                                             Group.members.any(User.id==current_user.id)).one_or_none()
+#             if group:
+#                 for perm in group.permissions:
+#                     if perm.type == PermType.groups:
+#                         allowed = True
+#                         break
+#         if not allowed:
+#             flash('Permission denied')
+#             return redirect(request.referrer)
+#         return func(*args, **kwargs)
+#     return wrapper
 

@@ -6,7 +6,7 @@ from apluslms_shepherd import config
 from apluslms_shepherd.extensions import celery, db, make_celery
 from flask_principal import Principal, Identity, AnonymousIdentity, \
     identity_changed, identity_loaded, RoleNeed, UserNeed
-from apluslms_shepherd.groups.utils import CreateGroupNeed,CreateCourseNeed
+from apluslms_shepherd.groups.utils import GroupManageNeed,CourseManageNeed
 from apluslms_shepherd.groups.models import PermType
 
 __version__ = '0.1'
@@ -27,8 +27,10 @@ def create_app():
         db.init_app(app=app)
         migrate = Migrate(app, db, render_as_batch=True)
         lti_login_authenticated.connect(write_user_to_db)
+        # Flask-Principal: ---  Setup ------------------------------------
         principals = Principal(app)
         principals.init_app(app)
+        #-----------------------------------------------------------------
         app.register_blueprint(main_bp)
         app.register_blueprint(course_bp)
         app.register_blueprint(lti)
@@ -55,10 +57,13 @@ def create_app():
                 for group in current_user.groups:
                     for perm in group.permissions:
                         if perm.type == PermType.groups:
-                            identity.provides.add(CreateGroupNeed(group_id=group.id))
+                            identity.provides.add(GroupManageNeed(group_id=str(group.id)))
+                            # identity.provides.add(GroupNeed(action='create',group_id=group.id))
 
                         if perm.type == PermType.courses:
-                            identity.provides.add(CreateCourseNeed(group_id=group.id))
+                            identity.provides.add(CourseManageNeed(group_id=str(group.id)))
+                            # identity.provides.add(CourseNeed(action='create',group_id=group.id))
+
             app.logger.info(identity)
 
         @app.errorhandler(403)

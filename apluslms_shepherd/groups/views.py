@@ -21,10 +21,7 @@ def list_all_groups():
 
     title = "Group list"
     roots = Group.query.filter_by(parent_id=None).all()
-    # full_tree = []
-    # for root in roots:
-    #     full_tree.append(root.drilldown_tree()[0])
-    # return render_template('test.html', title=title, groups=full_tree)
+
     return render_template('groups/group_list.html', title=title, roots=roots,group=None)
 
 
@@ -47,13 +44,10 @@ def list_subgroups(group_id):
 @role_permission.require(http_exception=403)
 def list_my_groups():
     title = "My Groups"
-    # groups = (db.session.query(Group).join(association_table).\
-    #         filter(association_table.columns.user_id==current_user.id).all())
-    # groups = db.session.query(Group).filter(Group.members.any(User.id==current_user.id).all()
     groups = Group.query.join(Group.members).filter(User.id == current_user.id).all()
     group_slugs = [group_slugify(g.name,g.parent_id) for g in groups]
     flash(current_user)
-    return render_template('groups/my_groups.html', title=title, groups=zip(groups,group_slugs))
+    return render_template('groups/my_groups.html', title=title, groups=zip(groups,group_slugs),PermType=PermType)
 
 
 @groups_bp.route('create/', methods=['GET','POST'])
@@ -114,6 +108,7 @@ def create_group():
 @role_permission.require(http_exception=403)
 @group_create_perm 
 def create_subgroup(group_id):
+
     parent = Group.query.filter_by(id=group_id).one_or_none()
     form = GroupForm(request.form)
     if form.validate() and request.method == 'POST':
@@ -131,7 +126,7 @@ def create_subgroup(group_id):
             for name, perm_type in PermType.__members__.items():
                 if name in perm_selected:
                     perm = db.session.query(GroupPermission).filter(
-                                            GroupPermission.type==perm_type).one_or_none()
+                                            GroupPermission.type==perm_type).first()
                     if not perm:
                         perm = GroupPermission(type=perm_type)
                     new_group.permissions.append(perm)
@@ -160,6 +155,7 @@ def create_subgroup(group_id):
 @group_edit_del_perm
 def delete_group(group_id):
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+
     try:
         group_slug = group_slugify(group.name,group.parent_id)
         group.delete()
@@ -178,7 +174,7 @@ def delete_group(group_id):
 def edit_group(group_id):
 
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-    
+
     group_slug = group_slugify(group.name,group.parent_id)
     permissions = [perm.type.name for perm in group.permissions]
     form = GroupForm(request.form)
@@ -242,7 +238,6 @@ def edit_group(group_id):
                     perm = db.session.query(GroupPermission).filter(
                                             GroupPermission.type==perm_type).one_or_none()             
                     group.permissions.remove(perm)
-
         try: 
             group.save()
             flash('The group '+group_slugify(group.name,group.parent_id)+' is edited successfully')
@@ -295,6 +290,7 @@ def list_users(group_id):
 def add_member(group_id):
 
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+
     try:
         user_id = request.form['user']
         conditions = []
