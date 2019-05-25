@@ -1,4 +1,4 @@
-from flask import Flask,request,session,redirect,url_for
+from flask import Flask,request,session,redirect,url_for,flash
 from flask_lti_login import lti, lti_login_authenticated
 from flask_migrate import Migrate
 from flask_login import current_user
@@ -6,6 +6,8 @@ from apluslms_shepherd import config
 from apluslms_shepherd.extensions import celery, db, make_celery
 from flask_principal import Principal, Identity, AnonymousIdentity, \
     identity_changed, identity_loaded, RoleNeed, UserNeed
+from apluslms_shepherd.groups.utils import CreateGroupNeed,CreateCourseNeed
+from apluslms_shepherd.groups.models import PermType
 
 __version__ = '0.1'
 
@@ -48,11 +50,21 @@ def create_app():
             if hasattr(current_user, 'roles'):
                 for role in current_user.roles.split(','):
                     identity.provides.add(RoleNeed(role))
+
+            if hasattr(current_user, 'groups'):
+                for group in current_user.groups:
+                    for perm in group.permissions:
+                        if perm.type == PermType.groups:
+                            identity.provides.add(CreateGroupNeed(group_id=group.id))
+
+                        if perm.type == PermType.courses:
+                            identity.provides.add(CreateCourseNeed(group_id=group.id))
             app.logger.info(identity)
 
         @app.errorhandler(403)
         def page_not_found(e):
             session['redirected_from'] = request.url
-            return redirect('https://plus.cs.hut.fi/')
+            flash('Access Forbidden')
+            return redirect(request.referrer)
         
     return app

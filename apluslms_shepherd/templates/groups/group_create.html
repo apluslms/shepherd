@@ -15,6 +15,7 @@
                 <dt>{{form.parent_path.label}} </dt>
                 <dd>{{ form.parent_path }}</dd>
                 {% endif %}
+                <div>{{ form.permissions.label }} {{ form.permissions() }}</div>
             </dl>
             {% block button %}
                 <p><input type=submit class="btn-lg btn-outline-primary " value=Create>

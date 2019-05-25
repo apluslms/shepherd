@@ -11,6 +11,8 @@
     <div class="container text-center">
         {% from "_formhelpers.html" import render_field %}
         <div>Group: <strong>{{ group_slug }}</strong></div>
+        <div><strong>Permissions: {{permissions}}</strong>
+        </div>
         <form method="POST">
                 <dl class="form-group">
                     <dd>
@@ -22,6 +24,11 @@
                         {{ form.parent_path.label }} {{ form.parent_path}} 
                         <button type="submit" class="btn btn-outline-danger are-you-sure" 
                         name="edit" value="update parent path"> Update parent path </buttton>
+                    </dd>
+                    <dd>
+                        {{ form.permissions.label }} {{ form.permissions()}} 
+                        <button type="submit" class="btn btn-outline-danger are-you-sure" 
+                        name="edit" value="update permissions"> Update permissions </buttton>
                     </dd>
                 </dl>
         </form>

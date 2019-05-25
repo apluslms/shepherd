@@ -5,4 +5,4 @@
 .idea/
 venv/
 **/__pycache__/
-migrations/
+apluslms_shepherd/test.py

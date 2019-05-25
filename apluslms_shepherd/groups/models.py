@@ -10,14 +10,14 @@ import enum
 
 # db.metadata.clear()
 
-groups_members = db.Table('groups_members',db.Model.metadata,
+gm_table = db.Table('gm_table',db.Model.metadata,
     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
 )
 
-groups_permissions = db.Table('groups_permissions',db.Model.metadata,
+gp_table = db.Table('gp_table',db.Model.metadata,
     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
-    db.Column('permission_id', db.Integer, db.ForeignKey('permission.id'))
+    db.Column('permission_id', db.Integer, db.ForeignKey('group_permission.id'))
 )
 
 class CRUD():
@@ -33,9 +33,9 @@ class CRUD():
 class Group(db.Model, BaseNestedSets, CRUD):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), index=True,nullable=False)
-    members = db.relationship("User", secondary=groups_members,
+    members = db.relationship("User", secondary=gm_table,
                             backref= db.backref('groups',lazy='dynamic'))
-    permissions = db.relationship("Permission", secondary=groups_permissions,
+    permissions = db.relationship("GroupPermission", secondary=gp_table,
                             backref= db.backref('groups',lazy='dynamic'))
 
     def __init__(self,name,parent_id=None):
@@ -50,15 +50,15 @@ class Group(db.Model, BaseNestedSets, CRUD):
                                                                     self.parent.name)
 
 
-
+PERM_TYPE = {'groups':'manage groups','courses':'manage courses'}
+PERMISSION_LIST = list( perm_tuple for perm_tuple in PERM_TYPE.items())
 class PermType(enum.Enum):
-    subgroups = 1
+    groups = 1
     courses = 2
 
-class Permission(db.Model):
+class GroupPermission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     type = db.Column(db.Enum(PermType))
-
 
 
     
