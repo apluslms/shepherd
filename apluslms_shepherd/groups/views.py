@@ -18,11 +18,9 @@ groups_bp = Blueprint('groups', __name__, url_prefix='/groups')
 @login_required
 @role_permission.require(http_exception=403)
 def list_all_groups():
-
     title = "Group list"
     roots = Group.query.filter_by(parent_id=None).all()
-
-    return render_template('groups/group_list.html', title=title, roots=roots,group=None)
+    return render_template('groups/group_list.html', title=title, user=current_user, roots=roots,group=None)
 
 
 @groups_bp.route('<group_id>/subgroups/', methods=['GET'])
@@ -36,7 +34,7 @@ def list_subgroups(group_id):
     else:
         title = 'Group: ' + group_slugify(group.name,group.parent_id)
         roots = Group.query.filter_by(parent_id=group.id).all()
-    return render_template('groups/group_list.html', title=title, roots=roots,group=group)
+    return render_template('groups/group_list.html', title=title, user=current_user, roots=roots,group=group)
 
 
 @groups_bp.route('/my_groups/', methods=['GET'])
@@ -46,7 +44,6 @@ def list_my_groups():
     title = "My Groups"
     groups = Group.query.join(Group.members).filter(User.id == current_user.id).all()
     group_slugs = [group_slugify(g.name,g.parent_id) for g in groups]
-    flash(current_user)
     return render_template('groups/my_groups.html', title=title, user=current_user, groups=zip(groups,group_slugs),PermType=PermType)
 
 
@@ -263,7 +260,7 @@ def list_members(group_id):
     else:
         members = group.members
 
-    return render_template('members/member_list.html',title=title,group=group,members=members)
+    return render_template('members/member_list.html',title=title,user=current_user,group=group,members=members)
 
 
 @groups_bp.route('/<group_id>/add_members/', methods=['GET'])

@@ -12,9 +12,11 @@
 {% block body %}
 <h1 style = "font-size:50px;">
     <strong>{{title}}</strong>
+    {% if user in group.parent.members %}
     <button type="button" class="btn btn-outline-primary"
     onclick="location.href='/groups/{{ group.id }}/add_members/'">Add members
     </button>
+    {% endif %}
     <button type="button" class="btn btn-outline-primary"
     onclick="goBack()">Return 
     </button>
