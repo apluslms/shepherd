@@ -47,7 +47,7 @@ def list_my_groups():
     groups = Group.query.join(Group.members).filter(User.id == current_user.id).all()
     group_slugs = [group_slugify(g.name,g.parent_id) for g in groups]
     flash(current_user)
-    return render_template('groups/my_groups.html', title=title, groups=zip(groups,group_slugs),PermType=PermType)
+    return render_template('groups/my_groups.html', title=title, user=current_user, groups=zip(groups,group_slugs),PermType=PermType)
 
 
 @groups_bp.route('create/', methods=['GET','POST'])
@@ -229,14 +229,14 @@ def edit_group(group_id):
             for name, perm_type in PermType.__members__.items():
                 if (name not in perm_origin) and (name in perm_new):
                     perm = db.session.query(GroupPermission).filter(
-                                            GroupPermission.type==perm_type).one_or_none()
+                                            GroupPermission.type==perm_type).first()
                     if not perm:
                         perm = GroupPermission(type=perm_type)
                     group.permissions.append(perm)
 
                 if (name in perm_origin) and (name not in perm_new): 
                     perm = db.session.query(GroupPermission).filter(
-                                            GroupPermission.type==perm_type).one_or_none()             
+                                            GroupPermission.type==perm_type).first()             
                     group.permissions.remove(perm)
         try: 
             group.save()

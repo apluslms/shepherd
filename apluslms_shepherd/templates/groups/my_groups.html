@@ -23,16 +23,38 @@
                 <button type="button" class="btn btn-outline-primary"
                 onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
                 </button>
+                {% if group.parent and user in group.parent.members %}
                  <button type="button" class="btn btn-outline-primary"
                 onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
                 </button>
+                {% else %}
                 <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/{{group.id }}/create/'">Create subgroup 
+                onclick="location.href='/groups/edit/{{ group.id }}/'" disabled>Edit
                 </button>
+                {% endif %}
+                {% if PermType.groups in group.permissions|map(attribute="type") %}
                 <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/{{group.id }}/create/'">Create course
+                onclick="location.href='/groups/{{group.id }}/create/'">New subgroup 
                 </button>
+                {% else %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{group.id }}/create/'" disabled>New subgroup 
+                </button>
+                {% endif %}
+                {% if PermType.courses in group.permissions|map(attribute="type") %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/courses/create/'">New course
+                </button>
+                {% else %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/courses/create/'" disabled>New course
+                </button>
+                {% endif %}
+                {% if group.parent and user in group.parent.members %}
                 <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
+                {% else %}
+                <button type="submit" class="btn btn-outline-danger are-you-sure" disabled>Delete</button>
+                {% endif %}
             </form> 
             </li>
             {% endfor %} 
