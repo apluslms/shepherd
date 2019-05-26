@@ -79,7 +79,7 @@ def create_group():
         for name, perm_type in PermType.__members__.items():
             if name in perm_selected:
                 perm = db.session.query(GroupPermission).filter(
-                                        GroupPermission.type==perm_type).one_or_none()
+                                        GroupPermission.type==perm_type).first()
                 if not perm:
                     perm = GroupPermission(type=perm_type)
                 new_group.permissions.append(perm)
