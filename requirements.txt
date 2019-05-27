@@ -11,3 +11,6 @@ aio_pika
 celery
 asynqp
 wtforms
+sqlalchemy-mptt==0.2.4
+python-slugify==3.0.2
+Flask-Principal==0.4.0

@@ -1,5 +1,9 @@
+from flask import current_app,session
+from apluslms_shepherd.extensions import db
 from flask import (Blueprint, render_template, redirect, flash)
 from flask_login import login_required, current_user, logout_user
+from flask_principal import Principal, Identity, AnonymousIdentity, \
+    identity_changed, identity_loaded, RoleNeed, UserNeed
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth/')
 
@@ -14,5 +18,12 @@ def auth_success():
 @login_required
 def logout():
     logout_user()
+    # Remove session keys set by Flask-Principal
+    for key in ('identity.name', 'identity.auth_type'):
+        session.pop(key, None)
+
+    # Tell Flask-Principal the user is anonymous
+    identity_changed.send(current_app._get_current_object(),
+                          identity=AnonymousIdentity())
     flash("User logout.")
     return redirect('https://plus.cs.hut.fi/')

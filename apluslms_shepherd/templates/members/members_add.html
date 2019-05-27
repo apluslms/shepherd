@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block head %}
+    <script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
+    <script src="{{ url_for('static', filename='helpers.js') }}"></script>
+{% endblock %}
+{% block title %}
+    Add members
+{% endblock %}
+
+{% block body %}
+<h1 style = "font-size:50px;">
+        <strong>Add members</strong>
+        <button type="button" class="btn btn-outline-primary"
+        onclick="goBack()">Return 
+        </button>
+</h1>
+
+<div  style = "font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
+    <ul>
+        {%- for user in users  %}   
+        <li class="form-inline">
+        {{user.sorting_name}} &nbsp; &nbsp;
+        <form method="post" action="{{ url_for('groups.add_member',group_id=group.id) }}">
+                <button type="submit" name='user' value={{user.id}} class="btn btn-outline-danger are-you-sure">Add</button>
+        </form>
+        </li>
+
+        {%- endfor %}
+    </ul>
+</div>
+{% endblock %}

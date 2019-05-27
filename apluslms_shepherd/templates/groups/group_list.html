@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block head %}
+    <!-- <script src="../../../static/are_you_sure.js"></script>
+    <script type="text/javascript" src="../../../static/helpers.js"></script> -->
+    <script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
+    <script src="{{ url_for('static', filename='helpers.js') }}"></script>
+{% endblock %}
+{% block title %}
+    Group list
+{% endblock %}
+
+{% block body %}
+<h1 style = "font-size:50px;">
+        <strong>{{title}}</strong>
+        {%if group %}
+            <button type="button" class="btn btn-outline-primary"
+            onclick="goBack()">Return 
+            </button>
+            <button type="button" class="btn btn-outline-primary"
+            onclick="location.href='/groups/{{ group.id }}/create/'">Create subgroup 
+            </button>
+        {% else %}
+        <button type="button" class="btn btn-outline-primary"
+        onclick="location.href='/groups/create/'">Create group 
+        </button>
+        {% endif %}
+</h1>
+    
+    <div  style = "font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
+        <ul>
+            {%- for group in roots recursive %}
+            <li>
+            {% if user in group.members %}
+            {{ '-' * (loop.depth-1) }}{{group.name}} <font size='3'>(member) </font>
+            {% else %}
+            {{ '-' * (loop.depth-1) }}{{group.name}}
+            {% endif %}
+            <br>
+            <!-- <form method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}"> -->
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{ group.id }}/members/'">Members
+                </button>
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
+                </button>
+                <!-- <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
+                </button>
+                <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>  -->
+            <!-- </form> -->
+           
+            </li>
+            {%- if group.children -%}
+                {{ loop(group.children) }}
+            {%- endif %}
+            {%- endfor %}
+        </ul>
+    </div>
+{% endblock %}

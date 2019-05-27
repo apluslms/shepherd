@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block head %}
+<script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
+{% endblock %}
+{% block title %}
+    Group list
+{% endblock %}
+
+{% block body %}
+<h1 style = "font-size:50px;">
+        <strong>{{title}}</strong>
+</h1>
+    
+    <div  style = "font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
+        <ul>
+            {%- for group,slug in groups %}
+            <li>
+            {{slug}} <br>
+            <form method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}"> 
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{ group.id }}/members/'">Members
+                </button>
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
+                </button>
+                {% if group.parent and user in group.parent.members %}
+                 <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
+                </button>
+                {% else %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/edit/{{ group.id }}/'" disabled>Edit
+                </button>
+                {% endif %}
+                {% if PermType.groups in group.permissions|map(attribute="type") %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{group.id }}/create/'">New subgroup 
+                </button>
+                {% else %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{group.id }}/create/'" disabled>New subgroup 
+                </button>
+                {% endif %}
+                {% if PermType.courses in group.permissions|map(attribute="type") %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/courses/create/'">New course
+                </button>
+                {% else %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/courses/create/'" disabled>New course
+                </button>
+                {% endif %}
+                {% if group.parent and user in group.parent.members %}
+                <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
+                {% else %}
+                <button type="submit" class="btn btn-outline-danger are-you-sure" disabled>Delete</button>
+                {% endif %}
+            </form> 
+            </li>
+            {% endfor %} 
+        </ul>
+    </div>
+{% endblock %}
