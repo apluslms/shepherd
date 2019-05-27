@@ -23,10 +23,9 @@ def group_slugify(group_name, parent_id, separator='.'):
 
 
 def query_parent_id(group_path):
-    group_path = group_path.lower()
     parent_id = None
     if group_path == '':
-        return -1
+        return parent_id
 
     group_path = group_path.lower()
     group_list = group_path.split('.')
@@ -94,6 +93,10 @@ def group_edit_del_perm(func):
             group = db.session.query(Group).filter_by(id=group_id).one_or_none()
             if group and group.parent:
                 permission = GroupManagePermission(group_id=group.parent.id)
+                if permission.can():
+                    allowed = True
+            if group and not group.parent:
+                permission = GroupManagePermission(group_id=group.id)
                 if permission.can():
                     allowed = True
 

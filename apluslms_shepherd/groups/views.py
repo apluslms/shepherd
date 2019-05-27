@@ -64,17 +64,16 @@ def create_group():
             return redirect(url_for('.create_group'))
 
         parent = Group.query.filter_by(id=parent_id).one_or_none()
-        if current_user not in parent.members:
+        if parent and current_user not in parent.members:
             flash('You are not the member of this group, could not create subgroups')
             return redirect(url_for('.create_group'))
 
-        q = Group.query.filter_by(name=group_name, parent_id=parent.id).one_or_none()
-
+        q = Group.query.filter_by(name=group_name, parent_id=parent_id).one_or_none()
         if q is not None:
             flash('The group ' + group_slugify(group_name, parent.id) + ' already exists.')
             return redirect(url_for('.create_group'))
 
-        new_group = Group(name=group_name, parent_id=parent.id)
+        new_group = Group(name=group_name, parent_id=parent_id)
         perm_selected = form.permissions.data
         for name, perm_type in PermType.__members__.items():
             if name in perm_selected:
