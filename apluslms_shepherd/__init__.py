@@ -1,10 +1,9 @@
 from flask import Flask,request,session,redirect,url_for,flash
 from flask_lti_login import lti, lti_login_authenticated
 from flask_migrate import Migrate
-<<<<<<< HEAD
-=======
+
 from flask_login import current_user
->>>>>>> groups_and_permissions
+
 from apluslms_shepherd import config
 
 from apluslms_shepherd.extensions import celery, db, make_celery
