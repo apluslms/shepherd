@@ -1,4 +1,7 @@
 {% extends 'base.html' %}
+{% block head %}
+<script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
+{% endblock %}
 {% block title %}
     Group list
 {% endblock %}
@@ -11,32 +14,50 @@
     <div  style = "font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
         <ul>
             {%- for group,slug in groups %}
-            <li class='group' value={{group.id}}>
+            <li>
             {{slug}} <br>
-            <form class="delete_form" value={{ group.id }} method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}"> 
-                    <button type="button" class="btn btn-outline-primary"
-                    onclick="location.href='/groups/{{ group.id }}/members/'">Members
-                    </button>
-                    <button type="button" class="btn btn-outline-primary"
-                    onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
-                    </button>
-                    <button type="button" class="btn btn-outline-primary"
-                    onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
-                    </button>
-                    <button type="button" class="btn btn-outline-primary"
-                    onclick="location.href='/groups/{{group.id }}/create/'">New subgroup 
-                    </button>
-                    <button name='delete_btn' value={{ group.id }} type="submit" class="btn btn-outline-danger are-you-sure delete">Delete</button> 
-            </form>
+            <form method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}"> 
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{ group.id }}/members/'">Members
+                </button>
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
+                </button>
+                {% if (group.parent and user in group.parent.members) or (not group.parent and user in group.members) %}
+                 <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
+                </button>
+                {% else %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/edit/{{ group.id }}/'" disabled>Edit
+                </button>
+                {% endif %}
+                {% if PermType.groups in group.permissions|map(attribute="type") %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{group.id }}/create/'">New subgroup 
+                </button>
+                {% else %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{group.id }}/create/'" disabled>New subgroup 
+                </button>
+                {% endif %}
+                <!-- {% if PermType.courses in group.permissions|map(attribute="type") %} -->
+                <!-- <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/courses/create/'">New course
+                </button> -->
+                <!-- {% else %}
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/courses/create/'" disabled>New course
+                </button>
+                {% endif %} -->
+                {% if (group.parent and user in group.parent.members) or (not group.parent and user in group.members) %}
+                <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
+                {% else %}
+                <button type="submit" class="btn btn-outline-danger are-you-sure" disabled>Delete</button>
+                {% endif %}
+            </form> 
             </li>
             {% endfor %} 
         </ul>
     </div>
-{% include 'groups/move_courses.html' %}
 {% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
-<script src="{{ url_for('static', filename='my_groups.js') }}"></script>
-{% endblock %}
-
