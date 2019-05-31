@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 from apluslms_shepherd.courses.forms import CourseForm, InstanceForm
 from apluslms_shepherd.courses.models import CourseRepository, CourseInstance, db
-
+from apluslms_shepherd.groups.utils import course_perm
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 
 
@@ -17,6 +17,7 @@ def list_course():
 
 @course_bp.route('create/', methods=['GET', 'POST'])
 @login_required
+@course_perm
 def add_course():
     form = CourseForm(request.form)
     form.git_origin.label = "First Instance Git Origin"

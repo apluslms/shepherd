@@ -5,9 +5,9 @@ from functools import wraps
 from flask import request, flash, redirect
 from flask_principal import Permission, RoleNeed
 from slugify import slugify
-
+from flask_login import current_user
 from apluslms_shepherd.extensions import db
-from apluslms_shepherd.groups.models import Group
+from apluslms_shepherd.groups.models import Group,PermType,CreateCoursePerm
 
 
 def group_slugify(group_name, parent_id, separator='.'):
@@ -44,17 +44,28 @@ role_permission = Permission(RoleNeed('Instructor'), RoleNeed('Mentor'),
 
 GroupNeed = namedtuple('GroupNeed', ['action', 'group_id'])
 CourseNeed = namedtuple('CourseNeed', ['action', 'group_id'])
+MemberNeed = namedtuple('MembershipNeed', ['action', 'group_id'])
 
-GroupManageNeed = partial(GroupNeed, 'manage')
+SubgroupNeed = partial(GroupNeed, 'manage')
+SelfAdminNeed = partial(GroupNeed, 'self-admin')
 CourseManageNeed = partial(CourseNeed, 'manage')
+MemberManageNeed = partial(MemberNeed, 'manage')
 
 
-class GroupManagePermission(Permission):
+class SubgroupPermission(Permission):
     """Extend Permission to take a group_id and action as arguments"""
 
     def __init__(self, group_id):
-        need = GroupManageNeed(str(group_id))
-        super(GroupManagePermission, self).__init__(need)
+        need = SubgroupNeed(str(group_id))
+        super(SubgroupPermission, self).__init__(need)
+
+
+class SelfAdminPermission(Permission):
+    """Extend Permission to take a group_id and action as arguments"""
+
+    def __init__(self, group_id):
+        need = SelfAdminNeed(str(group_id))
+        super(SelfAdminPermission, self).__init__(need)
 
 
 class CourseManagePermission(Permission):
@@ -63,17 +74,27 @@ class CourseManagePermission(Permission):
         super(CourseManagePermission, self).__init__(need)
 
 
+class MemberManagePermission(Permission):
+    def __init__(self, group_id):
+        need = MemberManageNeed(str(group_id))
+        super(MemberManagePermission, self).__init__(need)
+
+
 def group_create_perm(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
+
         allowed = False
         if "group_id" in request.view_args:
             group_id = request.view_args['group_id']
             group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-            if group:
-                permission = GroupManagePermission(group_id=group.id)
+
+            ancestors = group.path_to_root().all()
+            for ancestor in ancestors:
+                permission = SubgroupPermission(group_id=ancestor.id)
                 if permission.can():
                     allowed = True
+                    break
 
         if not allowed:
             flash('Permission denied')
@@ -87,18 +108,51 @@ def group_create_perm(func):
 def group_edit_del_perm(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
+
         allowed = False
+
         if "group_id" in request.view_args:
             group_id = request.view_args['group_id']
             group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-            if group and group.parent:
-                permission = GroupManagePermission(group_id=group.parent.id)
-                if permission.can():
-                    allowed = True
-            if group and not group.parent:
-                permission = GroupManagePermission(group_id=group.id)
-                if permission.can():
-                    allowed = True
+
+            permission = SelfAdminPermission(group_id=group_id)
+            if permission.can():
+                allowed = True
+            else:
+                ancestors = group.path_to_root().all()
+                for ancestor in ancestors:
+                    permission = SubgroupPermission(group_id=ancestor.id)
+                    if permission.can():
+                        allowed = True
+                        break
+
+        if not allowed:
+            flash('Permission denied')
+            return redirect(request.referrer)
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
+def membership_perm(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        allowed = False
+
+        if "group_id" in request.view_args:
+            group_id = request.view_args['group_id']
+            group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+
+            permission = SelfAdminPermission(group_id=group_id)
+            if permission.can():
+                allowed = True
+            else:
+                ancestors = group.path_to_root().all()
+                for ancestor in ancestors:
+                    permission =MemberManagePermission(group_id=ancestor.id)
+                    if permission.can():
+                        allowed = True
+                        break
 
         if not allowed:
             flash('Permission denied')
@@ -113,13 +167,13 @@ def course_perm(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         allowed = False
-        if "group_id" in request.view_args:
-            group_id = request.view_args['group_id']
-            group = db.session.query(Group).filter(Group.id == group_id).one_or_none()
-            if group:
-                permission = CourseManagePermission(group_id=group.id)
-                if permission.can():
-                    allowed = True
+        groups = current_user.groups
+        # perm = db.session.query(CreateCoursePerm).filter(Group.id == group_id).one_or_none()
+        for group in groups:
+            # if PermType.courses in [ perm.type for perm in group.permissions]:
+            if db.session.query(CreateCoursePerm).filter(CreateCoursePerm.group_id == group.id).one_or_none():
+                allowed = True
+                break
 
         if not allowed:
             flash('Permission denied')
