@@ -70,19 +70,26 @@ def create_group():
 
         q = Group.query.filter_by(name=group_name, parent_id=parent_id).one_or_none()
         if q is not None:
-            flash('The group ' + group_slugify(group_name, parent.id) + ' already exists.')
+            flash('The group ' + group_slugify(group_name, parent_id) + ' already exists.')
             return redirect(url_for('.create_group'))
 
         new_group = Group(name=group_name, parent_id=parent_id)
         perm_selected = form.permissions.data
+
+        if 'admin' not in perm_selected:
+            new_group.self_admin = False
+
         for name, perm_type in PermType.__members__.items():
             if name in perm_selected:
                 perm = db.session.query(GroupPermission).filter(
                     GroupPermission.type == perm_type).first()
                 if not perm:
                     perm = GroupPermission(type=perm_type)
+                    db.session.add(perm)
+                    db.session.commit()
                 new_group.permissions.append(perm)
         try:
+            
             new_group.save()
             flash('The new group ' + group_slugify(new_group.name, parent_id) + ' is added.')
             try:
@@ -118,15 +125,29 @@ def create_subgroup(group_id):
         else:
             new_group = Group(name=group_name, parent_id=group_id)
             perm_selected = form.permissions.data
+
+            if 'admin' not in perm_selected:
+                new_group.self_admin = False
+
             for name, perm_type in PermType.__members__.items():
                 if name in perm_selected:
                     perm = db.session.query(GroupPermission).filter(
                         GroupPermission.type == perm_type).first()
                     if not perm:
                         perm = GroupPermission(type=perm_type)
+                        db.session.add(perm)
+                        # db.session.commit()
                     new_group.permissions.append(perm)
+
+            if 'courses' in perm_selected:
+                course_prefix = form.course_prefix.data
+                course_perm = CreateCoursePerm(group=new_group,pattern=course_prefix)
+            
             try:
-                new_group.save()
+                flash(form.data)
+                db.session.add(new_group)
+                db.session.add(course_perm)
+                db.session.commit()
                 flash('The new group ' + group_slugify(group_name, group_id) + ' is created successfully')
                 try:
                     new_group.members.append(current_user)
@@ -141,7 +162,7 @@ def create_subgroup(group_id):
         return redirect(url_for('.list_my_groups'))
 
     return render_template('groups/group_create.html', form=form, parent=parent)
-
+    
 
 @groups_bp.route('delete/<group_id>/', methods=['POST'])
 @login_required
@@ -219,6 +240,10 @@ def edit_group(group_id):
         elif request.form['edit'] == 'update permissions':
             perm_origin = [perm.type.name for perm in group.permissions]
             perm_new = form.permissions.data
+            if 'admin' in perm_new:
+                group.self_admin = True
+            else:
+                group.self_admin = False
             for name, perm_type in PermType.__members__.items():
                 if (name not in perm_origin) and (name in perm_new):
                     perm = db.session.query(GroupPermission).filter(
@@ -260,7 +285,7 @@ def list_members(group_id):
 @groups_bp.route('/<group_id>/add_members/', methods=['GET'])
 @login_required
 @role_permission.require(http_exception=403)
-@group_edit_del_perm
+@membership_perm
 def list_users(group_id):
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
@@ -276,7 +301,7 @@ def list_users(group_id):
 @groups_bp.route('<group_id>/members/add/', methods=['POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@group_edit_del_perm
+@membership_perm
 def add_member(group_id):
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
@@ -302,7 +327,7 @@ def add_member(group_id):
 @groups_bp.route('/<group_id>/members/delete/', methods=['POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@group_edit_del_perm
+@membership_perm
 def delete_member(group_id):
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 

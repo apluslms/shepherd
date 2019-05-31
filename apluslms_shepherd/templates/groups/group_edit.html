@@ -11,8 +11,6 @@
     <div class="container text-center">
         {% from "_formhelpers.html" import render_field %}
         <div>Group: <strong>{{ group_slug }}</strong></div>
-        <div><strong>Permissions: {{permissions}}</strong>
-        </div>
         <form method="POST">
                 <dl class="form-group">
                     <dd>
@@ -26,7 +24,11 @@
                         name="edit" value="update parent path"> Update parent path </buttton>
                     </dd>
                     <dd>
-                        {{ form.permissions.label }} {{ form.permissions()}} 
+                        <ul>
+                            {% for key, value, checked in form.permissions.iter_choices() %}
+                                <input type="checkbox" id={{key}} onclick="reply_click(this.id);" >{{value}}</input>
+                            {% endfor %}
+                        </ul>   
                         <button type="submit" class="btn btn-outline-danger are-you-sure" 
                         name="edit" value="update permissions"> Update permissions </buttton>
                     </dd>

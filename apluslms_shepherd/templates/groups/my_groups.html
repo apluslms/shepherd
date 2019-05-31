@@ -41,15 +41,15 @@
                 onclick="location.href='/groups/{{group.id }}/create/'" disabled>New subgroup 
                 </button>
                 {% endif %}
-                {% if PermType.courses in group.permissions|map(attribute="type") %}
-                <button type="button" class="btn btn-outline-primary"
+                <!-- {% if PermType.courses in group.permissions|map(attribute="type") %} -->
+                <!-- <button type="button" class="btn btn-outline-primary"
                 onclick="location.href='/courses/create/'">New course
-                </button>
-                {% else %}
+                </button> -->
+                <!-- {% else %}
                 <button type="button" class="btn btn-outline-primary"
                 onclick="location.href='/courses/create/'" disabled>New course
                 </button>
-                {% endif %}
+                {% endif %} -->
                 {% if (group.parent and user in group.parent.members) or (not group.parent and user in group.members) %}
                 <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
                 {% else %}

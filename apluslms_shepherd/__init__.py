@@ -9,7 +9,7 @@ from apluslms_shepherd import config
 from apluslms_shepherd.extensions import celery, db, make_celery
 from flask_principal import Principal, Identity, AnonymousIdentity, \
     identity_changed, identity_loaded, RoleNeed, UserNeed
-from apluslms_shepherd.groups.utils import GroupManageNeed,CourseManageNeed
+from apluslms_shepherd.groups.utils import *
 from apluslms_shepherd.groups.models import PermType
 
 __version__ = '0.1'
@@ -62,13 +62,15 @@ def create_app():
                 for group in current_user.groups:
                     for perm in group.permissions:
                         if perm.type == PermType.groups:
-                            identity.provides.add(GroupManageNeed(group_id=str(group.id)))
+                            identity.provides.add(SubgroupNeed(group_id=str(group.id)))
                             # identity.provides.add(GroupNeed(action='create',group_id=group.id))
 
                         if perm.type == PermType.courses:
                             identity.provides.add(CourseManageNeed(group_id=str(group.id)))
                             # identity.provides.add(CourseNeed(action='create',group_id=group.id))
 
+                        if perm.type == PermType.self_admin:
+                            identity.provides.add(SelfAdminNeed(group_id=str(group.id)))
             app.logger.info(identity)
 
         @app.errorhandler(403)
