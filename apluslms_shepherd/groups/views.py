@@ -88,6 +88,12 @@ def create_group():
                     db.session.add(perm)
                     db.session.commit()
                 new_group.permissions.append(perm)
+        
+        if 'courses' in perm_selected:
+            course_prefix = form.course_prefix.data.upper()
+            course_pattern = course_prefix + '-[A-Za-z][0-9][0-9][0-9][0-9]'
+            course_perm = CreateCoursePerm(group=new_group,pattern=course_pattern)
+            db.session.add(course_perm)
         try:
             
             new_group.save()
@@ -141,12 +147,12 @@ def create_subgroup(group_id):
 
             if 'courses' in perm_selected:
                 course_prefix = form.course_prefix.data
-                course_perm = CreateCoursePerm(group=new_group,pattern=course_prefix)
-            
+                course_pattern = course_prefix + '-[A-Za-z][0-9][0-9][0-9][0-9]'
+                course_perm = CreateCoursePerm(group=new_group,pattern=course_pattern)
+                db.session.add(course_perm)
             try:
                 flash(form.data)
                 db.session.add(new_group)
-                db.session.add(course_perm)
                 db.session.commit()
                 flash('The new group ' + group_slugify(group_name, group_id) + ' is created successfully')
                 try:
@@ -240,7 +246,8 @@ def edit_group(group_id):
         elif request.form['edit'] == 'update permissions':
             perm_origin = [perm.type.name for perm in group.permissions]
             perm_new = form.permissions.data
-            if 'admin' in perm_new:
+            flash(perm_new)
+            if 'self_admin' in perm_new:
                 group.self_admin = True
             else:
                 group.self_admin = False

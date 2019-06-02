@@ -1,4 +1,4 @@
-from wtforms import Form, StringField, validators, TextAreaField, BooleanField
+from wtforms import Form, StringField, validators, TextAreaField, BooleanField,SelectField
 
 
 class CourseForm(Form):
@@ -8,6 +8,7 @@ class CourseForm(Form):
     git_origin = StringField([validators.Length(max=255)])
     change_all = BooleanField('Change git origin to all instance?')
     branch = StringField('First Instance Branch', [validators.Length(max=50)])
+    owner = SelectField('Group',coerce=int)
 
 
 class InstanceForm(Form):
