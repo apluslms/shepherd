@@ -2,7 +2,7 @@ import enum
 import re
 from sqlalchemy_mptt.mixins import BaseNestedSets
 from apluslms_shepherd.extensions import db
-
+from apluslms_shepherd.courses.models import CourseRepository
 # db.metadata.clear()
 
 gm_table = db.Table('gm_table', db.Model.metadata,
@@ -43,7 +43,6 @@ class Group(db.Model, BaseNestedSets, CRUD):
     #                        primaryjoin=id==admin_table.c.group_id,
     #                        secondaryjoin=id==admin_table.c.admin_group_id,
     #                     )
-
     def __init__(self, name, parent_id=None):
         self.name = name
         self.parent_id = parent_id
@@ -103,7 +102,7 @@ class GroupPermission(db.Model):
 class CreateCoursePerm(db.Model):
     id = db.Column(db.Integer,primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey('group.id'))
-    group = db.relationship("Group", backref=db.backref("course_permission", uselist=False))
+    group = db.relationship("Group", backref=db.backref("course_permission", uselist=False,cascade='all,delete'))
     regexp = db.Column(db.Boolean,default=True)
     pattern = db.Column(db.String(30))
 
@@ -111,7 +110,11 @@ class CreateCoursePerm(db.Model):
         # None or "cs-*" or "^cs-[a-c][0-9]+$" # fnmatch.fnmatch vs. re.match
         if self.pattern is None:
             return True
-
-        return re.match(self.pattern,course_name)
+        else:
+            flag = re.match(self.pattern,course_name)
+            if flag:
+                return True
+            else:
+                return False
 
 

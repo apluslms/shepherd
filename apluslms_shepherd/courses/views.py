@@ -1,17 +1,18 @@
-from flask import Blueprint, render_template, request, flash, redirect
+from flask import Blueprint, render_template, request, flash, redirect,url_for
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 
 from apluslms_shepherd.courses.forms import CourseForm, InstanceForm
 from apluslms_shepherd.courses.models import CourseRepository, CourseInstance, db
-from apluslms_shepherd.groups.utils import course_perm
+from apluslms_shepherd.groups.models import Group,PermType,CreateCoursePerm
+from apluslms_shepherd.groups.utils import course_perm,group_slugify
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 
 
 @course_bp.route('', methods=['GET'])
 @login_required
 def list_course():
-    all_courses = CourseRepository.query.filter_by(owner=current_user.id)
+    all_courses = CourseRepository.query.all()
     return render_template('course_list.html', user=current_user, courses=all_courses)
 
 
@@ -19,31 +20,39 @@ def list_course():
 @login_required
 @course_perm
 def add_course():
+    groups = Group.query.filter(Group.members.any(id=current_user.id),
+                            Group.permissions.any(type=PermType.courses)).all()
     form = CourseForm(request.form)
+    form.owner.choices =  [(g.id, group_slugify(g.name,g.parent_id)) for g in groups]
     form.git_origin.label = "First Instance Git Origin"
     if form.validate() and request.method == 'POST':
-        new_course = CourseRepository(key=form.key.data,
-                                      name=form.name.data,
-                                      owner=current_user.id)
-
-        try:
-            db.session.add(new_course)
-            db.session.commit()
-            flash('New course added.')
-        except IntegrityError:
-            flash('Course key already exists.')
-        # Part of first instance info provided in the form
-        new_instance = CourseInstance(course_key=form.key.data, branch=form.branch.data, key=form.instance_key.data,
-                                      git_origin=form.git_origin.data)
-        # Also add a new instance with the course, the instance kay and course key is combined primary key of the
-        # CourseInstance model
-        try:
-            db.session.add(new_instance)
-            db.session.commit()
-            flash('New course added with a new instance under this course')
-        except IntegrityError:
-            flash('New course added, but Instance key already exists.')
-        return redirect('/courses/')
+        course_perm = CreateCoursePerm.query.filter_by(group_id=form.owner.data).one_or_none()
+        if not course_perm.pattern_match(form.key.data.upper()):
+            flash('The course key does not match the naming rule ',str(course_perm.pattern))
+            redirect(url_for('.add_course'))
+        else:    
+            new_course = CourseRepository(key=form.key.data.upper(),
+                                        name=form.name.data,
+                                        owner_id=form.owner.data)
+            # new_course.owner = Group.query.filter(Group.id == form.owner.data).one_or_none()
+            try:
+                db.session.add(new_course)
+                db.session.commit()
+                flash('New course added.')
+            except IntegrityError:
+                flash('Course key already exists.')
+            # Part of first instance info provided in the form
+            new_instance = CourseInstance(course_key=form.key.data, branch=form.branch.data, key=form.instance_key.data,
+                                        git_origin=form.git_origin.data)
+            # Also add a new instance with the course, the instance kay and course key is combined primary key of the
+            # CourseInstance model
+            try:
+                db.session.add(new_instance)
+                db.session.commit()
+                flash('New course added with a new instance under this course')
+            except IntegrityError:
+                flash('New course added, but Instance key already exists.')
+            return redirect('/courses/')
     return render_template('course_create.html', form=form)
 
 
@@ -80,13 +89,19 @@ def add_course_instance(course_key):
 @course_bp.route('edit/<course_key>/', methods=['GET', 'POST'])
 @login_required
 def edit_course(course_key):
-    course = CourseRepository.query.filter_by(key=course_key, owner=current_user.id)
+    course = CourseRepository.query.filter_by(key=course_key)
     course_instances = CourseInstance.query.filter_by(course_key=course_key)
     if course is None:
         flash('There is no such course under this user')
         return redirect('/courses/')
+    elif current_user not in course.first().owner.members:
+        flash('Permission Denied')
+        return redirect('/courses/')
     else:
         form = CourseForm(request.form, obj=course.first())
+        groups = Group.query.filter(Group.members.any(id=current_user.id),
+                            Group.permissions.any(type=PermType.courses)).all()
+        form.owner.choices =  [(g.id, group_slugify(g.name,g.parent_id)) for g in groups]
         # The label is changes according to whether user is edit a course or creating a course,
         # When editing a course, it should be changed to follows, or it will be "First instance origin"
         form.git_origin.label = "New Git Origin for all instance"
@@ -94,9 +109,15 @@ def edit_course(course_key):
                                 + str(course_instances.count()) \
                                 + " instance(s) belong to this course as well?"
         if form.validate() and request.method == 'POST':
+            course_perm = CreateCoursePerm.query.filter_by(group_id=form.owner.data).one_or_none()
+            if not course_perm.pattern_match(form.key.data.upper()):
+                flash('The course key does not match the naming rule')
+                return redirect(url_for('.edit_course',course_key=course_key))
+
             course.update(dict(
                 key=form.key.data,
                 name=form.name.data,
+                owner_id = form.owner.data
             ))
             # If checkbox clicked
             if form.change_all.data:
@@ -134,9 +155,11 @@ def edit_instance(course_key, instance_key):
 @course_bp.route('delete/<course_key>/', methods=['POST'])
 @login_required
 def del_course(course_key):
-    course = CourseRepository.query.filter_by(key=course_key, owner=current_user.id).first()
+    course =CourseRepository.query.filter(CourseRepository.key==course_key).first()
     if course is None:
         flash('There is no such course under this user')
+    elif current_user not in course.owner.members:
+        flash('Permission Denied')
     else:
         # The delete is cascade, the instance will be deleted as well.
         db.session.delete(course)
