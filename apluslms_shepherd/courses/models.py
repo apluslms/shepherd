@@ -1,11 +1,11 @@
 from apluslms_shepherd.extensions import db
 from apluslms_shepherd.config import DevelopmentConfig
-
+from apluslms_shepherd.groups.models import gc_table
 class CourseRepository(db.Model):
     key = db.Column(db.String(50), unique=True, primary_key=True)
     name = db.Column(db.String(50), default='')
-    owner_id = db.Column(db.Integer, db.ForeignKey('group.id'))
-    owner = db.relationship("Group", backref=db.backref("courses", cascade="all,delete"))
+    owners = db.relationship("Group", secondary=gc_table,
+                            backref=db.backref('courses', lazy='dynamic'))
     instance = db.relationship('CourseInstance', backref='course_repository', cascade="all,delete")
 
 
