@@ -67,8 +67,11 @@ def add_course():
 def add_course_instance(course_key):
     course_repo = CourseRepository.query.filter_by(key=course_key)
     last_instance = CourseInstance.query.filter_by(course_key=course_key).first()
-    form = InstanceForm(request.form, obj=CourseInstance(git_origin=last_instance.git_origin))
-
+    if last_instance:
+        form = InstanceForm(request.form, obj=CourseInstance(git_origin=last_instance.git_origin))
+    else:
+        form = InstanceForm(request.form)
+        
     if form.validate() and request.method == 'POST':
         # Using the git repo of first instance as the default repo
         new_course_instance = CourseInstance(key=form.key.data,
