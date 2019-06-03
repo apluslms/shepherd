@@ -28,8 +28,7 @@ class MultiCheckboxField(SelectMultipleField):
 
 
 class GroupForm(Form):
-    # name = StringField('Group name', [validators.InputRequired(), validators.Length(max=50) ])
-    name = StringField('Group name', [validators.Length(max=50)])
+    name = StringField('Group name', [validators.InputRequired(),validators.Length(max=50)])
     parent_path = StringField('Parent Path', [validators.Length(max=200)])
     # permissions = MultiCheckboxField('Permisson Type', choices=PERMISSION_LIST)
     permissions = SelectMultipleField('Permisson', choices=PERMISSION_LIST,widget=select_multi_checkbox,)
