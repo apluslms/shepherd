@@ -14,10 +14,9 @@ course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 @course_bp.route('', methods=['GET'])
 @login_required
 def list_course():
-    groups = Group.query.filter(Group.members.any(id=current_user.id),
-                            Group.permissions.any(type=PermType.courses)).all()
+    groups = Group.query.filter(Group.members.any(id=current_user.id)).all()
 
-    all_courses = CourseRepository.query.filter(CourseRepository.owner_id.in_([g.id for g in groups]))
+    all_courses = CourseRepository.query.all()
 
     return render_template('course_list.html', user=current_user, courses=all_courses)
 
@@ -29,21 +28,40 @@ def add_course():
     groups = Group.query.filter(Group.members.any(id=current_user.id),
                             Group.permissions.any(type=PermType.courses)).all()
     form = CourseForm(request.form)
-    form.owner.choices =  [(g.id, group_slugify(g.name,g.parent_id)) for g in groups]
+    form.owner.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in groups]
     form.git_origin.label = "First Instance Git Origin"
-    if form.validate() and request.method == 'POST':
+    if request.method == 'POST' and form.validate():
+        
         course_perm = CreateCoursePerm.query.filter_by(group_id=form.owner.data).one_or_none()
         if not course_perm.pattern_match(form.key.data.upper()):
             flash('The course key does not match the naming rule ',str(course_perm.pattern))
-            redirect(url_for('.add_course'))
+            return redirect(url_for('.add_course'))
         else:    
+            owner_id = form.owner.data
+            if form.course_group:
+                q = Group.query.filter(Group.name==form.key.data.upper()).one_or_none()
+                if q:
+                    flash('The group already exists')
+                    return redirect(url_for('.add_course'))
+
+                g =  Group.query.filter(Group.id==owner_id).one_or_none()
+                owner_id = g.parent_id
+                course_group = Group(name=form.key.data.upper(), parent_id=g.parent_id)
+                course_group.members.append(current_user)
+                try:
+                    course_group.save()
+                    flash('Add the course group successfully')
+                except:
+                    flash('Could not add the new group')
+
             new_course = CourseRepository(key=form.key.data.upper(),
                                         name=form.name.data,
-                                        owner_id=form.owner.data)
+                                        owner_id=owner_id)
             # new_course.owner = Group.query.filter(Group.id == form.owner.data).one_or_none()
             try:
                 db.session.add(new_course)
                 db.session.commit()
+                flash(form.data)
                 flash('New course added.')
             except IntegrityError:
                 flash('Course key already exists.')
@@ -72,7 +90,7 @@ def add_course_instance(course_key):
     else:
         form = InstanceForm(request.form)
         
-    if form.validate() and request.method == 'POST':
+    if request.method == 'POST' and form.validate():
         # Using the git repo of first instance as the default repo
         new_course_instance = CourseInstance(key=form.key.data,
                                              git_origin=form.git_origin.data,
@@ -117,7 +135,7 @@ def edit_course(course_key):
         form.change_all.label = "Would like to change the git repo of " \
                                 + str(course_instances.count()) \
                                 + " instance(s) belong to this course as well?"
-        if form.validate() and request.method == 'POST':
+        if request.method == 'POST' and form.validate():
             course_perm = CreateCoursePerm.query.filter_by(group_id=form.owner.data).one_or_none()
             if not course_perm.pattern_match(form.key.data.upper()):
                 flash('The course key does not match the naming rule')
@@ -148,7 +166,7 @@ def edit_instance(course_key, instance_key):
         return redirect('/courses/')
     else:
         form = InstanceForm(request.form, obj=instance.first())
-        if form.validate() and request.method == 'POST':
+        if request.method == 'POST' and form.validate():
             instance.update(dict(
                 key=form.key.data,
                 git_origin=form.git_origin.data,

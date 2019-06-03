@@ -52,7 +52,7 @@ def list_my_groups():
 @role_permission.require(http_exception=403)
 def create_group():
     form = GroupForm(request.form)
-    if form.validate() and request.method == 'POST':
+    if request.method == 'POST' and form.validate():
         if len(form.name.data) < 1:
             flash('The group name can not be empty!')
             return redirect(request.referrer)
@@ -76,7 +76,7 @@ def create_group():
         new_group = Group(name=group_name, parent_id=parent_id)
         perm_selected = form.permissions.data
 
-        if 'admin' not in perm_selected:
+        if 'self_admin' not in perm_selected:
             new_group.self_admin = False
 
         for name, perm_type in PermType.__members__.items():
@@ -119,7 +119,7 @@ def create_group():
 def create_subgroup(group_id):
     parent = Group.query.filter_by(id=group_id).one_or_none()
     form = GroupForm(request.form)
-    if form.validate() and request.method == 'POST':
+    if request.method == 'POST' and form.validate():
         if len(form.name.data) < 1:
             flash('The group name can not be empty!')
             return redirect(request.referrer)
@@ -132,7 +132,7 @@ def create_subgroup(group_id):
             new_group = Group(name=group_name, parent_id=group_id)
             perm_selected = form.permissions.data
 
-            if 'admin' not in perm_selected:
+            if 'self_admin' not in perm_selected:
                 new_group.self_admin = False
 
             for name, perm_type in PermType.__members__.items():
@@ -201,7 +201,7 @@ def edit_group(group_id):
     form.name.label = "New group name"
     form.parent_path.label = "New parent path"
     form.permissions.label = 'Update permission'
-    if form.validate() and request.method == 'POST':
+    if request.method == 'POST' and form.validate():
         if request.form['edit'] == 'update parent path':
 
             new_parent_id = query_parent_id(form.parent_path.data)
