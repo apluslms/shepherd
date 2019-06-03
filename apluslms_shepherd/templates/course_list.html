@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block head %}
-<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+    <script src="../static/are_you_sure.js"></script>
 {% endblock %}
 {% block title %}
     All Courses
@@ -9,98 +9,94 @@
 {% block body %}
     <div class="container text-center">
         <div>User id:{{ user.id }}</div>
-{#        {% for each in courses %}#}
-{#            <div class="collapse" id="{{ each.key }}">#}
-{#                <table class="text-center table">#}
-{#                    <thead>#}
-{#                    <tr>#}
-{#                        <th scope="col">Course Key</th>#}
-{#                        <th scope="col">Key</th>#}
-{#                        <th scope="col">Instance Repo</th>#}
-{#                        <th scope="col">Branch</th>#}
-{#                        <th scope="col">Secret Token</th>#}
-{#                        <th scope="col">Operations</th>#}
-{#                    </tr>#}
-{#                    </thead>#}
-{#                    <tbody>#}
-{#                    {% for branch in each.instance %}#}
-{#                        <tr>#}
-{#                            <td>{{ branch.course_key }}</td>#}
-{#                            <td>{{ branch.key }}</td>#}
-{#                            <td>{{ branch.git_origin }}</td>#}
-{#                            <td>{{ branch.branch }}</td>#}
-{#                            <td>{{ branch.secret_token }}</td>#}
-{##}
-{#                            <td>#}
-{#                                <form method="post" action="/courses/delete/{{ each.key }}/{{ branch.key }}/">#}
-{#                                    <button type="button" class="btn btn-outline-primary"#}
-{#                                            onclick="location.href='/courses/edit/{{ each.key }}/{{ branch.key }}/'">#}
-{#                                        Edit#}
-{#                                    </button>#}
-{#                                    <button type="submit" class="btn btn-outline-danger are-you-sure">#}
-{#                                        Delete#}
-{#                                    </button>#}
-{#                                </form>#}
-{#                            </td>#}
-{#                        </tr>#}
-{#                    {% endfor %}#}
-{#                    </tbody>#}
-{#                </table>#}
-{#            </div>#}
-{#        {% endfor %}#}
+        {% for each in courses %}
+            <div class="collapse" id="{{ each.key }}">
+                <table class="text-center table">
+                    <thead>
+                    <tr>
+                        <th scope="col">Course Key</th>
+                        <th scope="col">Key</th>
+                        <th scope="col">Instance Repo</th>
+                        <th scope="col">Branch</th>
+                        <th scope="col">Secret Token</th>
+                        <th scope="col">Operations</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for branch in each.instance %}
+                        <tr>
+                            <td>{{ branch.course_key }}</td>
+                            <td>{{ branch.key }}</td>
+                            <td>{{ branch.git_origin }}</td>
+                            <td>{{ branch.branch }}</td>
+                            <td>{{ branch.secret_token }}</td>
+
+                            <td>
+                                <form method="post" action="/courses/delete/{{ each.key }}/{{ branch.key }}/">
+                                    <button type="button" class="btn btn-outline-primary"
+                                            onclick="location.href='/courses/edit/{{ each.key }}/{{ branch.key }}/'">
+                                        Edit
+                                    </button>
+                                    <button type="submit" class="btn btn-outline-danger are-you-sure">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                           
+                        </tr>
+
+                    {% endfor %}
+                    </tbody>
+                </table>
+
+            </div>
+        {% endfor %}
         <table class="text-center table">
             <caption>Courses</caption>
             <thead>
             <tr>
-                <th scope="col">Course Key</th>
-                <th scope="col">Instance Key</th>
-                <th scope="col">Name</th>
-                <th scope="col">Identity</th>
-                <th scope="col">Git</th>
+
+                <th scope="col">Key</th>
+                <th scope="col">Course Name</th>
                 <th scope="col">Operations</th>
             </tr>
             </thead>
             <tbody>
             {% for each in courses %}
                 <tr>
-                    <td>{{ each.course_key }}</td>
-                    <td>{{ each.instance_key }}</td>
+
+                    <td>{{ each.key }}</td>
                     <td>{{ each.name }}</td>
-                    <td>{{ each.owners }}</td>
-                    <td>{{ each.git_origin }}:{{ each.branch }}</td>
+
                     <td>
-                        <form method="post" action="/courses/delete/{{ each.course_key }}/{{ each.instance_key }}/">
-{#                            <a class=" btn btn-outline-primary" data-toggle="collapse" href="#{{ each.key }}"#}
-{#                               role="button" aria-expanded="false" aria-controls="collapseExample">#}
-{#                                View instances#}
-{#                            </a>#}
+
+                        <form method="post" action="/courses/delete/{{ each.key }}/">
+                            <a class=" btn btn-outline-primary" data-toggle="collapse" href="#{{ each.key }}"
+                               role="button" aria-expanded="false" aria-controls="collapseExample">
+                                View instances
+                            </a>
                             <button type="button" class="btn btn-outline-primary"
-                                    onclick="location.href='/courses/edit/{{ each.course_key }}/{{ each.instance_key }}/'">Edit
+                                    onclick="location.href='/courses/edit/{{ each.key }}/'">Edit
                             </button>
                             <button type="button" class="btn btn-outline-primary"
-                                    onclick="location.href='/courses/create/?course={{ each.course_key }}&instance={{ each.instance_key }}'">Duplicate
+                                    onclick="location.href='/courses/create/{{ each.key }}/'">New Instance
                             </button>
-                            <button type="button" class="btn btn-outline-primary owner_groups" 
-                                    data-course={{each.course_key}} data-instance={{each.instance_key}}>Owner groups
+                            <button type="button" class="btn btn-outline-primary"
+                                    onclick="location.href='/courses/manager/{{ each.key }}/add/'">
+                                    Add managers
                             </button>
                             <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
                         </form>
                     </td>
+
                 </tr>
+
+
             {% endfor %}
+
             </tbody>
+
         </table>
     </div>
-    
-<div id="content">
-        {% block content %}
-        {% include 'groups/owner_groups.html' %}
-        {% endblock %}
-</div>
-{% endblock %}
 
-{% block scripts %}
-<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-<script src="{{ url_for('static', filename='owner_groups.js') }}"></script>
-<script src="../static/are_you_sure.js"></script>
 {% endblock %}
