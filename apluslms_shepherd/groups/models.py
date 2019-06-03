@@ -2,7 +2,6 @@ import enum
 import re
 from sqlalchemy_mptt.mixins import BaseNestedSets
 from apluslms_shepherd.extensions import db
-from apluslms_shepherd.courses.models import CourseRepository
 # db.metadata.clear()
 
 gm_table = db.Table('gm_table', db.Model.metadata,
@@ -13,6 +12,11 @@ gm_table = db.Table('gm_table', db.Model.metadata,
 gp_table = db.Table('gp_table', db.Model.metadata,
                     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
                     db.Column('permission_id', db.Integer, db.ForeignKey('group_permission.id'))
+                    )
+
+gc_table = db.Table('gc_table', db.Model.metadata,
+                    db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
+                    db.Column('course_key', db.String, db.ForeignKey('course_repository.key'))
                     )
 
 # admin_table = db.Table('admin_table', db.Model.metadata,
