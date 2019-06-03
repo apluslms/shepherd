@@ -6,13 +6,19 @@ from apluslms_shepherd.courses.forms import CourseForm, InstanceForm
 from apluslms_shepherd.courses.models import CourseRepository, CourseInstance, db
 from apluslms_shepherd.groups.models import Group,PermType,CreateCoursePerm
 from apluslms_shepherd.groups.utils import course_perm,group_slugify
+from apluslms_shepherd.auth.models import User
+from apluslms_shepherd.groups.views import list_users,add_member
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 
 
 @course_bp.route('', methods=['GET'])
 @login_required
 def list_course():
-    all_courses = CourseRepository.query.all()
+    groups = Group.query.filter(Group.members.any(id=current_user.id),
+                            Group.permissions.any(type=PermType.courses)).all()
+
+    all_courses = CourseRepository.query.filter(CourseRepository.owner_id.in_([g.id for g in groups]))
+
     return render_template('course_list.html', user=current_user, courses=all_courses)
 
 
@@ -112,7 +118,7 @@ def edit_course(course_key):
             course_perm = CreateCoursePerm.query.filter_by(group_id=form.owner.data).one_or_none()
             if not course_perm.pattern_match(form.key.data.upper()):
                 flash('The course key does not match the naming rule')
-                return redirect(url_for('.edit_course',course_key=course_key))
+                return  redirect(url_for('.edit_course',course_key=course_key))
 
             course.update(dict(
                 key=form.key.data,
@@ -190,3 +196,24 @@ def instance_log(instance_id):
         flash('No such instance in the database, please refresh the page.')
         redirect('')
     render_template('instance_log.html', instance=instance)
+
+@course_bp.route('manager/<course_key>/add/', methods=['GET'])
+@login_required
+def available_users(course_key):
+    course = CourseRepository.query.filter_by(key=course_key).one_or_none()
+    if course is None:
+        flash('There is no such course under this user')
+        return redirect('/courses/')
+    if current_user not in course.owner.members:
+        flash('Permission Denied')
+        return redirect('/courses/')
+    
+    group = db.session.query(Group).filter_by(id=course.owner_id).one_or_none()
+    # conditions = []
+    # for role in ['Instructor', 'Mentor', 'Teacher', 'TeachingAssistant', 'TA']:
+    #     conditions.append(User.roles.contains(role))
+    # available_users = db.session.query(User).filter(db.or_(*conditions),
+    #                                                 db.not_(User.groups.any(Group.id == group.id))).all()
+    # return render_template('members/members_add.html', group=group, users=available_users)
+    return list_users(group.id)
+
