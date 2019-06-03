@@ -30,6 +30,7 @@
                             <td>{{ branch.git_origin }}</td>
                             <td>{{ branch.branch }}</td>
                             <td>{{ branch.secret_token }}</td>
+
                             <td>
                                 <form method="post" action="/courses/delete/{{ each.key }}/{{ branch.key }}/">
                                     <button type="button" class="btn btn-outline-primary"
@@ -41,6 +42,7 @@
                                     </button>
                                 </form>
                             </td>
+                           
                         </tr>
 
                     {% endfor %}
@@ -78,6 +80,10 @@
                             </button>
                             <button type="button" class="btn btn-outline-primary"
                                     onclick="location.href='/courses/create/{{ each.key }}/'">New Instance
+                            </button>
+                            <button type="button" class="btn btn-outline-primary"
+                                    onclick="location.href='/courses/manager/{{ each.key }}/add/'">
+                                    Add managers
                             </button>
                             <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
                         </form>

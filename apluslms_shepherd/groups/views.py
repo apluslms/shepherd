@@ -146,7 +146,7 @@ def create_subgroup(group_id):
                     new_group.permissions.append(perm)
 
             if 'courses' in perm_selected:
-                course_prefix = form.course_prefix.data
+                course_prefix = form.course_prefix.data.upper()
                 course_pattern = course_prefix + '-[A-Za-z][0-9][0-9][0-9][0-9]'
                 course_perm = CreateCoursePerm(group=new_group,pattern=course_pattern)
                 db.session.add(course_perm)
@@ -292,7 +292,6 @@ def list_members(group_id):
 @groups_bp.route('/<group_id>/add_members/', methods=['GET'])
 @login_required
 @role_permission.require(http_exception=403)
-@membership_perm
 def list_users(group_id):
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
