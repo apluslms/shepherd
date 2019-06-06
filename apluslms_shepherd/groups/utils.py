@@ -142,10 +142,11 @@ def membership_perm(func):
         if "group_id" in request.view_args:
             group_id = request.view_args['group_id']
             group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-
-            permission = SelfAdminPermission(group_id=group_id)
-            if permission.can():
+            if group.self_admin:
                 allowed = True
+            # permission = SelfAdminPermission(group_id=group_id)
+            # if permission.can():
+            #     allowed = True
             else:
                 ancestors = group.path_to_root().all()
                 for ancestor in ancestors:

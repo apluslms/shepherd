@@ -21,6 +21,20 @@ def select_multi_checkbox(field, ul_class='', **kwargs):
     html.append(u'</div>')    
     return u''.join(html)
 
+def select_multi_checkbox2(field, ul_class='', **kwargs):
+    kwargs.setdefault('type', 'checkbox')
+    field_id = kwargs.pop('id', field.id)
+    html = [u'<ul %s>' % html_params(id=field_id, class_=ul_class)]
+    for value, label, checked in field.iter_choices():
+        choice_id = u'%s-%s' % (field_id, value)
+        options = dict(kwargs, name=field.name, value=value, id=choice_id)
+        if checked:
+            options['checked'] = 'checked'
+        html.append(u'<li><input %s /> ' % html_params(**options))
+        html.append(u'<label for="%s">%s</label></li>' % (field_id, label))
+    html.append(u'</ul>')
+    return u''.join(html)
+
 
 class MultiCheckboxField(SelectMultipleField):
     widget = ListWidget(prefix_label=False)
@@ -31,7 +45,8 @@ class GroupForm(Form):
     name = StringField('Group name', [validators.InputRequired(),validators.Length(max=50)])
     parent_path = StringField('Parent Path', [validators.Length(max=200)])
     # permissions = MultiCheckboxField('Permisson Type', choices=PERMISSION_LIST)
-    permissions = SelectMultipleField('Permisson', choices=PERMISSION_LIST,widget=select_multi_checkbox,)
+    permissions = SelectMultipleField('Permisson', choices=PERMISSION_LIST,widget=select_multi_checkbox)
     course_prefix = StringField('Course Prefix', [validators.Optional()])
+    target_groups = SelectMultipleField('Parents of Subgroups',[validators.Optional()],choices=[(0,'Itself')],coerce=int,widget=select_multi_checkbox2)
 
     

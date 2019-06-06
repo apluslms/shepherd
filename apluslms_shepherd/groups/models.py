@@ -81,7 +81,7 @@ class Group(db.Model, BaseNestedSets, CRUD):
 
 
 PERM_TYPE = {'self_admin':'self-administrator',
-            'groups': 'manage subgroups','courses': 'create courses'}
+            'groups': 'create subgroups','courses': 'create courses'}
 PERMISSION_LIST = list(perm_tuple for perm_tuple in PERM_TYPE.items())
 
 
@@ -96,12 +96,14 @@ class GroupPermission(db.Model):
     type = db.Column(db.Enum(PermType))
 
 
-# class CreateGroupPerm:
-    # group_id = db.Column(db.Integer, db.ForeignKey('group.id'))
-    # parent_group = foreign ForeignKey
-    # self_admin = db.Column(db.boolean,default=True)
-    # maybe: pattern = None or "cs-*" or "^cs-[a-c][0-9]+$" # fnmatch.fnmatch vs. re.match
-
+class CreateGroupPerm(db.Model):
+    # id = db.Column(db.Integer,primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('group.id'),primary_key=True)
+    target_group_id = db.Column(db.Integer, db.ForeignKey('group.id'),primary_key=True)
+    group = db.relationship('Group',foreign_keys=[group_id],backref=db.backref("group_perm", 
+                            uselist=False,cascade='all,delete'))
+    target_group = db.relationship('Group',foreign_keys=[target_group_id],backref=db.backref("group_perm_as_target", 
+                            uselist=False,cascade='all,delete'))
 
 class CreateCoursePerm(db.Model):
     id = db.Column(db.Integer,primary_key=True)
