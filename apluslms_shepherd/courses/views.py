@@ -1,14 +1,28 @@
 from flask import Blueprint, render_template, request, flash, redirect,url_for
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
-
+from sqlalchemy import inspect
 from apluslms_shepherd.courses.forms import CourseForm, InstanceForm
 from apluslms_shepherd.courses.models import CourseRepository, CourseInstance, db
 from apluslms_shepherd.groups.models import Group,PermType,CreateCoursePerm
 from apluslms_shepherd.groups.utils import course_perm,group_slugify
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.views import list_users,add_member
+
+
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
+
+
+
+def getattr_from_column_name(instance, name, default=Ellipsis):
+    for attr, column in inspect(instance.__class__).c.items():
+        if column.name == name:
+            return getattr(instance, attr)
+
+    if default is Ellipsis:
+        raise KeyError
+    else:
+        return default
 
 
 @course_bp.route('', methods=['GET'])
@@ -30,6 +44,7 @@ def add_course():
     form = CourseForm(request.form)
     form.owner.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in groups]
     form.git_origin.label = "First Instance Git Origin"
+    
     if request.method == 'POST' and form.validate():
         
         course_perm = CreateCoursePerm.query.filter_by(group_id=form.owner.data).one_or_none()
@@ -55,9 +70,11 @@ def add_course():
                     flash('Could not add the new group')
 
             new_course = CourseRepository(key=form.key.data.upper(),
-                                        name=form.name.data,
-                                        owner_id=owner_id)
-            # new_course.owner = Group.query.filter(Group.id == form.owner.data).one_or_none()
+                                        name=form.name.data)
+            if form.course_group:
+                new_course.owners.append(course_group)
+            else: 
+                new_course.owners.append(Group.query.filter(Group.id == form.owner.data).one_or_none())
             try:
                 db.session.add(new_course)
                 db.session.commit()
