@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.forms import GroupForm
-from apluslms_shepherd.groups.models import GroupPermission, PermType
+from apluslms_shepherd.groups.models import GroupPermission, PermType,CreateGroupPerm,CreateCoursePerm
 from apluslms_shepherd.groups.utils import *
 
 logging.basicConfig(level=logging.DEBUG)
@@ -52,10 +52,11 @@ def list_my_groups():
 @role_permission.require(http_exception=403)
 def create_group():
     form = GroupForm(request.form)
+    parents_of_subgroups = db.session.query(Group).filter(
+                            Group.permissions.any(type=PermType.groups)).all()
+    form.target_groups.choices += ([(g.id, group_slugify(g.name,g.parent_id)) for g in parents_of_subgroups])
+
     if request.method == 'POST' and form.validate():
-        if len(form.name.data) < 1:
-            flash('The group name can not be empty!')
-            return redirect(request.referrer)
         group_name = slugify(form.name.data, separator='_')
         parent_id = query_parent_id(form.parent_path.data)
 
@@ -72,12 +73,9 @@ def create_group():
         if q is not None:
             flash('The group ' + group_slugify(group_name, parent_id) + ' already exists.')
             return redirect(url_for('.create_group'))
-
+        
         new_group = Group(name=group_name, parent_id=parent_id)
         perm_selected = form.permissions.data
-
-        if 'self_admin' not in perm_selected:
-            new_group.self_admin = False
 
         for name, perm_type in PermType.__members__.items():
             if name in perm_selected:
@@ -88,23 +86,44 @@ def create_group():
                     db.session.add(perm)
                     db.session.commit()
                 new_group.permissions.append(perm)
+
+        course_perm,group_perms = None, None
+        if new_group.parent_id is None or 'self_admin' in perm_selected:
+            new_group.self_admin = True
+        else:
+            new_group.self_admin = False
         
         if 'courses' in perm_selected:
             course_prefix = form.course_prefix.data.upper()
             course_pattern = course_prefix + '-[A-Za-z][0-9][0-9][0-9][0-9]'
             course_perm = CreateCoursePerm(group=new_group,pattern=course_pattern)
-            db.session.add(course_perm)
+        
+        if 'groups' in perm_selected:
+            parent_group_ids = form.target_groups.data
+            if len(parent_group_ids) == 0:
+                flash('You must choose a parent group')
+                return redirect(url_for('.create_group'))
+            group_perms = []
+            for g_id in parent_group_ids:
+                if g_id==0:
+                    group_perm = CreateGroupPerm(group=new_group,target_group=new_group)
+                else:
+                    target_group = db.session.query(Group).filter_by(id=g_id).one_or_none()
+                    group_perm = CreateGroupPerm(group=new_group,target_group=target_group)
+                    # group_perm = CreateGroupPerm(group=new_group,target_group_id=g_id)
+                group_perms.append(group_perm)
         try:
-            
-            new_group.save()
+            flash(form.data)
+            new_group.members.append(current_user)
+            db.session.add(new_group)
+            if course_perm: 
+                db.session.add(course_perm)
+            if group_perms:
+                for group_perm in group_perms:
+                    db.session.add(group_perm)
+            db.session.commit()
             flash('The new group ' + group_slugify(new_group.name, parent_id) + ' is added.')
-            try:
-                new_group.members.append(current_user)
-                db.session.commit()
-                flash('You are set as the admin of the new group')
-            except:
-                flash('Failed to set you as the admin of the new group')
-                return redirect(request.referrer)
+            flash('You are set as the admin of the new group')
         except:
             flash('Could not create the group')
             return redirect(url_for('.create_group'))
@@ -119,21 +138,18 @@ def create_group():
 def create_subgroup(group_id):
     parent = Group.query.filter_by(id=group_id).one_or_none()
     form = GroupForm(request.form)
+    parents_of_subgroups = db.session.query(Group).filter(
+                            Group.permissions.any(type=PermType.groups)).all()
+    form.target_groups.choices += ([(g.id, group_slugify(g.name,g.parent_id)) for g in parents_of_subgroups])
     if request.method == 'POST' and form.validate():
-        if len(form.name.data) < 1:
-            flash('The group name can not be empty!')
-            return redirect(request.referrer)
         group_name = slugify(form.name.data, separator='_')
         q = Group.query.filter_by(name=group_name, parent_id=group_id).one_or_none()
-        if q is not None:
+        if q:
             flash('The group ' + group_slugify(group_name, group_id) + ' already exists')
             return redirect(url_for('.create_subgroup', group_id=group_id))
         else:
             new_group = Group(name=group_name, parent_id=group_id)
             perm_selected = form.permissions.data
-
-            if 'self_admin' not in perm_selected:
-                new_group.self_admin = False
 
             for name, perm_type in PermType.__members__.items():
                 if name in perm_selected:
@@ -142,30 +158,49 @@ def create_subgroup(group_id):
                     if not perm:
                         perm = GroupPermission(type=perm_type)
                         db.session.add(perm)
-                        # db.session.commit()
+                
                     new_group.permissions.append(perm)
-
-            if 'courses' in perm_selected:
-                course_prefix = form.course_prefix.data.upper()
-                course_pattern = course_prefix + '-[A-Za-z][0-9][0-9][0-9][0-9]'
-                course_perm = CreateCoursePerm(group=new_group,pattern=course_pattern)
+            
+        course_perm,group_perms = None, None
+        if new_group.parent_id is None or 'self_admin' in perm_selected:
+            new_group.self_admin = True
+        else:
+            new_group.self_admin = False
+        
+        if 'courses' in perm_selected:
+            course_prefix = form.course_prefix.data.upper()
+            course_pattern = course_prefix + '-[A-Za-z][0-9][0-9][0-9][0-9]'
+            course_perm = CreateCoursePerm(group=new_group,pattern=course_pattern)
+        
+        if 'groups' in perm_selected:
+            parent_group_ids = form.target_groups.data
+            if len(parent_group_ids) == 0:
+                flash('You must choose a parent group')
+                return redirect(url_for('.create_group'))
+            group_perms = []
+            for g_id in parent_group_ids:
+                if g_id==0:
+                    group_perm = CreateGroupPerm(group=new_group,target_group=new_group)
+                else:
+                    # target_group = db.session.query(Group).filter_by(id=g_id).one_or_none()
+                    # group_perm = CreateGroupPerm(group=new_group,target_group=target_group)
+                    group_perm = CreateGroupPerm(group=new_group,target_group_id=g_id)
+                group_perms.append(group_perm)
+        try:
+            flash(form.data)
+            new_group.members.append(current_user)
+            db.session.add(new_group)
+            if course_perm: 
                 db.session.add(course_perm)
-            try:
-                flash(form.data)
-                db.session.add(new_group)
-                db.session.commit()
-                flash('The new group ' + group_slugify(group_name, group_id) + ' is created successfully')
-                try:
-                    new_group.members.append(current_user)
-                    db.session.commit()
-                    flash('You are set as the admin of the new group')
-                except:
-                    flash('Failed to set you as the admin of the new group')
-                    return redirect(request.referrer)
-            except:
-                flash('Could not create the group ')
-                return redirect(url_for('.create_subgroup', group_id=group_id))
-        return redirect(url_for('.list_my_groups'))
+            if group_perms:
+                for group_perm in group_perms:
+                    db.session.add(group_perm)
+            db.session.commit()
+            flash('The new group ' + group_slugify(new_group.name, parent.id) + ' is added.')
+            flash('You are set as the admin of the new group')
+        except:
+            flash('Could not create the group')
+            return redirect(url_for('.create_group'))
 
     return render_template('groups/group_create.html', form=form, parent=parent)
     
@@ -176,14 +211,18 @@ def create_subgroup(group_id):
 @group_edit_del_perm
 def delete_group(group_id):
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-
-    try:
-        group_slug = group_slugify(group.name, group.parent_id)
-        group.delete()
-        flash('The group ' + group_slug + ' has been deleted')
-    except:
-        flash('Error occurs when trying to remove the group')
-        return redirect(request.referrer)
+    # create_group_perms = db.session.query(CreateGroupPerm).filter(db.or_(
+    #                     CreateGroupPerm.group_id==group.id,CreateGroupPerm.target_group_id==group.id)).all()
+    
+    group_slug = group_slugify(group.name, group.parent_id)
+    # for perm in create_group_perms:
+    #     db.session.delete(perm)
+    db.session.delete(group)
+    db.session.commit() 
+    flash('The group ' + group_slug + ' has been deleted')
+    # except:
+    #     flash('Error occurs when trying to remove the group')
+    #     return redirect(request.referrer)
 
     return redirect(request.referrer)
 
@@ -194,7 +233,7 @@ def delete_group(group_id):
 @group_edit_del_perm
 def edit_group(group_id):
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-
+    flash(group.name)
     group_slug = group_slugify(group.name, group.parent_id)
     permissions = [perm.type.name for perm in group.permissions]
     form = GroupForm(request.form)
@@ -247,10 +286,8 @@ def edit_group(group_id):
             perm_origin = [perm.type.name for perm in group.permissions]
             perm_new = form.permissions.data
             flash(perm_new)
-            if 'self_admin' in perm_new:
-                group.self_admin = True
-            else:
-                group.self_admin = False
+
+
             for name, perm_type in PermType.__members__.items():
                 if (name not in perm_origin) and (name in perm_new):
                     perm = db.session.query(GroupPermission).filter(
@@ -263,6 +300,17 @@ def edit_group(group_id):
                     perm = db.session.query(GroupPermission).filter(
                         GroupPermission.type == perm_type).first()
                     group.permissions.remove(perm)
+
+            if 'self_admin' in perm_new:
+                group.self_admin = True
+            else:
+                group.self_admin = False
+                self_group_perm = db.session.query(CreateGroupPerm).filter(
+                                    CreateGroupPerm.group_id==group.id,
+                                    CreateGroupPerm.target_group_id==group.id).one_or_none()
+                if self_group_perm:
+                    db.session.delete(self_group_perm)
+                    db.session.commit()
         try:
             group.save()
             flash('The group ' + group_slugify(group.name, group.parent_id) + ' is edited successfully')
