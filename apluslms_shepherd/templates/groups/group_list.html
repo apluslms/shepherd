@@ -42,12 +42,12 @@ $('.check').change(function() {
 {% block body %}
 <h1 style = "font-size:50px;">
         <strong>{{title}}</strong>
-        {%if node %}
+        {%if group %}
             <button type="button" class="btn btn-outline-primary"
             onclick="goBack()">Return 
             </button>
             <button type="button" class="btn btn-outline-primary"
-            onclick="location.href='/groups/{{ node.id }}/create/'">Create subgroup 
+            onclick="location.href='/groups/{{ group.id }}/create/'">Create subgroup 
             </button>
         {% else %}
         <button type="button" class="btn btn-outline-primary"
@@ -69,12 +69,19 @@ $('.check').change(function() {
             {% endif %} 
             <input class='check' type="checkbox" />
             {{group.name}}</span>
-            <button type="button" class="btn btn-outline-primary"
-            onclick="location.href='/groups/{{ group.id }}/members/'">Members
-            </button>
-            <button type="button" class="btn btn-outline-primary"
-            onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
-            </button>
+            <!-- <br> -->
+            <!-- <form method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}"> -->
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{ group.id }}/members/'">Members
+                </button>
+                <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
+                </button>
+                <!-- <button type="button" class="btn btn-outline-primary"
+                onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
+                </button>
+                <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>  -->
+            <!-- </form> -->
             </li>
             {%- if group.children -%}
                 {{ loop(group.children) }}

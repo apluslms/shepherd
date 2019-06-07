@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 063ee067d5d7
+Revision ID: b5647de17da5
 Revises: 
-Create Date: 2019-06-06 14:28:40.138997
+Create Date: 2019-06-06 15:40:30.958345
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '063ee067d5d7'
+revision = 'b5647de17da5'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -28,11 +28,11 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('self_admin', sa.Boolean(), nullable=True),
-    sa.Column('tree_id', sa.Integer(), nullable=True),
     sa.Column('lft', sa.Integer(), nullable=False),
     sa.Column('rgt', sa.Integer(), nullable=False),
-    sa.Column('parent_id', sa.Integer(), nullable=True),
     sa.Column('level', sa.Integer(), nullable=False),
+    sa.Column('parent_id', sa.Integer(), nullable=True),
+    sa.Column('tree_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['parent_id'], ['group.id'], name=op.f('fk_group_parent_id_group'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_group'))
     )
