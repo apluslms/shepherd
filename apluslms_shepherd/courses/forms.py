@@ -8,9 +8,10 @@ class CourseForm(Form):
     git_origin = StringField([validators.InputRequired(),validators.Length(max=255)])
     change_all = BooleanField('Change git origin to all instance?')
     branch = StringField('First Instance Branch', [validators.InputRequired(),validators.Length(max=50)])
-    owner = SelectField('Group',coerce=int)
-
-    course_group = BooleanField('Create a new group for the course',default=False)
+    identity = SelectField('Identity',coerce=int)
+    owner_group = SelectField('Owner Group',coerce=int)
+    new_group = BooleanField('Create a new group for the course',default=False)
+    parent_group =  SelectField('Parent Group',coerce=int)
 
 class InstanceForm(Form):
     key = StringField('Instance Key', [validators.InputRequired(),validators.Length(max=50)])
