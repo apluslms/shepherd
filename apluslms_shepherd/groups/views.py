@@ -7,7 +7,7 @@ from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.forms import GroupForm
 from apluslms_shepherd.groups.models import GroupPermission, PermType,CreateGroupPerm,CreateCoursePerm
 from apluslms_shepherd.groups.utils import *
-
+import json
 logging.basicConfig(level=logging.DEBUG)
 
 groups_bp = Blueprint('groups', __name__, url_prefix='/groups')
@@ -51,6 +51,9 @@ def list_my_groups():
 @login_required
 @role_permission.require(http_exception=403)
 def create_group():
+    
+    flash(request.path)
+       
     form = GroupForm(request.form)
     parents_of_subgroups = db.session.query(Group).filter(
                             Group.permissions.any(type=PermType.groups)).all()
@@ -124,11 +127,12 @@ def create_group():
             db.session.commit()
             flash('The new group ' + group_slugify(new_group.name, parent_id) + ' is added.')
             flash('You are set as the admin of the new group')
+
         except:
             flash('Could not create the group')
             return redirect(url_for('.create_group'))
-
-    return render_template('groups/group_create.html', form=form, parent=None)
+    
+    return render_template('groups/group_create.html', form=form, parent=None,course_group=0)
 
 
 @groups_bp.route('<group_id>/create/', methods=['GET', 'POST'])

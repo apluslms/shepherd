@@ -8,6 +8,9 @@ from apluslms_shepherd.groups.models import Group,PermType,CreateCoursePerm
 from apluslms_shepherd.groups.utils import course_perm,group_slugify
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.views import list_users,add_member
+from apluslms_shepherd.groups.views import create_group
+from apluslms_shepherd.groups.forms import GroupForm
+import jsonify
 
 
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
@@ -39,62 +42,51 @@ def list_course():
 @login_required
 @course_perm
 def add_course():
-    groups = Group.query.filter(Group.members.any(id=current_user.id),
-                            Group.permissions.any(type=PermType.courses)).all()
+    identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
+                                Group.permissions.any(type=PermType.courses)).all()
+    owner_groups  = Group.query.filter(Group.members.any(id=current_user.id)).all()
+    parent_groups = Group.query.filter(Group.permissions.any(type=PermType.groups)).all()
+
     form = CourseForm(request.form)
-    form.owner.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in groups]
+    group_form = GroupForm(request.form)
+    form.identity.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in identity_groups]
+    form.owner_group.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in owner_groups]
+    form.parent_group.choices = [(0,'---')] + [(g.id, group_slugify(g.name,g.parent_id)) for g in parent_groups]
     form.git_origin.label = "First Instance Git Origin"
     
     if request.method == 'POST' and form.validate():
-        
-        course_perm = CreateCoursePerm.query.filter_by(group_id=form.owner.data).one_or_none()
+        flash(form.data)
+        # if not form.new_group:
+        course_perm = CreateCoursePerm.query.filter_by(group_id=form.identity.data).one_or_none()
         if not course_perm.pattern_match(form.key.data.upper()):
             flash('The course key does not match the naming rule ',str(course_perm.pattern))
             return redirect(url_for('.add_course'))
         else:    
-            owner_id = form.owner.data
-            if form.course_group:
-                q = Group.query.filter(Group.name==form.key.data.upper()).one_or_none()
-                if q:
-                    flash('The group already exists')
-                    return redirect(url_for('.add_course'))
-
-                g =  Group.query.filter(Group.id==owner_id).one_or_none()
-                owner_id = g.parent_id
-                course_group = Group(name=form.key.data.upper(), parent_id=g.parent_id)
-                course_group.members.append(current_user)
-                try:
-                    course_group.save()
-                    flash('Add the course group successfully')
-                except:
-                    flash('Could not add the new group')
-
             new_course = CourseRepository(key=form.key.data.upper(),
                                         name=form.name.data)
-            if form.course_group:
-                new_course.owners.append(course_group)
-            else: 
-                new_course.owners.append(Group.query.filter(Group.id == form.owner.data).one_or_none())
+            owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
+            new_course.owners.append(owner_group)
             try:
                 db.session.add(new_course)
                 db.session.commit()
-                flash(form.data)
                 flash('New course added.')
             except IntegrityError:
                 flash('Course key already exists.')
-            # Part of first instance info provided in the form
-            new_instance = CourseInstance(course_key=form.key.data, branch=form.branch.data, key=form.instance_key.data,
-                                        git_origin=form.git_origin.data)
-            # Also add a new instance with the course, the instance kay and course key is combined primary key of the
-            # CourseInstance model
-            try:
-                db.session.add(new_instance)
-                db.session.commit()
-                flash('New course added with a new instance under this course')
-            except IntegrityError:
-                flash('New course added, but Instance key already exists.')
-            return redirect('/courses/')
-    return render_template('course_create.html', form=form)
+                return redirect('/courses/')
+
+        # Part of first instance info provided in the form
+        new_instance = CourseInstance(course_key=form.key.data, branch=form.branch.data, key=form.instance_key.data,
+                                    git_origin=form.git_origin.data)
+        # Also add a new instance with the course, the instance kay and course key is combined primary key of the
+        # CourseInstance model
+        try:
+            db.session.add(new_instance)
+            db.session.commit()
+            flash('New course added with a new instance under this course')
+        except IntegrityError:
+            flash('New course added, but Instance key already exists.')
+        return redirect('/courses/')
+    return render_template('course_create.html', form=form,group_form=group_form)
 
 
 @course_bp.route('create/<course_key>/', methods=['GET', 'POST'])
@@ -202,13 +194,22 @@ def del_course(course_key):
     course =CourseRepository.query.filter(CourseRepository.key==course_key).first()
     if course is None:
         flash('There is no such course under this user')
-    elif current_user not in course.owner.members:
-        flash('Permission Denied')
+        return redirect('/courses/')
     else:
-        # The delete is cascade, the instance will be deleted as well.
-        db.session.delete(course)
-        db.session.commit()
-        flash('Course with key: ' + course_key + ' name: ' + course.name + ' has been deleted.')
+        allowed = False
+        owner_groups = course.owners
+        for g in owner_groups:
+            if current_user in g.members:
+                allowed = True
+                break
+        if not allowed:
+            flash('Permission Denied')
+            return redirect('/courses/')
+
+    # The delete is cascade, the instance will be deleted as well.
+    db.session.delete(course)
+    db.session.commit()
+    flash('Course with key: ' + course_key + ' name: ' + course.name + ' has been deleted.')
     return redirect('/courses/')
 
 
@@ -254,4 +255,3 @@ def available_users(course_key):
     #                                                 db.not_(User.groups.any(Group.id == group.id))).all()
     # return render_template('members/members_add.html', group=group, users=available_users)
     return list_users(group.id)
-
