@@ -3,7 +3,75 @@
     Add New Course
 {% endblock %}
 {% block head %}
-<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.js"></script>
+<link rel="shortcut icon" href="">
+{% endblock %}
+{% block body %}
+<div id='test'></div>
+    <div class="container text-center">
+        {% from "_formhelpers.html" import render_field %}
+        <form method=post>
+            <dl class="form-group">
+                {{ render_field(form.key, class='form-control') }}
+                {{ render_field(form.name,class='form-control' ) }}
+
+                {% block additional %}
+                    {% from "_formhelpers.html" import render_field %}
+                    {{ render_field(form.instance_key, class='form-control') }}
+
+                    {{ render_field(form.branch, class='form-control') }}
+
+                {% endblock %}
+                {{ render_field(form.git_origin, class='form-control') }}
+                {{ render_field(form.identity, class='form-control') }}
+                {{ render_field(form.owner_group, class='form-control') }}
+                {{ render_field(form.new_group, class='form-control') }}
+                {{ render_field(form.parent_group, class='form-control') }}
+
+            </dl>
+            {% block button %}
+                <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
+                    <input type="button" onclick="location.href='/courses/'" class="btn-lg btn-outline-secondary "
+                           value=Cancel>
+                </p>
+            {% endblock %}
+        </form>
+        
+    </div>
+    
+
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <form id="GroupForm" name="groupForm" action="/groups/test/" class="form" method="post">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                    {% from "_formhelpers.html" import render_field %}
+                    {{ render_field(group_form.name) }}
+                    {{ render_field(group_form.parent_path) }}
+                    {{ render_field(group_form.permissions) }}
+                            
+                    </div>
+                    <div id="div_target_groups">
+                        {{ render_field(group_form.target_groups) }}
+                        <!-- <strong>{{group_form.target_groups.label}}</strong><br>
+                             {{ group_form.target_groups }} -->
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                      <button type="submit" class="btn btn-secondary" >Submit</button>
+                    </div>
+                </form>
+                </div>
+            </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
 <script src="{{ url_for('static', filename='helpers.js') }}"></script>
 <script>
 $(function(){  // DOM ready shorthand
@@ -34,99 +102,108 @@ $(function() {
     });
     });  
 
+$(function() {
+  var parent_group = $("#parent_group");
+  
+  // Setup an event listener for when the state of the 
+  // checkbox changes.
+  parent_group.change(function() {
+    //   console.log(parent_group.val())
 
-    $(function() {
-        var form = $('#GroupForm');
-        
-        $(form).submit(function(event) {
-            var formData = $('#GroupForm').serialize();
-             $.ajax({
-                // url:  "{{ url_for('groups.create_group') }}",
-                url:  form.attr('action'),
-                type: 'POST',
-                // dataType: 'json', // returning data as json
-                data:  formData,
-                // data: {'name':$('#name').val(),'parent_path':$('#parent_path').val(),'permissions':$('#permissions').val()},  //form values
-                success:function(data){
-                console.log('success');
-                $('#test').text($('#GroupForm').serialize()); 
-                // $('#exampleModal').modal('hide');
-                // location.reload();
-                // $('#owner_group').value=;
-                //  window.location.href = "{{ url_for('courses.add_course') }}";
-                },
-                error: function(){
-                    console.log('error')
-                }
-            });
-        
-    // Stop the browser from submitting the form.
-    event.preventDefault();
+    if (parent_group.val()!=0) {
+      
+      console.log(parent_group.val());
+      window.location.href = "{{url_for('groups.create_group') }}";
+    // window.open("{{url_for('groups.create_group') }}")
+          
+      // })
+    }
+  });
+  });     
+    
 
-    // TODO
+$(function() {
+    var form = $('#GroupForm');
+    $(form).submit(function(event) {
+        var formData = $('#GroupForm').serialize();
+            $.ajax({
+            // url:  "{{ url_for('groups.create_group') }}",
+            url:  form.attr('action'),
+            type: 'POST',
+            // dataType: 'json', // returning data as json
+            data:  formData,
+            // data: {'name':$('#name').val(),'parent_path':$('#parent_path').val(),'permissions':$('#permissions').val()},  //form values
+            success:function(data){
+            // document.getElementById('owner_group').val() = data.id;
+            // $('#owner_group').value = "2";
+            select = document.getElementById('owner_group');
+            var opt = document.createElement('option');
+            opt.value = data.group_id;
+            opt.innerHTML = data.group_id;
+            select.add(opt);
+            console.log('success');
+            alert(data.group_id)
+            $('#exampleModal').modal('hide');
+            $('#owner_group').val(data.group_id);
+            location.reload();
+            // $('#test').text($('#GroupForm').serialize()); 
+            
+           
+            },
+            // error: function(){
+            //     alert('Error');
+            // }
+        });
+    
+// Stop the browser from submitting the form.
+event.preventDefault();
+
+// TODO
 });
-       
-    }); 
+    
+}); 
  
 </script>
 
-{% endblock %}
-{% block body %}
-    <div class="container text-center">
-        {% from "_formhelpers.html" import render_field %}
-        <form method=post>
-            <dl class="form-group">
-                {{ render_field(form.key, class='form-control') }}
-                {{ render_field(form.name,class='form-control' ) }}
-
-                {% block additional %}
-                    {% from "_formhelpers.html" import render_field %}
-                    {{ render_field(form.instance_key, class='form-control') }}
-
-                    {{ render_field(form.branch, class='form-control') }}
-
-                {% endblock %}
-                {{ render_field(form.git_origin, class='form-control') }}
-                {{ render_field(form.identity, class='form-control') }}
-                {{ render_field(form.owner_group, class='form-control') }}
-                {{ render_field(form.new_group, class='form-control') }}
-                {{ render_field(form.parent_group, class='form-control') }}
-
-            </dl>
-            {% block button %}
-                <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
-                    <input type="button" onclick="location.href='/courses/'" class="btn-lg btn-outline-secondary "
-                           value=Cancel>
-                </p>
-            {% endblock %}
-        </form>
-        <div id='test'></div>
-    </div>
+<script>
+    $(function() {
+    // Get the form fields and hidden div
+    var checkbox = $("#permissions-groups");
+    var hidden = $("#div_target_groups");
+    console.log(checkbox)
     
+    // Hide the fields.
+    // Use JS to do this in case the user doesn't have JS 
+    // enabled.
+    if (!checkbox.is(':checked'))
+    {
+    hidden.hide();
+    }
+    // Setup an event listener for when the state of the 
+    // checkbox changes.
+    checkbox.change(function() {
+      // Check to see if the checkbox is checked.
+      // If it is, show the fields and populate the input.
+      // If not, hide the fields.
+      if (checkbox.is(':checked')) {
+        // Show the hidden fields.
+        hidden.show();
+      } else {
+        // Make sure that the hidden fields are indeed
+        // hidden.
+        hidden.hide();
+        
+        // You may also want to clear the value of the 
+        // hidden fields here. Just in case somebody 
+        // shows the fields, enters data to them and then 
+        // unticks the checkbox.
+        //
+        // This would do the job:
+        //
+        // $("#hidden_field").val("");
+      }
+    });
+    });  
+    </script>
 
-    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <form id="GroupForm" name="groupForm" action="/groups/create/" class="form" method="post">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                      <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    </div>
-                    <div class="modal-body">
-                    {% from "_formhelpers.html" import render_field %}
-                    {{ render_field(group_form.name) }}
-                    {{ render_field(group_form.parent_path) }}
-                    {{ render_field(group_form.permissions) }}
-                            
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                      <button type="submit" class="btn btn-secondary" >Submit</button>
-                    </div>
-                </form>
-                </div>
-            </div>
-        </div>
 {% endblock %}
