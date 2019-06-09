@@ -1,4 +1,18 @@
 from wtforms import Form, StringField, validators, TextAreaField, BooleanField,SelectField
+from wtforms.widgets import html_params
+
+def select_option(field, select_class = "form-control", **kwargs):
+    field_id = kwargs.pop('id', field.id)
+    html = []
+    html.append('<select %s>' % html_params(id=field_id, class_=select_class))
+    for value, label, checked in field.iter_choices():
+        choice_id = u'%s-%s' % (label, value)
+        options = dict(value=value, id=choice_id)
+        html.append(u'<option %s> ' % html_params(**options))
+        html.append(label)
+        html.append(u'</option>')
+    html.append(u'</select>')            
+    return u''.join(html)
 
 
 class CourseForm(Form):
@@ -9,7 +23,7 @@ class CourseForm(Form):
     change_all = BooleanField('Change git origin to all instance?')
     branch = StringField('First Instance Branch', [validators.InputRequired(),validators.Length(max=50)])
     identity = SelectField('Identity',coerce=int)
-    owner_group = SelectField('Owner Group',coerce=int)
+    owner_group = SelectField('Owner Group',coerce=int,widget=select_option)
     new_group = BooleanField('Create a new group for the course',default=False)
     parent_group =  SelectField('Parent Group',coerce=int)
 

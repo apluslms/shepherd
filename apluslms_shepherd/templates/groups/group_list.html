@@ -69,19 +69,12 @@ $('.check').change(function() {
             {% endif %} 
             <input class='check' type="checkbox" />
             {{group.name}}</span>
-            <!-- <br> -->
-            <!-- <form method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}"> -->
-                <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/{{ group.id }}/members/'">Members
-                </button>
-                <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
-                </button>
-                <!-- <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
-                </button>
-                <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>  -->
-            <!-- </form> -->
+            <button type="button" class="btn btn-outline-primary"
+            onclick="location.href='/groups/{{ group.id }}/members/'">Members
+            </button>
+            <button type="button" class="btn btn-outline-primary"
+            onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
+            </button>
             </li>
             {%- if group.children -%}
                 {{ loop(group.children) }}
