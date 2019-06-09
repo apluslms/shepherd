@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import inspect
 from apluslms_shepherd.courses.forms import CourseForm, InstanceForm
 from apluslms_shepherd.courses.models import CourseRepository, CourseInstance, db
-from apluslms_shepherd.groups.models import Group,PermType,CreateCoursePerm
+from apluslms_shepherd.groups.models import Group,PermType,CreateCoursePerm,PERMISSION_LIST
 from apluslms_shepherd.groups.utils import course_perm,group_slugify
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.views import list_users,add_member
@@ -49,6 +49,7 @@ def add_course():
 
     form = CourseForm(request.form)
     group_form = GroupForm(request.form)
+    group_form.permissions.choices = [v for v in PERMISSION_LIST if v != ('courses','create courses')]  
     form.identity.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in identity_groups]
     form.owner_group.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in owner_groups]
     form.parent_group.choices = [(0,'---')] + [(g.id, group_slugify(g.name,g.parent_id)) for g in parent_groups]
