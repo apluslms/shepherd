@@ -5,9 +5,10 @@ from flask_login import login_required, current_user
 
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.forms import GroupForm
-from apluslms_shepherd.groups.models import GroupPermission, PermType,CreateGroupPerm,CreateCoursePerm
+from apluslms_shepherd.groups.models import GroupPermission, PermType,CreateGroupPerm,CreateCoursePerm,PERMISSION_LIST
 from apluslms_shepherd.groups.utils import *
 import json
+from flask import jsonify
 logging.basicConfig(level=logging.DEBUG)
 
 groups_bp = Blueprint('groups', __name__, url_prefix='/groups')
@@ -404,3 +405,81 @@ def delete_member(group_id):
         return redirect(url_for('.list_members', group_id=group.id))
 
     return redirect(request.referrer)
+
+
+@groups_bp.route('/test/', methods=['POST','GET'])
+def test():
+    form = GroupForm(request.form)
+    
+    parents_of_subgroups = db.session.query(Group).filter(
+                            Group.permissions.any(type=PermType.groups)).all()
+    form.target_groups.choices += ([(g.id, group_slugify(g.name,g.parent_id)) for g in parents_of_subgroups])
+
+    if request.method == 'POST' and form.validate():
+        group_name = slugify(form.name.data, separator='_')
+        parent_id = query_parent_id(form.parent_path.data)
+
+        if parent_id == -1:
+            flash('No such a parent path ' + form.parent_path.data)
+            raise Exception('parent path error!')
+            
+
+        parent = Group.query.filter_by(id=parent_id).one_or_none()
+        if parent and current_user not in parent.members:
+            flash('You are not the member of this group, could not create subgroups')
+            raise Exception('permission Error!')
+
+        q = Group.query.filter_by(name=group_name, parent_id=parent_id).one_or_none()
+        if q is not None:
+            flash('The group ' + group_slugify(group_name, parent_id) + ' already exists.')
+            raise Exception('group Error!')
+
+        new_group = Group(name=group_name, parent_id=parent_id)
+        perm_selected = form.permissions.data
+
+        for name, perm_type in PermType.__members__.items():
+            if name in perm_selected:
+                perm = db.session.query(GroupPermission).filter(
+                    GroupPermission.type == perm_type).first()
+                if not perm:
+                    perm = GroupPermission(type=perm_type)
+                    db.session.add(perm)
+                    db.session.commit()
+                new_group.permissions.append(perm)
+
+        course_perm,group_perms = None, None
+        if new_group.parent_id is None or 'self_admin' in perm_selected:
+            new_group.self_admin = True
+        else:
+            new_group.self_admin = False
+        
+        if 'groups' in perm_selected:
+            parent_group_ids = form.target_groups.data
+            if len(parent_group_ids) == 0:
+                flash('You must choose a parent group')
+                raise Exception(' no parent Error!')
+            group_perms = []
+            for g_id in parent_group_ids:
+                if g_id==0:
+                    group_perm = CreateGroupPerm(group=new_group,target_group=new_group)
+                else:
+                    target_group = db.session.query(Group).filter_by(id=g_id).one_or_none()
+                    group_perm = CreateGroupPerm(group=new_group,target_group=target_group)
+                    # group_perm = CreateGroupPerm(group=new_group,target_group_id=g_id)
+                group_perms.append(group_perm)
+        try:
+            new_group.members.append(current_user)
+            db.session.add(new_group)
+            if course_perm: 
+                db.session.add(course_perm)
+            if group_perms:
+                for group_perm in group_perms:
+                    db.session.add(group_perm)
+            db.session.commit()
+            flash('The new group ' + group_slugify(new_group.name, parent_id) + ' is added.')
+            flash('You are set as the admin of the new group')
+        except:
+            flash('Could not create the group')
+            raise Exception('Could not create the group')
+
+    return jsonify(group_id=new_group.id)
