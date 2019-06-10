@@ -88,6 +88,23 @@ checkbox.change(function() {
   });
   });  
   </script>
+<script>
+$(function(){
+var urlParams = new URLSearchParams(window.location.search);
+var from_course = urlParams.get('from_course');
+var success = urlParams.get('sucess');
+var group_id = urlParams.get('group_id');
+console.log(from_course)
+console.log(success)
+console.log(group_id)
+if ((from_course == 'true') && (success == 'true'))
+{
+  console.log('test')
+  window.location.href ='/courses/create/'+'?owner_id='+group_id
+} 
+});
+</script>
+ 
 {% endblock %}
 
 {% block title %}
@@ -97,7 +114,7 @@ checkbox.change(function() {
 {% block body %}
     <div class="container text-center">
         {% from "_formhelpers.html" import render_field %}
-        <form method=post >
+        <form id='group_from' method=post >
             <dl class="form-group">
                 <dt>{{form.name.label}} </dt>
                 <dd>{{ form.name }}</dd>
