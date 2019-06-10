@@ -6,7 +6,6 @@
 <link rel="shortcut icon" href="">
 {% endblock %}
 {% block body %}
-<div id='test'></div>
     <div class="container text-center">
         {% from "_formhelpers.html" import render_field %}
         <form method=post>
@@ -24,7 +23,9 @@
                 {{ render_field(form.git_origin, class='form-control') }}
                 {{ render_field(form.identity, class='form-control') }}
                 {{ render_field(form.owner_group, class='form-control') }}
-                {{ render_field(form.new_group, class='form-control') }}
+                <!-- {{ render_field(form.new_group, class='form-control') }} -->
+                <label for="new_group">Create a new group for the course</label>
+                {{ form.new_group }}
                 {{ render_field(form.parent_group, class='form-control') }}
 
             </dl>
@@ -113,14 +114,30 @@ $(function() {
     if (parent_group.val()!=0) {
       
       console.log(parent_group.val());
-      window.location.href = "{{url_for('groups.create_group') }}";
+      group_id = parent_group.val()
+      url = '/groups/'+group_id+'/create/'+'?from_course=true'
+      window.location.href = url;
     // window.open("{{url_for('groups.create_group') }}")
           
       // })
     }
   });
   });     
-    
+
+  $(function() {
+var urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('owner_id')===true)
+{
+var group_id = urlParams.get('owner_id');
+console.log(group_id);
+select = document.getElementById('owner_group');
+            var opt = document.createElement('option');
+            opt.value = group_id;
+            opt.innerHTML = group_id;
+            select.add(opt);
+$('#owner_group').val(group_id);
+}
+});     
 
 $(function() {
     var form = $('#GroupForm');
