@@ -40,8 +40,9 @@ def list_course():
 
 @course_bp.route('create/', methods=['GET', 'POST'])
 @login_required
-@course_perm
+# @course_perm
 def add_course():
+    flash(request.url)
     identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
                                 Group.permissions.any(type=PermType.courses)).all()
     owner_groups  = Group.query.filter(Group.members.any(id=current_user.id)).all()

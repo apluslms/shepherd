@@ -141,6 +141,7 @@ def create_group():
 @role_permission.require(http_exception=403)
 @group_create_perm
 def create_subgroup(group_id):
+    flash(request.url)
     parent = Group.query.filter_by(id=group_id).one_or_none()
     form = GroupForm(request.form)
     parents_of_subgroups = db.session.query(Group).filter(
@@ -203,9 +204,11 @@ def create_subgroup(group_id):
             db.session.commit()
             flash('The new group ' + group_slugify(new_group.name, parent.id) + ' is added.')
             flash('You are set as the admin of the new group')
+            if 'from_course' in request.url:
+                return redirect(url_for('.create_subgroup',group_id=group_id)+'?from_course=true'+'&sucess=true'+'&group_id='+str(new_group.id))
+
         except:
             flash('Could not create the group')
-            return redirect(url_for('.create_group'))
 
     return render_template('groups/group_create.html', form=form, parent=parent)
     
@@ -408,6 +411,7 @@ def delete_member(group_id):
 
 
 @groups_bp.route('/test/', methods=['POST','GET'])
+@login_required
 def test():
     form = GroupForm(request.form)
     
