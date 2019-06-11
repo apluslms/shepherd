@@ -8,7 +8,7 @@
 {% block body %}
     <div class="container text-center">
         {% from "_formhelpers.html" import render_field %}
-        <form method=post>
+        <form action="" method=post>
             <dl class="form-group">
                 {{ render_field(form.key, class='form-control') }}
                 {{ render_field(form.name,class='form-control' ) }}
@@ -23,11 +23,13 @@
                 {{ render_field(form.git_origin, class='form-control') }}
                 {{ render_field(form.identity, class='form-control') }}
                 {{ render_field(form.owner_group, class='form-control') }}
-                <!-- {{ render_field(form.new_group, class='form-control') }} -->
+                <div id='div_new_group'>
                 <label for="new_group">Create a new group for the course</label>
                 {{ form.new_group }}
+                </div>
+                <div id='div_parent_group'>
                 {{ render_field(form.parent_group, class='form-control') }}
-
+                </div>
             </dl>
             {% block button %}
                 <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
@@ -45,7 +47,7 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                      <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                      <h5 class="modal-title" id="exampleModalLabel">New group</h5>
                       <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                       </button>
@@ -53,14 +55,8 @@
                     <div class="modal-body">
                     {% from "_formhelpers.html" import render_field %}
                     {{ render_field(group_form.name) }}
-                    {{ render_field(group_form.parent_path) }}
                     {{ render_field(group_form.permissions) }}
                             
-                    </div>
-                    <div id="div_target_groups">
-                        {{ render_field(group_form.target_groups) }}
-                        <!-- <strong>{{group_form.target_groups.label}}</strong><br>
-                             {{ group_form.target_groups }} -->
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -84,45 +80,53 @@ $("#permissions-self_admin").prop('checked', true);
 });
 
 $(function() {
+    var div_parent_group = $("#div_parent_group");
     var checkbox = $("#new_group");
-    
+    var parent_group = $("#parent_group");
+    div_parent_group.hide();
+    // if (checkbox.is(':checked')){
+    //     div_parent_group.show();
+    // }
+    // else
+    // {
+    //     div_parent_group.hide();
+    // }
     // Setup an event listener for when the state of the 
     // checkbox changes.
     checkbox.change(function() {
     if (checkbox.is(':checked')) {
-        // var parent_group = $("#parent_group");
+        div_parent_group.show();
+        parent_group.change(function(){
+            if (parent_group.val()!=0) {
             $('#exampleModal').modal();
-            
-    }
+            }})}
     else {
-        // Make sure that the hidden fields are indeed
-        // hidden.
-        console.log(checkbox.val());
+        div_parent_group.hide();
         $("#exampleModal").modal('hide');
     }
     });
     });  
 
-$(function() {
-  var parent_group = $("#parent_group");
+// $(function() {
+//   var parent_group = $("#parent_group");
   
-  // Setup an event listener for when the state of the 
-  // checkbox changes.
-  parent_group.change(function() {
-    //   console.log(parent_group.val())
+//   // Setup an event listener for when the state of the 
+//   // checkbox changes.
+//   parent_group.change(function() {
+//     //   console.log(parent_group.val())
 
-    if (parent_group.val()!=0) {
+//     if (parent_group.val()!=0) {
       
-      console.log(parent_group.val());
-      group_id = parent_group.val()
-      url = '/groups/'+group_id+'/create/'+'?from_course=true'
-      window.location.href = url;
-    // window.open("{{url_for('groups.create_group') }}")
+//       console.log(parent_group.val());
+//       group_id = parent_group.val();
+//       url = '/groups/'+group_id+'/create/'+'?from_course=true'
+//       window.location.href = url;
+//     // window.open("{{url_for('groups.create_group') }}")
           
-      // })
-    }
-  });
-  });     
+//       // })
+//     }
+//   });
+//   });     
 
   $(function() {
 var urlParams = new URLSearchParams(window.location.search);
@@ -141,51 +145,39 @@ $('#owner_group').val(group_id);
 
 $(function() {
     var form = $('#GroupForm');
+    var parent_group = $("#parent_group");
     $(form).submit(function(event) {
         var formData = $('#GroupForm').serialize();
             $.ajax({
-            // url:  "{{ url_for('groups.create_group') }}",
-            url:  form.attr('action'),
+            url:  form.attr('action')+'?group_id='+parent_group.val(),
             type: 'POST',
-            // dataType: 'json', // returning data as json
             data:  formData,
-            // data: {'name':$('#name').val(),'parent_path':$('#parent_path').val(),'permissions':$('#permissions').val()},  //form values
             success:function(data){
-            // document.getElementById('owner_group').val() = data.id;
-            // $('#owner_group').value = "2";
             select = document.getElementById('owner_group');
             var opt = document.createElement('option');
             opt.value = data.group_id;
-            opt.innerHTML = data.group_id;
+            opt.innerHTML = data.group_slug;
             select.add(opt);
             console.log('success');
-            alert(data.group_id)
             $('#exampleModal').modal('hide');
             $('#owner_group').val(data.group_id);
-            location.reload();
-            // $('#test').text($('#GroupForm').serialize()); 
-            
-           
+            $('#div_new_group').hide();
+            $('#div_parent_group').hide();
             },
-            // error: function(){
-            //     alert('Error');
-            // }
+            error: function(){
+                alert('Could not create this group');
+            }
         });
-    
 // Stop the browser from submitting the form.
 event.preventDefault();
-
-// TODO
-});
-    
+});   
 }); 
- 
 </script>
 
 <script>
     $(function() {
     // Get the form fields and hidden div
-    var checkbox = $("#permissions-groups");
+    var checkbox = $("#permissions-subgroups");
     var hidden = $("#div_target_groups");
     console.log(checkbox)
     
@@ -203,21 +195,9 @@ event.preventDefault();
       // If it is, show the fields and populate the input.
       // If not, hide the fields.
       if (checkbox.is(':checked')) {
-        // Show the hidden fields.
         hidden.show();
       } else {
-        // Make sure that the hidden fields are indeed
-        // hidden.
         hidden.hide();
-        
-        // You may also want to clear the value of the 
-        // hidden fields here. Just in case somebody 
-        // shows the fields, enters data to them and then 
-        // unticks the checkbox.
-        //
-        // This would do the job:
-        //
-        // $("#hidden_field").val("");
       }
     });
     });  
