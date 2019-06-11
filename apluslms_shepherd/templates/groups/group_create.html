@@ -53,7 +53,7 @@ checkbox.change(function() {
 <script>
   $(function() {
   // Get the form fields and hidden div
-  var checkbox = $("#permissions-groups");
+  var checkbox = $("#permissions-subgroups");
   var hidden = $("#div_target_groups");
   console.log(checkbox)
   
@@ -116,20 +116,16 @@ if ((from_course == 'true') && (success == 'true'))
         {% from "_formhelpers.html" import render_field %}
         <form id='group_from' method=post >
             <dl class="form-group">
-                <dt>{{form.name.label}} </dt>
-                <dd>{{ form.name }}</dd>
+                {{ render_field(form.name, class='form-control') }}
                 {% if not parent %}
-                <dt>{{form.parent_path.label}} </dt>
-                <dd>{{ form.parent_path }}</dd>
+                {{ render_field(form.parent_path, class='form-control') }}
                 {% endif %}
                 {{ render_field(form.permissions) }}
                 <div id="div_course_prefix">
-                   <strong>{{form.course_prefix.label}}</strong><br>
-                        {{ form.course_prefix }}
+                    {{ render_field(form.course_prefix, class='form-control') }}
                 </div>
                 <div id="div_target_groups">
-                    <strong>{{form.target_groups.label}}</strong><br>
-                         {{ form.target_groups }}
+                    {{ render_field(form.target_groups, class='form-control') }}
                 </div>
             </dl>
             {% block button %}
