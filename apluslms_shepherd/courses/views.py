@@ -4,28 +4,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import inspect
 from apluslms_shepherd.courses.forms import CourseForm, InstanceForm
 from apluslms_shepherd.courses.models import CourseRepository, CourseInstance, db
-from apluslms_shepherd.groups.models import Group,PermType,CreateCoursePerm,PERMISSION_LIST
-from apluslms_shepherd.groups.utils import course_perm,group_slugify
+from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, CreateCoursePerm
+from apluslms_shepherd.groups.utils import group_slugify,PERMISSION_LIST, course_create_perm
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.views import list_users,add_member
 from apluslms_shepherd.groups.views import create_group
 from apluslms_shepherd.groups.forms import GroupForm
-import jsonify
-
 
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
-
-
-
-def getattr_from_column_name(instance, name, default=Ellipsis):
-    for attr, column in inspect(instance.__class__).c.items():
-        if column.name == name:
-            return getattr(instance, attr)
-
-    if default is Ellipsis:
-        raise KeyError
-    else:
-        return default
 
 
 @course_bp.route('', methods=['GET'])
@@ -40,25 +26,33 @@ def list_course():
 
 @course_bp.route('create/', methods=['GET', 'POST'])
 @login_required
-# @course_perm
+@course_create_perm
 def add_course():
-    flash(request.url)
+
     identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
                                 Group.permissions.any(type=PermType.courses)).all()
     owner_groups  = Group.query.filter(Group.members.any(id=current_user.id)).all()
-    parent_groups = Group.query.filter(Group.permissions.any(type=PermType.groups)).all()
+
+    identity_group_IDs = [g.id for g in identity_groups]
+    create_group_perm = db.session.query(CreateGroupPerm).filter(CreateCoursePerm.group_id.in_
+                                                    (identity_group_IDs)).all()
+                                                
+    parent_groups = []                                                
+    for perm in create_group_perm:
+        target_group = perm.target_group
+        if target_group not in parent_groups:
+            parent_groups.append(target_group)
 
     form = CourseForm(request.form)
-    group_form = GroupForm(request.form)
-    group_form.permissions.choices = [v for v in PERMISSION_LIST if v != ('courses','create courses')]  
     form.identity.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in identity_groups]
     form.owner_group.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in owner_groups]
     form.parent_group.choices = [(0,'---')] + [(g.id, group_slugify(g.name,g.parent_id)) for g in parent_groups]
     form.git_origin.label = "First Instance Git Origin"
-    
+
+    group_form = GroupForm(request.form)
+    group_form.permissions.choices = [v for v in PERMISSION_LIST if v != ('courses','create courses')]  
+
     if request.method == 'POST' and form.validate():
-        flash(form.data)
-        # if not form.new_group:
         course_perm = CreateCoursePerm.query.filter_by(group_id=form.identity.data).one_or_none()
         if not course_perm.pattern_match(form.key.data.upper()):
             flash('The course key does not match the naming rule ',str(course_perm.pattern))
