@@ -42,12 +42,12 @@ $('.check').change(function() {
 {% block body %}
 <h1 style = "font-size:50px;">
         <strong>{{title}}</strong>
-        {%if group %}
+        {%if node %}
             <button type="button" class="btn btn-outline-primary"
             onclick="goBack()">Return 
             </button>
             <button type="button" class="btn btn-outline-primary"
-            onclick="location.href='/groups/{{ group.id }}/create/'">Create subgroup 
+            onclick="location.href='/groups/{{ node.id }}/create/'">Create subgroup 
             </button>
         {% else %}
         <button type="button" class="btn btn-outline-primary"

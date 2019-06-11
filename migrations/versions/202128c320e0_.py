@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: b5647de17da5
+Revision ID: 202128c320e0
 Revises: 
-Create Date: 2019-06-06 15:40:30.958345
+Create Date: 2019-06-11 10:04:30.348375
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'b5647de17da5'
+revision = '202128c320e0'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -26,12 +26,12 @@ def upgrade():
     )
     op.create_table('group',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('name', sa.String(length=50), nullable=False),
     sa.Column('self_admin', sa.Boolean(), nullable=True),
+    sa.Column('parent_id', sa.Integer(), nullable=True),
     sa.Column('lft', sa.Integer(), nullable=False),
     sa.Column('rgt', sa.Integer(), nullable=False),
     sa.Column('level', sa.Integer(), nullable=False),
-    sa.Column('parent_id', sa.Integer(), nullable=True),
     sa.Column('tree_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['parent_id'], ['group.id'], name=op.f('fk_group_parent_id_group'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_group'))
@@ -44,7 +44,7 @@ def upgrade():
 
     op.create_table('group_permission',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('type', sa.Enum('self_admin', 'groups', 'courses', name='permtype'), nullable=True),
+    sa.Column('type', sa.Enum('self_admin', 'subgroups', 'courses', name='permtype'), nullable=True),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_group_permission'))
     )
     op.create_table('user',
