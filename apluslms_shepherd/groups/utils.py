@@ -103,7 +103,9 @@ def subgroup_create_perm(func):
     Check whether the current user can create a subgroup under a group.
     Permission: 1. the user is a member of the group with the permission to self-admin
                 OR
-                2. the group is the target group where subgroups can be created under.
+                2.the user is a member of the ancestors of the group
+                OR
+                3. the group is the target group where subgroups can be created under.
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -112,18 +114,27 @@ def subgroup_create_perm(func):
         if "group_id" in request.view_args:
             group_id = request.view_args['group_id'] 
 
+            # Check condition 1
             permission = SelfAdminPermission(group_id=group_id)
-            if permission.can():  # the group is self-admin and the current user is its member
-            # if current_user in group.members:
+            if permission.can():  
                 allowed = True
             else:
-                # Check whether the group is a target_group permitted to create subgroups
-                groups = db.session.query(CreateGroupPerm).filter_by(target_group_id=group_id).all()
-                if groups:
-                    for g in groups: 
-                        if current_user in g.members:
+                # Check condition 2
+                group =  db.session.query(Group).filter_by(id=group_id).one_or_none()
+                ancestors = group.path_to_root().all()
+                for ancestor in ancestors[1:]:
+                    if current_user in ancestor.members:
                             allowed = True
                             break
+
+                if not allowed: 
+                # Check condition 3
+                    groups = db.session.query(CreateGroupPerm).filter_by(target_group_id=group_id).all()
+                    if groups:
+                        for g in groups: 
+                            if current_user in g.members:
+                                allowed = True
+                                break
 
         if not allowed:
             flash('Permission denied')
@@ -154,18 +165,21 @@ def group_manage_perm(func):
             if permission.can():  # the group is self-admin and the current user is its member
             # if current_user in group.members:
                 allowed = True
+                kwargs['group'] = group
             else:
                 ancestors = group.path_to_root().all()
                 # Check whether the current user is in any of its ancestor groups
-                for ancestor in ancestors:
+                for ancestor in ancestors[1:]:
                     if current_user in ancestor.members:
                         allowed = True
+                        kwargs['group'] = group
                         break
 
         if not allowed:
             flash('Permission denied')
             return redirect(url_for('groups.list_my_groups'))
 
+        
         return func(*args, **kwargs)
 
     return wrapper
