@@ -111,7 +111,7 @@ def subgroup_create_perm(func):
 
         if "group_id" in request.view_args:
             group_id = request.view_args['group_id'] 
-            
+
             permission = SelfAdminPermission(group_id=group_id)
             if permission.can():  # the group is self-admin and the current user is its member
             # if current_user in group.members:
@@ -158,7 +158,7 @@ def group_manage_perm(func):
                 ancestors = group.path_to_root().all()
                 # Check whether the current user is in any of its ancestor groups
                 for ancestor in ancestors:
-                    if current_user in ancestor:
+                    if current_user in ancestor.members:
                         allowed = True
                         break
 
