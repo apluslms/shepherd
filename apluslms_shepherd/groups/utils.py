@@ -3,6 +3,7 @@ from flask_login import current_user
 from flask_principal import Permission, RoleNeed
 
 from apluslms_shepherd.extensions import db
+from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, CreateCoursePerm
 
 from collections import namedtuple
@@ -10,7 +11,134 @@ from functools import partial
 from functools import wraps
 from slugify import slugify
 
+
 #-------------------------------------------------------------------------------------------------#
+# Permission objects
+
+# Permission types (dict)
+PERM_TYPE = {'self_admin':'self-administrator',
+            'subgroups': 'create subgroups','courses': 'create courses'}
+# The list of permission tuples (for forms)            
+PERMISSION_LIST = list(perm_tuple for perm_tuple in PERM_TYPE.items())
+
+# Create the permission with RoleNeeds.
+role_permission = Permission(RoleNeed('Instructor'), RoleNeed('Mentor'),
+                             RoleNeed('Teacher'), RoleNeed('TA'), RoleNeed('TeachingAssistant'))
+
+#-------------------------------------------------------------------------------------------------#
+# Decorators for permission checking
+
+def subgroup_create_perm(func):
+    """
+    Check whether the current user can create a subgroup under a group.
+    Permission: 1. the user is a member of the group with the permission to self-admin
+                OR
+                2.the user is a member of the ancestors of the group
+                OR
+                3. the group is the target group where subgroups can be created under.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        allowed = False # Init allowed flag
+
+        if "group_id" in request.view_args:
+            group_id = request.view_args['group_id'] 
+            group =  db.session.query(Group).filter_by(id=group_id).one_or_none()
+            # Check condition 1
+            if group.self_admin and current_user in group.members:
+                allowed = True
+                kwargs['group'] = group
+            else:
+                # Check condition 2
+                ancestors = group.path_to_root().all()
+                for ancestor in ancestors[1:]:
+                    if current_user in ancestor.members:
+                            allowed = True
+                            kwargs['group'] = group
+                            break
+
+                if not allowed: 
+                # Check condition 3
+                    perms = db.session.query(CreateGroupPerm).\
+                                        join(CreateGroupPerm.group).\
+                                        filter(CreateGroupPerm.target_group_id==group_id).\
+                                        filter(Group.members.any(User.id==current_user.id)).all()
+                    if perms:
+                            allowed = True
+                            kwargs['group'] = group
+                                
+        if not allowed:
+            flash('Permission denied')
+            return redirect(url_for('groups.list_my_groups'))
+        
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def group_manage_perm(func):
+    """
+    Check whether the current user can manage a group (edit, delete, manage membership)
+    Permission: 1. the user is a member of the group with the permission to self-admin
+                OR
+                2. the user is a member of one of its ancestor groups 
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        allowed = False
+
+        if "group_id" in request.view_args:
+            group_id = request.view_args['group_id']
+            group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+
+            # Check condtion 1 
+            if group.self_admin and current_user in group.members:
+                allowed = True
+                kwargs['group'] = group
+            else: # Check condition 2
+                ancestors = group.path_to_root().all()
+                for ancestor in ancestors[1:]:
+                    if current_user in ancestor.members:
+                        allowed = True
+                        kwargs['group'] = group
+                        break
+
+        if not allowed:
+            flash('Permission denied')
+            return redirect(url_for('groups.list_my_groups'))
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def course_create_perm(func):
+    """
+    Check whether the current user can create a course
+    Permission: the user is a member of a group with the permission to create courses
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        group_IDs = [g.id for g in current_user.groups] 
+        # Check whether any of the groups that current user is in has the permission
+        allowed = db.session.query(CreateCoursePerm).filter(CreateCoursePerm.group_id.in_(group_IDs)).all()
+        if not allowed:
+            flash('Permission denied')
+            return redirect('/')
+
+        return func(*args, **kwargs)
+
+    return wrapper
+#-------------------------------------------------------------------------------------------------#
+# Function for permission checking
+
+def perm_check():
+    pass
+
+#-------------------------------------------------------------------------------------------------#
+
 def group_slugify(group_name, parent_id, separator='.'):
     """
     Generate the slug of a group.
@@ -57,150 +185,4 @@ def query_end_group_id(group_path):
 
     return end_group_id
 
-#-------------------------------------------------------------------------------------------------#
-
-# Permission types (dict)
-PERM_TYPE = {'self_admin':'self-administrator',
-            'subgroups': 'create subgroups','courses': 'create courses'}
-# The list of permission tuples (for forms)            
-PERMISSION_LIST = list(perm_tuple for perm_tuple in PERM_TYPE.items())
-
-# Create the permission with RoleNeeds.
-role_permission = Permission(RoleNeed('Instructor'), RoleNeed('Mentor'),
-                             RoleNeed('Teacher'), RoleNeed('TA'), RoleNeed('TeachingAssistant'))
-
-# Create Need and Permission objects
-GroupNeed = namedtuple('GroupNeed', ['action', 'group_id'])
-CourseNeed = namedtuple('CourseNeed', ['action', 'group_id'])
-
-SelfAdminNeed = partial(GroupNeed, 'self_admin')
-SubgroupCreateNeed = partial(GroupNeed, 'create')
-CourseCreateNeed = partial(CourseNeed, 'create')
-
-
-class SelfAdminPermission(Permission):
-    def __init__(self, group_id):
-        need = SelfAdminNeed(str(group_id))
-        super(SelfAdminPermission, self).__init__(need)
-
-
-class SubgroupCreatePermission(Permission):
-    def __init__(self, group_id):
-        need = SubgroupCreateNeed(str(group_id))
-        super(SubgroupCreatePermission, self).__init__(need)
-
-
-class CourseCreatePermission(Permission):
-    def __init__(self, group_id):
-        need = CourseCreateNeed(str(group_id))
-        super(CourseCreatePermission, self).__init__(need)
-
-#-------------------------------------------------------------------------------------------------#
-# Decorators for permission checking
-
-def subgroup_create_perm(func):
-    """
-    Check whether the current user can create a subgroup under a group.
-    Permission: 1. the user is a member of the group with the permission to self-admin
-                OR
-                2.the user is a member of the ancestors of the group
-                OR
-                3. the group is the target group where subgroups can be created under.
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        allowed = False # Init allowed flag
-
-        if "group_id" in request.view_args:
-            group_id = request.view_args['group_id'] 
-
-            # Check condition 1
-            permission = SelfAdminPermission(group_id=group_id)
-            if permission.can():  
-                allowed = True
-            else:
-                # Check condition 2
-                group =  db.session.query(Group).filter_by(id=group_id).one_or_none()
-                ancestors = group.path_to_root().all()
-                for ancestor in ancestors[1:]:
-                    if current_user in ancestor.members:
-                            allowed = True
-                            break
-
-                if not allowed: 
-                # Check condition 3
-                    groups = db.session.query(CreateGroupPerm).filter_by(target_group_id=group_id).all()
-                    if groups:
-                        for g in groups: 
-                            if current_user in g.members:
-                                allowed = True
-                                break
-
-        if not allowed:
-            flash('Permission denied')
-            return redirect(url_for('groups.list_my_groups'))
-
-        return func(*args, **kwargs)
-
-    return wrapper
-
-
-def group_manage_perm(func):
-    """
-    Check whether the current user can manage a group (edit, delete, manage membership)
-    Permission: 1. the user is a member of the group with the permission to self-admin
-                OR
-                2. the user is a member of one of its ancestor groups 
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-
-        allowed = False
-
-        if "group_id" in request.view_args:
-            group_id = request.view_args['group_id']
-            group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-        
-            permission = SelfAdminPermission(group_id=group_id)
-            if permission.can():  # the group is self-admin and the current user is its member
-            # if current_user in group.members:
-                allowed = True
-                kwargs['group'] = group
-            else:
-                ancestors = group.path_to_root().all()
-                # Check whether the current user is in any of its ancestor groups
-                for ancestor in ancestors[1:]:
-                    if current_user in ancestor.members:
-                        allowed = True
-                        kwargs['group'] = group
-                        break
-
-        if not allowed:
-            flash('Permission denied')
-            return redirect(url_for('groups.list_my_groups'))
-
-        
-        return func(*args, **kwargs)
-
-    return wrapper
-
-
-def course_create_perm(func):
-    """
-    Check whether the current user can create a course
-    Permission: the user is a member of a group with the permission to create courses
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-
-        group_IDs = [g.id for g in current_user.groups] 
-        # Check whether any of the groups that current user is in has the permission
-        allowed = db.session.query(CreateCoursePerm).filter(CreateCoursePerm.group_id.in_(group_IDs)).all()
-        if not allowed:
-            flash('Permission denied')
-            return redirect('/')
-
-        return func(*args, **kwargs)
-
-    return wrapper
 #-------------------------------------------------------------------------------------------------#
