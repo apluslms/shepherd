@@ -1,99 +1,68 @@
 //  This file is for course_create.html
 
 
-// The 'create_group' modal hide and show control
+// The section 'div_parent_group' hide and show control
 $(function() {
-    var button = $("#new_group"); // The button that create a new group
+    var checkbox = $("#new_group"); // The checkbox that create a new group
+    var div_parent_group = $("#div_parent_group");
+    div_parent_group.hide(); // Initially, hiden the parent_group section
+    var parent_group = $("#parent_group");
     
     // Setup an event listener for when the state of the 
     // checkbox changes.
-    button.click(function() {
-        // Set the self_admin permission checkbox is default checked 
-        // in the groupCreateModal
-        $("#permissions-self_admin").prop('checked', true);
-        $('#createGroupModal').modal();  // Show the CreateGroup modal
+    checkbox.change(function() {
+    if (checkbox.is(':checked')) {  
+        div_parent_group.show();  // Show the parent_group drop-down list 
+        parent_group.change(function(){  // If a parent_group is selected
+            if (parent_group.val()!=0) {
+            $('#createGroupModal').modal();  // Show the CreateGroup modal
+            }})}
+    else {  // If the checkbox is unchecked, hide the elements
+        div_parent_group.hide();
+        $("#createGroupModal").modal('hide');
+    }
     });
 });  
-
     
-// Update the possible parent groups of the new course group
-// when the identity changes
+
+// Set the self_admin permission checkbox 
+// in the groupCreateModal is checked
 $(function(){  
-    // Init
-    if ($("#identity").val() != -1){
-        fetch('/groups/perm/'+$("#identity").val()+'/parents/')  // fetch the groups from the database
-        .then(function(response){
-            if (response.status !== 200) {  
-                console.log('Error occurs. Status Code: ' +
-                    response.status);
-                return;}        
-            response.json().then(function(data){
-                // Update the html of the 'parent_group' element
-                $("#parent_group").html('');  // Empty the 'parent_group' option
-                // var optionHTML = '';
-                for ( group of data.parent_options){  // Add options
-                    $('#parent_group').append('<option value= ' + group.id + '>' + group.name + '</option>');
-                }
-            })
-        })
-    };
-    // Onchange event
-    $("#identity").change(function(){
-
-        fetch('/groups/perm/'+$(this).val()+'/parents/')  // fetch the groups from the database
-        .then(function(response){
-            if (response.status !== 200) {  
-                console.log('Error occurs. Status Code: ' +
-                    response.status);
-                return;}        
-            response.json().then(function(data){
-                // Update the html of the 'parent_group' element
-                $("#parent_group").html('');  // Empty the 'parent_group' option
-                // var optionHTML = '';
-                for ( group of data.parent_options){  // Add options
-
-                    // var option = new Option(group.name, group.id); 
-                    // $('#parent_group').append($(option));
-                    $('#parent_group').append('<option value= ' + group.id + '>' + group.name + '</option>');
-                    // optionHTML += '<option value= ' + group.id + '>' + group.name + '</option>';
-                }
-                // $("#parent_group").html(optionHTML);
-            })
-        })
-    });
+    $("#permissions-self_admin").prop('checked', true);
 });
+    
 
 // createGroupForm submission
 $(function() {
-    var form = $('#group_form');
+    var form = $('#GroupForm');
     var parent_group = $("#parent_group");
     // Submit the form
     $(form).submit(function(event) {
-        event.preventDefault();  // Stop the browser from submitting the form
-
-        var formData = form.serialize();
-        console.log(formData);
-        $.ajax({
-        type: 'POST',
-        // Add the group_id query string to the url
-        url: '/groups/course_group/create/'+'?group_id='+parent_group.val(),
-        data:  formData,
-        success:function(data){  // The new group is created successfully
-        // Update 'owner_group' dorpdown list 
-        alert('New group is added successfully');
-        select = document.getElementById('owner_group');
-        var opt = document.createElement('option');
-        opt.value = data.group_id;
-        opt.innerHTML = data.group_slug;
-        select.add(opt);
-        // Set the selected value
-        $('#owner_group').val(data.group_id);
-        // Hide the elements
-        $('#createGroupModal').modal('hide');
-        },
-        error: function(){
-            alert('Could not create the group');
-            }
-        });
+        var formData = $('#GroupForm').serialize();
+            $.ajax({
+            // Add the group_id query string to the url
+            url:  form.attr('action')+'?group_id='+parent_group.val(),  
+            type: 'POST',
+            data:  formData,
+            success:function(data){  // The new group is created successfully
+            // Update 'owner_group' dorpdown list and change its value 
+            select = document.getElementById('owner_group');
+            var opt = document.createElement('option');
+            opt.value = data.group_id;
+            opt.innerHTML = data.group_slug;
+            select.add(opt);
+            $('#owner_group').val(data.group_id);
+            // Hide the elements
+            $('#createGroupModal').modal('hide');
+            $('#div_parent_group').hide();
+            $('#div_new_group').hide();
+            },
+            error: function(){
+                alert('Could not create the group');
+                }
+            });
+        // Stop the browser from submitting the form.
+        event.preventDefault();
     });   
 });      
+    
