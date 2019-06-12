@@ -10,7 +10,6 @@ from apluslms_shepherd.extensions import celery, db, make_celery
 
 from flask_principal import Principal, identity_loaded, RoleNeed, UserNeed
 from apluslms_shepherd.groups.models import PermType    
-from apluslms_shepherd.groups.utils import SelfAdminNeed, SubgroupCreateNeed, CourseCreateNeed
 
 
 __version__ = '0.1'
@@ -60,22 +59,6 @@ def create_app():
             if hasattr(current_user, 'roles'):
                 for role in current_user.roles.split(','):
                     identity.provides.add(RoleNeed(role))
-
-            # The User model has a list of groups the user
-            # has authored, add the needs to the identity
-            if hasattr(current_user, 'groups'):
-                for group in current_user.groups:  # For each group
-
-                    if group.self_admin: # Check whether it is self-admin
-                        identity.provides.add(SelfAdminNeed(group_id=str(group.id)))
-
-                    for perm in group.permissions:  # Check its permissions
-                        # Add the CreateSubgroup need
-                        if perm.type == PermType.subgroups:
-                            identity.provides.add(SubgroupCreateNeed(group_id=str(group.id)))
-                        # Add the CreateCourse need
-                        if perm.type == PermType.courses:
-                            identity.provides.add(CourseCreateNeed(group_id=str(group.id)))
 
             app.logger.info(identity)
 
