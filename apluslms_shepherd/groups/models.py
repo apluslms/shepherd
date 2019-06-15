@@ -3,6 +3,7 @@ from sqlalchemy_mptt.mixins import BaseNestedSets
 import enum
 import re
 
+# db.metadata.clear()
 # Association tables for ManyToMany relationships
 # For Group model and User model
 gm_table = db.Table('gm_table', db.Model.metadata,
@@ -37,8 +38,10 @@ class Group(db.Model, BaseNestedSets, CRUD):
     name = db.Column(db.String(50), index=True, nullable=False)
     members = db.relationship("User", secondary=gm_table,
                               backref=db.backref('groups', lazy='dynamic'))
+    # Permissions include 'create subgroups' and 'create courses'
     permissions = db.relationship("GroupPermission", secondary=gp_table,
                                   backref=db.backref('groups', lazy='dynamic'))
+    # Whether the group can manage itself (edit, delete, membership management)
     self_admin = db.Column(db.Boolean,default=True)
 
     def __init__(self, name, parent_id=None):
@@ -54,44 +57,62 @@ class Group(db.Model, BaseNestedSets, CRUD):
 
 
 class PermType(enum.Enum):
-    self_admin = 1
-    subgroups = 2
-    courses = 3
+    subgroups = 1
+    courses = 2
     
 
 class GroupPermission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     type = db.Column(db.Enum(PermType))
 
+    def __repr__(self):
+        return "<Permission (type={0})>".format(self.type.name)
+  
 
 class CreateGroupPerm(db.Model):
+
+    # id = db.Column(db.Integer, primary_key=True)
+
     group_id = db.Column(db.Integer, db.ForeignKey('group.id'),primary_key=True)
     target_group_id = db.Column(db.Integer, db.ForeignKey('group.id'),primary_key=True)
-    group = db.relationship('Group',foreign_keys=[group_id],backref=db.backref("group_perm", 
-                            uselist=False,cascade='all,delete'))
-    target_group = db.relationship('Group',foreign_keys=[target_group_id],
-                                backref=db.backref("group_perm_as_target", 
-                                uselist=False,cascade='all,delete'))
+    # The group whose members have the permission to create subgroups
+    group = db.relationship('Group',
+                        foreign_keys=[group_id],
+                        # primaryjoin = "CreateGroupPerm.group_id == Group.id",
+                        uselist=False,
+                        backref=db.backref("group_perm", cascade='all,delete'))
+    # The parent group of the subgroups created by the group with group_id
+    target_group = db.relationship('Group',
+                        foreign_keys=[target_group_id],
+                        # primaryjoin = "CreateGroupPerm.target_group_id == Group.id",
+                        uselist=False,
+                        backref=db.backref("group_perm_as_target",  cascade='all,delete'))
+
+    
+    def __repr__(self):
+        return "<Create Group Permission (group={0}, target_group={1})>,".format(self.group,
+                                                                            self.target_group)
 
 
 class CreateCoursePerm(db.Model):
-    id = db.Column(db.Integer,primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey('group.id'))
+    group_id = db.Column(db.Integer, db.ForeignKey('group.id'),primary_key=True)
+    # The group whose members have the permission to create courses
     group = db.relationship("Group", backref=db.backref("course_permission", 
                             uselist=False,cascade='all,delete'))
     regexp = db.Column(db.Boolean,default=True)
+    # The course naming rule (a regular expression)
     pattern = db.Column(db.String(30))
+
+    def __repr__(self):
+        return "<Create Course Permission (group={0}, pattern={1})>,".format(self.group,
+                                                                            self.pattern)
 
     def pattern_match(self,course_name):
         """Check whether the course_name meet the pattern requirement.
         """
         if self.pattern is None:  # No pattern requirement needed
             return True 
-        else:
-            flag = re.match(self.pattern,course_name)
-            if flag:
-                return True
-            else:
-                return False
+
+        return True if re.match(self.pattern,course_name) else False
 
 
