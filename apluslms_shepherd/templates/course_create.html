@@ -20,12 +20,8 @@
                 {{ render_field(form.git_origin, class='form-control') }}
                 {{ render_field(form.identity, class='form-control') }}
                 {{ render_field(form.owner_group, class='form-control') }}
-                <div id='div_new_group'>
-                    {{ render_field(form.new_group, class='form-control') }}
-                </div>
-                <div id='div_parent_group'>
-                    {{ render_field(form.parent_group, class='form-control') }}
-                </div>
+                <button type="button" id="new_group" class="btn btn-secondary" data-toggle="modal" 
+                data-target="#createGroupModal">Create a new group for the course</button>
             </dl>
             {% block button %}
                 <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
@@ -37,7 +33,7 @@
     </div>
     
     <div class="modal fade" id="createGroupModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <form id="GroupForm" action="url_for('groups.create_course_group')" class="form" method="post">
+        <form id="group_form" action="url_for('groups.create_course_group')" class="form" method="post">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -47,9 +43,13 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                    {% from "_formhelpers.html" import render_field %}
-                    {{ render_field(group_form.name) }}
+                    <dl class="form-group">
+                        <dt><label for="parent_group">Parent Group</label>
+                            <dd><select  class="form-control" id="parent_group" name="parent_group"><option value="-1">---</option></select>
+                            </dd>
+                    {{ render_field(group_form.name, class='form-control') }}
                     {{ render_field(group_form.permissions) }}
+                    </dl>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
