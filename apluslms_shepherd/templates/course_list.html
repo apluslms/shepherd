@@ -42,36 +42,27 @@
                                     </button>
                                 </form>
                             </td>
-                           
                         </tr>
-
                     {% endfor %}
                     </tbody>
                 </table>
-
             </div>
         {% endfor %}
         <table class="text-center table">
             <caption>Courses</caption>
             <thead>
             <tr>
-
                 <th scope="col">Key</th>
                 <th scope="col">Course Name</th>
-                <th scope="col">Owner group</th>
                 <th scope="col">Operations</th>
             </tr>
             </thead>
             <tbody>
             {% for each in courses %}
                 <tr>
-
                     <td>{{ each.key }}</td>
                     <td>{{ each.name }}</td>
-                    <td>{{ each.owner_id }}</td>
-
                     <td>
-
                         <form method="post" action="/courses/delete/{{ each.key }}/">
                             <a class=" btn btn-outline-primary" data-toggle="collapse" href="#{{ each.key }}"
                                role="button" aria-expanded="false" aria-controls="collapseExample">
@@ -84,20 +75,15 @@
                                     onclick="location.href='/courses/create/{{ each.key }}/'">New Instance
                             </button>
                             <button type="button" class="btn btn-outline-primary"
-                                    onclick="location.href='/courses/manager/{{ each.key }}/add/'">
-                                    Add managers
+                                    onclick="location.href='/courses/{{ each.key }}/owner_groups/'">
+                                    Owner groups
                             </button>
                             <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
                         </form>
                     </td>
-
                 </tr>
-
-
             {% endfor %}
-
             </tbody>
-
         </table>
     </div>
 
