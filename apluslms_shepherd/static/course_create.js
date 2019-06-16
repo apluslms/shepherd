@@ -20,14 +20,33 @@ $(function(){
 });
     
 
-// Update the possible parent groups 
+// Update the possible parent groups of the new course group
 // when the identity changes
 $(function(){  
+    // Init
+    if ($("#identity").val() != -1){
+        fetch('/groups/perm/'+$("#identity").val()+'/parents/')  // fetch the groups from the database
+        .then(function(response){
+            if (response.status !== 200) {  
+                console.log('Error occurs. Status Code: ' +
+                    response.status);
+                return;}        
+            response.json().then(function(data){
+                // Update the html of the 'parent_group' element
+                $("#parent_group").html('');  // Empty the 'parent_group' option
+                // var optionHTML = '';
+                for ( group of data.parent_options){  // Add options
+                    $('#parent_group').append('<option value= ' + group.id + '>' + group.name + '</option>');
+                }
+            })
+        })
+    };
+    // Onchange event
     $("#identity").change(function(){
 
         fetch('/groups/perm/'+$(this).val()+'/parents/')  // fetch the groups from the database
         .then(function(response){
-            if (response.status !== 200) {  // 
+            if (response.status !== 200) {  
                 console.log('Error occurs. Status Code: ' +
                     response.status);
                 return;}        
