@@ -17,7 +17,6 @@ course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 @course_bp.route('', methods=['GET'])
 @login_required
 def list_course():
-    groups = Group.query.filter(Group.members.any(id=current_user.id)).all()
 
     all_courses = CourseRepository.query.all()
 
@@ -27,48 +26,46 @@ def list_course():
 @course_bp.route('create/', methods=['GET', 'POST'])
 @login_required
 @course_create_perm
-def add_course():
+def add_course(**kwargs):
 
-    identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
+    if 'identity_groups' in kwargs:
+        identity_groups = kwargs['identity_groups']
+    else:
+        identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
                                 Group.permissions.any(type=PermType.courses)).all()
+
     owner_groups  = Group.query.filter(Group.members.any(id=current_user.id)).all()
 
-    identity_group_IDs = [g.id for g in identity_groups]
-    create_group_perm = db.session.query(CreateGroupPerm).filter(CreateCoursePerm.group_id.in_
-                                                    (identity_group_IDs)).all()
-                                                
-    parent_groups = []                                                
-    for perm in create_group_perm:
-        target_group = perm.target_group
-        if target_group not in parent_groups:
-            parent_groups.append(target_group)
-
     form = CourseForm(request.form)
-    form.identity.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in identity_groups]
-    form.owner_group.choices = [(g.id, group_slugify(g.name,g.parent_id)) for g in owner_groups]
-    form.parent_group.choices = [(0,'---')] + [(g.id, group_slugify(g.name,g.parent_id)) for g in parent_groups]
+    form.identity.choices += [(g.id, group_slugify(g.name,g.parent)) for g in identity_groups]
+    form.owner_group.choices = [(g.id, group_slugify(g.name,g.parent)) for g in owner_groups]
     form.git_origin.label = "First Instance Git Origin"
 
     group_form = GroupForm(request.form)
     group_form.permissions.choices = [v for v in PERMISSION_LIST if v != ('courses','create courses')]  
 
     if request.method == 'POST' and form.validate():
+
         course_perm = CreateCoursePerm.query.filter_by(group_id=form.identity.data).one_or_none()
-        if not course_perm.pattern_match(form.key.data.upper()):
-            flash('The course key does not match the naming rule ',str(course_perm.pattern))
+        if not course_perm:
+            flash('Please choose a valid identity')
             return redirect(url_for('.add_course'))
-        else:    
-            new_course = CourseRepository(key=form.key.data.upper(),
-                                        name=form.name.data)
-            owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
-            new_course.owners.append(owner_group)
-            try:
-                db.session.add(new_course)
-                db.session.commit()
-                flash('New course added.')
-            except IntegrityError:
-                flash('Course key already exists.')
-                return redirect('/courses/')
+
+        if not course_perm.pattern_match(form.key.data.upper()):
+            flash('The course key does not match the naming rule ')
+            return redirect(url_for('.add_course'))
+  
+        new_course = CourseRepository(key=form.key.data.upper(),
+                                    name=form.name.data)
+        owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
+        new_course.owners.append(owner_group)
+        try:
+            db.session.add(new_course)
+            db.session.commit()
+            flash('New course added.')
+        except IntegrityError:
+            flash('Course key already exists.')
+            return redirect('/courses/')
 
         # Part of first instance info provided in the form
         new_instance = CourseInstance(course_key=form.key.data, branch=form.branch.data, key=form.instance_key.data,
@@ -131,9 +128,8 @@ def edit_course(course_key):
         return redirect('/courses/')
     else:
         form = CourseForm(request.form, obj=course.first())
-        groups = Group.query.filter(Group.members.any(id=current_user.id),
-                            Group.permissions.any(type=PermType.courses)).all()
-        form.owner.choices =  [(g.id, group_slugify(g.name,g.parent_id)) for g in groups]
+        owner_groups = Group.query.filter(Group.members.any(id=current_user.id)).all()
+        form.owner_groups.choices =  [(g.id, group_slugify(g.name,g.parent)) for g in owner_groups]
         # The label is changes according to whether user is edit a course or creating a course,
         # When editing a course, it should be changed to follows, or it will be "First instance origin"
         form.git_origin.label = "New Git Origin for all instance"
@@ -148,8 +144,7 @@ def edit_course(course_key):
 
             course.update(dict(
                 key=form.key.data,
-                name=form.name.data,
-                owner_id = form.owner.data
+                name=form.name.data
             ))
             # If checkbox clicked
             if form.change_all.data:

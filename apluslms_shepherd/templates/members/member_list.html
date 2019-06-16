@@ -12,7 +12,7 @@
 {% block body %}
 <h1 style = "font-size:50px;">
     <strong>{{title}}</strong>
-    {% if user in group.parent.members %}
+    {% if allow_manage %}
     <button type="button" class="btn btn-outline-primary"
     onclick="location.href='/groups/{{ group.id }}/add_members/'">Add members
     </button>
@@ -24,15 +24,22 @@
     
 <div  style = "font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
     <ul>
-        {%- for member in members  %}   
-        <li class="form-inline">
-        {{member.sorting_name}} &nbsp; &nbsp;
-        <form method="post" action="{{ url_for('groups.delete_member', group_id=group.id,user_id=member.id) }}">
-                <button type="submit" name="user" value= {{member.id}} class="btn btn-outline-danger are-you-sure">Delete</button>
-        </form>
-        </li>
-
-        {%- endfor %}
+        {% if allow_manage %}
+            {%- for member in members  %}   
+            <li class="form-inline">
+            {{member.sorting_name}} &nbsp; &nbsp;
+            <form method="post" action="{{ url_for('groups.delete_member', group_id=group.id,user_id=member.id) }}">
+                    <button type="submit" name="user" value= {{member.id}} class="btn btn-outline-danger are-you-sure">Delete</button>
+            </form>
+            </li>
+            {%- endfor %}
+        {% else %}
+            {%- for member in members  %}   
+            <li class="form-inline">
+            {{member.sorting_name}} &nbsp; &nbsp;
+            </li>
+            {%- endfor %}
+        {% endif %}
     </ul>
 </div>
 {% endblock %}
