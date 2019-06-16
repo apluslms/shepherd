@@ -227,22 +227,4 @@ def instance_log(instance_id):
         redirect('')
     render_template('instance_log.html', instance=instance)
 
-@course_bp.route('manager/<course_key>/add/', methods=['GET'])
-@login_required
-def available_users(course_key):
-    course = CourseRepository.query.filter_by(key=course_key).one_or_none()
-    if course is None:
-        flash('There is no such course under this user')
-        return redirect('/courses/')
-    if current_user not in course.owner.members:
-        flash('Permission Denied')
-        return redirect('/courses/')
-    
-    group = db.session.query(Group).filter_by(id=course.owner_id).one_or_none()
-    # conditions = []
-    # for role in ['Instructor', 'Mentor', 'Teacher', 'TeachingAssistant', 'TA']:
-    #     conditions.append(User.roles.contains(role))
-    # available_users = db.session.query(User).filter(db.or_(*conditions),
-    #                                                 db.not_(User.groups.any(Group.id == group.id))).all()
-    # return render_template('members/members_add.html', group=group, users=available_users)
-    return list_users(group.id)
+

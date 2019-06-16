@@ -89,6 +89,9 @@ def group_manage_perm(func):
         elif "group_id" in request.args:
             group_id = request.args.get('group_id')
             group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+        elif "old_owner_id" in request.args:
+            group_id = request.args.get('old_owner_id')
+            group = db.session.query(Group).filter_by(id=group_id).one_or_none()
         else:
             flash('Could not get the group info')
             return redirect(url_for('groups.list_my_groups'))
