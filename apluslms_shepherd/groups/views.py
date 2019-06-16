@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, url_for, redirect, request, flash
+from flask import Blueprint, render_template, url_for, redirect, request, flash,\
+    Response,abort
 from sqlalchemy.exc import IntegrityError
 from flask_login import login_required, current_user
 from apluslms_shepherd.auth.models import User
@@ -10,6 +11,7 @@ from apluslms_shepherd.groups.utils import group_slugify, slugify, query_end_gro
         role_permission, subgroup_create_perm, group_manage_perm, course_create_perm, \
         parent_group_check 
 from flask import jsonify
+from json import dumps
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -201,40 +203,39 @@ def create_course_group():
 
         return jsonify(group_id=new_group.id,
                     group_slug=group_slugify(new_group.name,new_group.parent))
-        
     else:
         raise Exception("Error occur")
 #-------------------------------------------------------------------------------------------------#
 # Group management
 
-@groups_bp.route('delete/<group_id>/', methods=['POST'])
+# @groups_bp.route('delete/<group_id>/', methods=['POST'])
+@groups_bp.route('delete/', methods=['POST'])
 @login_required
 @role_permission.require(http_exception=403)
 @group_manage_perm
-def delete_group(group_id,**kwargs):
+def delete_group(*args, **kwargs):
     """Delete a group
     """
-    if 'group' in kwargs:
-        group = kwargs['group']
-    else:
-        group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-
+    group = kwargs['group']
+   
     courses = db.session.query(CourseRepository).\
-                filter(CourseRepository.owners.any(id=group_id)).all()
+                filter(CourseRepository.owners.any(id=group.id)).all()
     
     if courses:
-        flash('You need to move the courses to another group first')
-        return redirect(request.referrer)
+        error_message = dumps({'message': 'You need to remove the courses to another group'})
+        abort(Response(error_message, 406))
+
 
     try:
         db.session.delete(group)
         db.session.commit() 
-        flash('The group is deleted')
     except:
         db.session.rollback()
-        flash('Error occurs and could not remove the group')
+        error_message = dumps({'message': 'Error occurs and could not remove the group'})
+        abort(Response(error_message, 501))
 
-    return redirect(request.referrer)
+    return jsonify(status="success")
+
 
 
 @groups_bp.route('edit/<group_id>/', methods=['GET', 'POST'])
@@ -474,7 +475,19 @@ def list_members(group_id):
 
     members = group.members
 
-    return render_template('members/member_list.html', title=title, user=current_user, group=group, members=members)
+    # Check the permission to manage membership
+    allow_manage = False
+    if group.self_admin and current_user in group.members:
+        allow_manage = True
+    else: 
+        ancestors = group.path_to_root().all()
+        for ancestor in ancestors[1:]:
+            if current_user in ancestor.members:
+                allow_manage = True
+                break
+
+    return render_template('members/member_list.html', title=title, user=current_user, 
+                        group=group, members=members, allow_manage=allow_manage)
 
 
 @groups_bp.route('/<group_id>/add_members/', methods=['GET'])
@@ -561,6 +574,34 @@ def delete_member(group_id,**kwargs):
         
     return redirect(url_for('.list_members', group_id=group.id))
 
+
+@groups_bp.route('/move_course/', methods=['POST','GET'])
+@login_required
+def move_course():
+    """Move courses of a group to another group
+    """
+    old_owner_id = request.args.get('old_owner_id')
+    new_owner_id = request.args.get('new_owner_id')
+
+    old_owner =  db.session.query(Group).\
+                filter_by(id=old_owner_id).one_or_none()
+    new_owner =  db.session.query(Group).\
+                filter_by(id=new_owner_id).one_or_none()
+
+    courses = db.session.query(CourseRepository).\
+                        join(CourseRepository.owners).\
+                        filter(Group.id==old_owner_id).all()
+    for c in courses:
+        c.owners.remove(old_owner)
+        c.owners.append(new_owner)
+    try:
+        db.session.commit() 
+    except:
+        db.session.rollback()
+        raise Exception('Could not change the owner of the courses')
+
+    return jsonify(status="success")    
+
 #-------------------------------------------------------------------------------------------------#
 # Helper views
 
@@ -583,3 +624,24 @@ def parent_options(group_id):
         groupArray.append(groupObj)
 
     return jsonify({'parent_options': groupArray})
+
+
+@groups_bp.route('/options_of_new_owner/', methods=['GET'])
+@login_required
+@role_permission.require(http_exception=403)
+def owner_options():
+    """Get all the possible owner groups for a course
+    """
+    # groups = db.session.query(Group).\
+    #                 join(CreateGroupPerm.members).\
+    #                 filter(User.id==current_user.id).all()
+    groups = current_user.groups
+
+    groupArray =[]
+
+    for group in groups:
+        groupObj = {'id':group.id,
+                    'name':group_slugify(group.name,group.parent)}
+        groupArray.append(groupObj)
+
+    return jsonify({'owner_options': groupArray})

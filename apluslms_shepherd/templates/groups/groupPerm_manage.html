@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}
+    Manage parent groups
+{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
+{% endblock %}
+{% block body %}
+<div id='possible_parents' style = "float:left;width:50%;font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
+    <div class="centered">
+        <strong>Add Parent Groups</strong>
+        <ul>
+            {%- for group1,slug1 in possible_parents %}
+            <li class="form-inline">
+            {{slug1}} &nbsp; &nbsp;
+            <form method="post" action="{{ url_for('groups.add_createGroupPerm', group_id=group_id) }}"> 
+                <button type="submit" id='add_perm' name='new_parent' value={{group1.id}} class="btn btn-outline-danger are-you-sure">Set</button>
+            </form> 
+            </li>
+            {% endfor %} 
+        </ul>
+    </div>
+</div>
+
+
+<div id='parents' style = "float:right;width:50%;font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
+    <div class="centered">
+    <strong> Parent Groups</strong>
+    <ul>
+        {%- for group2,slug2 in parents %}
+        <li class="form-inline">
+        {{slug2}} &nbsp; &nbsp;
+        <form method="post" action="{{ url_for('groups.del_createGroupPerm', group_id=group_id) }}"> 
+            <button type="submit" id='del_perm' name='del_parent' value={{group2.id}} class="btn btn-outline-danger are-you-sure">Remove</button>
+        </form> 
+        </li>
+        {% endfor %} 
+    </ul>
+</div>
+</div>
+
+{% endblock %}

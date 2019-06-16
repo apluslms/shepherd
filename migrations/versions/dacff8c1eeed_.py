@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 202128c320e0
+Revision ID: dacff8c1eeed
 Revises: 
-Create Date: 2019-06-11 10:04:30.348375
+Create Date: 2019-06-15 16:49:17.885013
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '202128c320e0'
+revision = 'dacff8c1eeed'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -28,11 +28,11 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=50), nullable=False),
     sa.Column('self_admin', sa.Boolean(), nullable=True),
-    sa.Column('parent_id', sa.Integer(), nullable=True),
     sa.Column('lft', sa.Integer(), nullable=False),
+    sa.Column('tree_id', sa.Integer(), nullable=True),
     sa.Column('rgt', sa.Integer(), nullable=False),
     sa.Column('level', sa.Integer(), nullable=False),
-    sa.Column('tree_id', sa.Integer(), nullable=True),
+    sa.Column('parent_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['parent_id'], ['group.id'], name=op.f('fk_group_parent_id_group'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_group'))
     )
@@ -44,7 +44,7 @@ def upgrade():
 
     op.create_table('group_permission',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('type', sa.Enum('self_admin', 'subgroups', 'courses', name='permtype'), nullable=True),
+    sa.Column('type', sa.Enum('subgroups', 'courses', name='permtype'), nullable=True),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_group_permission'))
     )
     op.create_table('user',
@@ -71,19 +71,20 @@ def upgrade():
     sa.PrimaryKeyConstraint('id', name=op.f('pk_course_instance'))
     )
     op.create_table('create_course_perm',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('group_id', sa.Integer(), nullable=True),
+    sa.Column('group_id', sa.Integer(), nullable=False),
     sa.Column('regexp', sa.Boolean(), nullable=True),
     sa.Column('pattern', sa.String(length=30), nullable=True),
     sa.ForeignKeyConstraint(['group_id'], ['group.id'], name=op.f('fk_create_course_perm_group_id_group')),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_create_course_perm'))
+    sa.PrimaryKeyConstraint('group_id', name=op.f('pk_create_course_perm'))
     )
     op.create_table('create_group_perm',
+    sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('group_id', sa.Integer(), nullable=False),
     sa.Column('target_group_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['group_id', 'target_group_id'], ['group.id', 'group.id'], name=op.f('fk_create_group_perm_group_id_group')),
     sa.ForeignKeyConstraint(['group_id'], ['group.id'], name=op.f('fk_create_group_perm_group_id_group')),
     sa.ForeignKeyConstraint(['target_group_id'], ['group.id'], name=op.f('fk_create_group_perm_target_group_id_group')),
-    sa.PrimaryKeyConstraint('group_id', 'target_group_id', name=op.f('pk_create_group_perm'))
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_create_group_perm'))
     )
     op.create_table('gc_table',
     sa.Column('group_id', sa.Integer(), nullable=True),

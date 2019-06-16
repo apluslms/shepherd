@@ -2,10 +2,6 @@
 {% block title %}
     Edit group
 {% endblock %}
-{% block head %}
-    <!-- <script src="../../../static/are_you_sure.js"></script> -->
-    <script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
-{% endblock %}
 
 {% block body %}
     <div class="container text-center">
@@ -16,23 +12,66 @@
                     <dd>
                         {{ form.name.label }} {{ form.name }} 
                         <button type="submit" class="btn btn-outline-danger are-you-sure" 
-                        name="edit" value="rename"> Rename </buttton>
+                        name="edit" value="name"> Rename </buttton>
                     </dd>
                     <dd>
                         {{ form.parent_path.label }} {{ form.parent_path}} 
                         <button type="submit" class="btn btn-outline-danger are-you-sure" 
-                        name="edit" value="update parent path"> Update parent path </buttton>
+                        name="edit" value="parent path"> Update parent path </buttton>
                     </dd>
                     <dd>
                         <ul>
-                            {% for key, value, checked in form.permissions.iter_choices() %}
-                                <input type="checkbox" id={{key}} onclick="reply_click(this.id);" >{{value}}</input>
-                            {% endfor %}
+                        {{ form.permissions.label }} {{ form.permissions}} 
                         </ul>   
                         <button type="submit" class="btn btn-outline-danger are-you-sure" 
-                        name="edit" value="update permissions"> Update permissions </buttton>
+                        name="edit" value="permissions"> Update permissions </buttton>
                     </dd>
+                    <div id="div_course_prefix">
+                        {{ render_field(form.course_prefix, class='form-control') }}
+                    </div>
+                    <div id='div_update_course_prefix'>
+                        <button type="submit" class="btn btn-outline-danger are-you-sure" 
+                        name="edit" value="course prefix"> Update course prefix </buttton>
+                    </div>
+                    <div id='div_parent_groups'>
+                        <button class="btn btn-outline-danger are-you-sure" 
+                        onclick="location.href='/groups/{{group_id}}/parents/'" > Manage parents of subgroups </buttton>
+                    </div>
                 </dl>
         </form>
     </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
+<script>
+$(function() {
+var permissions = {{permissions|tojson|safe }};
+var checkbox = $("#permissions-courses");
+var hidden = $("#div_course_prefix");
+var hidden_button = $("#div_update_course_prefix");
+
+hidden.hide();
+hidden_button.hide();
+if (permissions.includes('courses')){
+    hidden.show();
+    hidden_button.show();
+}else{
+    checkbox.change(function() {
+    if (checkbox.is(':checked')) {
+    hidden.show();
+    } else {
+    hidden.hide();
+    }});
+};  
+
+if (permissions.includes('subgroups')){
+    $("#div_parent_groups").show();
+}else{
+    $("#div_parent_groups").hide();
+};  
+});  
+</script>
+
 {% endblock %}

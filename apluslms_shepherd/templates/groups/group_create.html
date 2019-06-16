@@ -2,25 +2,20 @@
 {% block head %}
 <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.js"></script>
 <script src="{{ url_for('static', filename='helpers.js') }}"></script>
+
 <script>
-$(function(){  // DOM ready shorthand
-
+$(function(){  
 $("#permissions-self_admin").prop('checked', true);
-
-// other code here
-
 });
 </script>
+
 <script>
 $(function() {
 // Get the form fields and hidden div
 var checkbox = $("#permissions-courses");
 var hidden = $("#div_course_prefix");
-console.log(checkbox)
 
 // Hide the fields.
-// Use JS to do this in case the user doesn't have JS 
-// enabled.
 hidden.hide();
 
 // Setup an event listener for when the state of the 
@@ -36,75 +31,11 @@ checkbox.change(function() {
     // Make sure that the hidden fields are indeed
     // hidden.
     hidden.hide();
-    
-    // You may also want to clear the value of the 
-    // hidden fields here. Just in case somebody 
-    // shows the fields, enters data to them and then 
-    // unticks the checkbox.
-    //
-    // This would do the job:
-    //
-    // $("#hidden_field").val("");
   }
 });
 });  
 </script>
 
-<script>
-  $(function() {
-  // Get the form fields and hidden div
-  var checkbox = $("#permissions-subgroups");
-  var hidden = $("#div_target_groups");
-  console.log(checkbox)
-  
-  // Hide the fields.
-  // Use JS to do this in case the user doesn't have JS 
-  // enabled.
-  hidden.hide();
-  
-  // Setup an event listener for when the state of the 
-  // checkbox changes.
-  checkbox.change(function() {
-    // Check to see if the checkbox is checked.
-    // If it is, show the fields and populate the input.
-    // If not, hide the fields.
-    if (checkbox.is(':checked')) {
-      // Show the hidden fields.
-      hidden.show();
-    } else {
-      // Make sure that the hidden fields are indeed
-      // hidden.
-      hidden.hide();
-      
-      // You may also want to clear the value of the 
-      // hidden fields here. Just in case somebody 
-      // shows the fields, enters data to them and then 
-      // unticks the checkbox.
-      //
-      // This would do the job:
-      //
-      // $("#hidden_field").val("");
-    }
-  });
-  });  
-  </script>
-<script>
-$(function(){
-var urlParams = new URLSearchParams(window.location.search);
-var from_course = urlParams.get('from_course');
-var success = urlParams.get('sucess');
-var group_id = urlParams.get('group_id');
-console.log(from_course)
-console.log(success)
-console.log(group_id)
-if ((from_course == 'true') && (success == 'true'))
-{
-  console.log('test')
-  window.location.href ='/courses/create/'+'?owner_id='+group_id
-} 
-});
-</script>
- 
 {% endblock %}
 
 {% block title %}
@@ -114,7 +45,7 @@ if ((from_course == 'true') && (success == 'true'))
 {% block body %}
     <div class="container text-center">
         {% from "_formhelpers.html" import render_field %}
-        <form id='group_from' method=post >
+        <form id='group_form' method=post >
             <dl class="form-group">
                 {{ render_field(form.name, class='form-control') }}
                 {% if not parent %}
@@ -123,9 +54,6 @@ if ((from_course == 'true') && (success == 'true'))
                 {{ render_field(form.permissions) }}
                 <div id="div_course_prefix">
                     {{ render_field(form.course_prefix, class='form-control') }}
-                </div>
-                <div id="div_target_groups">
-                    {{ render_field(form.target_groups, class='form-control') }}
                 </div>
             </dl>
             {% block button %}
@@ -136,6 +64,4 @@ if ((from_course == 'true') && (success == 'true'))
             {% endblock %}
         </form>
     </div>
-
-
 {% endblock %}
