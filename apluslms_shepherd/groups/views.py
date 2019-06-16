@@ -225,7 +225,6 @@ def delete_group(*args, **kwargs):
         error_message = dumps({'message': 'You need to remove the courses to another group'})
         abort(Response(error_message, 406))
 
-
     try:
         db.session.delete(group)
         db.session.commit() 
@@ -577,20 +576,23 @@ def delete_member(group_id,**kwargs):
 
 @groups_bp.route('/move_course/', methods=['POST','GET'])
 @login_required
-def move_course():
+@role_permission.require(http_exception=403)
+@group_manage_perm
+def move_course(**kwargs):
     """Move courses of a group to another group
     """
-    old_owner_id = request.args.get('old_owner_id')
-    new_owner_id = request.args.get('new_owner_id')
+    # old_owner_id = request.args.get('old_owner_id')
+    # old_owner =  db.session.query(Group).\
+    #             filter_by(id=old_owner_id).one_or_none()
+    old_owner = kwargs['group']
 
-    old_owner =  db.session.query(Group).\
-                filter_by(id=old_owner_id).one_or_none()
+    new_owner_id = request.args.get('new_owner_id')
     new_owner =  db.session.query(Group).\
                 filter_by(id=new_owner_id).one_or_none()
 
     courses = db.session.query(CourseRepository).\
                         join(CourseRepository.owners).\
-                        filter(Group.id==old_owner_id).all()
+                        filter(Group.id==old_owner.id).all()
     for c in courses:
         c.owners.remove(old_owner)
         c.owners.append(new_owner)
