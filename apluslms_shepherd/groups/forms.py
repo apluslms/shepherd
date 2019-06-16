@@ -1,4 +1,4 @@
-from wtforms import Form, StringField, validators, SelectMultipleField
+from wtforms import Form, StringField, validators, SelectMultipleField,SelectField
 from wtforms.widgets import html_params, ListWidget, CheckboxInput 
 
 from apluslms_shepherd.groups.utils import PERMISSION_LIST
@@ -25,11 +25,20 @@ class MultiCheckboxField(SelectMultipleField):
 
 
 class GroupForm(Form):
-    name = StringField('Group name', [validators.InputRequired(),validators.Length(max=50)])
-    parent_path = StringField('Parent Path', [validators.Length(max=200)])
+    # The name of the group, e.g., 'Letech'
+    name = StringField('Group name', [validators.Length(max=50)])
+    # The path from the root group to the parent group,
+    # e.g., 'aalto.sci.cs'
+    parent_path = StringField('Parent Path', [validators.Optional(),validators.Length(max=200)])
+    # The options of parent groups
+    # parent_group = SelectField('Parent Group',choices=[(-1, "---")], coerce=int)
+    # The permission types
     permissions = SelectMultipleField('Permisson', choices=PERMISSION_LIST,widget=select_multi_checkbox)
+    # If the group is permitted to create courses, 
+    # the naming constraints of course names
     course_prefix = StringField('Course Prefix', [validators.Optional()])
-    target_groups = SelectMultipleField('Parents of Subgroups',[validators.Optional()],choices=[(0,'Itself')],
-                                    coerce=int,widget=select_multi_checkbox)
+
+
+    
 
     
