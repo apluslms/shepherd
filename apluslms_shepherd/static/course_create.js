@@ -8,18 +8,14 @@ $(function() {
     // Setup an event listener for when the state of the 
     // checkbox changes.
     button.click(function() {
+        // Set the self_admin permission checkbox is default checked 
+        // in the groupCreateModal
+        $("#permissions-self_admin").prop('checked', true);
         $('#createGroupModal').modal();  // Show the CreateGroup modal
     });
 });  
 
-
-// Set the self_admin permission checkbox 
-// in the groupCreateModal is checked
-$(function(){  
-    $("#permissions-self_admin").prop('checked', true);
-});
     
-
 // Update the possible parent groups of the new course group
 // when the identity changes
 $(function(){  
@@ -73,32 +69,31 @@ $(function() {
     var parent_group = $("#parent_group");
     // Submit the form
     $(form).submit(function(event) {
+        event.preventDefault();  // Stop the browser from submitting the form
+
         var formData = form.serialize();
         console.log(formData);
-            $.ajax({
-            // Add the group_id query string to the url
-            // url:  form.attr('action'),  
-            url: '/groups/course_group/create/'+'?group_id='+parent_group.val(),
-            type: 'POST',
-            data:  formData,
-            success:function(data){  // The new group is created successfully
-            // Update 'owner_group' dorpdown list 
-            alert('New group is added successfully');
-            select = document.getElementById('owner_group');
-            var opt = document.createElement('option');
-            opt.value = data.group_id;
-            opt.innerHTML = data.group_slug;
-            select.add(opt);
-            // Set the selected value
-            $('#owner_group').val(data.group_id);
-            // Hide the elements
-            $('#createGroupModal').modal('hide');
-            },
-            error: function(){
-                alert('Could not create the group');
-                }
-            });
-        // Stop the browser from submitting the form.
-        event.preventDefault();
+        $.ajax({
+        type: 'POST',
+        // Add the group_id query string to the url
+        url: '/groups/course_group/create/'+'?group_id='+parent_group.val(),
+        data:  formData,
+        success:function(data){  // The new group is created successfully
+        // Update 'owner_group' dorpdown list 
+        alert('New group is added successfully');
+        select = document.getElementById('owner_group');
+        var opt = document.createElement('option');
+        opt.value = data.group_id;
+        opt.innerHTML = data.group_slug;
+        select.add(opt);
+        // Set the selected value
+        $('#owner_group').val(data.group_id);
+        // Hide the elements
+        $('#createGroupModal').modal('hide');
+        },
+        error: function(){
+            alert('Could not create the group');
+            }
+        });
     });   
 });      

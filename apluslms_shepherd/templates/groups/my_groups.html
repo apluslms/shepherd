@@ -13,52 +13,30 @@
             {%- for group,slug in groups %}
             <li class='group' value={{group.id}}>
             {{slug}} <br>
-                <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/{{ group.id }}/members/'">Members
-                </button>
-                <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
-                </button>
-                 <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
-                </button>
-                <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/{{group.id }}/create/'">New subgroup 
-                </button>
-                <button value={{ group.id }} type="submit" class="btn btn-outline-danger are-you-sure delete">Delete</button> 
+            <form class="delete_form" value={{ group.id }} method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}"> 
+                    <button type="button" class="btn btn-outline-primary"
+                    onclick="location.href='/groups/{{ group.id }}/members/'">Members
+                    </button>
+                    <button type="button" class="btn btn-outline-primary"
+                    onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
+                    </button>
+                    <button type="button" class="btn btn-outline-primary"
+                    onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
+                    </button>
+                    <button type="button" class="btn btn-outline-primary"
+                    onclick="location.href='/groups/{{group.id }}/create/'">New subgroup 
+                    </button>
+                    <button name='delete_btn' value={{ group.id }} type="submit" class="btn btn-outline-danger are-you-sure delete">Delete</button> 
+            </form>
             </li>
             {% endfor %} 
         </ul>
     </div>
-
-    <div class="modal fade" id="moveCourseModal" tabindex="-1" role="dialog" aria-labelledby="moveCourseModal" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalLabel">Remove courses</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                        <dl class="form-group">
-                            <dt><label for="parent_group">New owner</label>
-                                <dd><select  class="form-control" id="new_owner"><option value="-1">---</option></select>
-                                </dd>
-                        </dl>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <button type="submit" id="move_courses" class="btn btn-secondary" >Submit</button>
-                        </div>
-                    </div>
-                </div>
-        </div>
-
+{% include 'groups/move_courses.html' %}
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
 <script src="{{ url_for('static', filename='my_groups.js') }}"></script>
-
 {% endblock %}
+
