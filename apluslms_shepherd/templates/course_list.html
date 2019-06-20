@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block head %}
-    <script src="../static/are_you_sure.js"></script>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
 {% endblock %}
 {% block title %}
     All Courses
@@ -74,9 +74,7 @@
                             <button type="button" class="btn btn-outline-primary"
                                     onclick="location.href='/courses/create/{{ each.key }}/'">New Instance
                             </button>
-                            <button type="button" class="btn btn-outline-primary"
-                                    onclick="location.href='/courses/{{ each.key }}/owner_groups/'">
-                                    Owner groups
+                            <button type="button" class="btn btn-outline-primary owner_groups" value={{each.key}}>Owner groups
                             </button>
                             <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
                         </form>
@@ -86,5 +84,16 @@
             </tbody>
         </table>
     </div>
+    
+<div id="content">
+        {% block content %}
+        {% include 'groups/owner_groups.html' %}
+        {% endblock %}
+</div>
+{% endblock %}
 
+{% block scripts %}
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+<script src="{{ url_for('static', filename='owner_groups.js') }}"></script>
+<script src="../static/are_you_sure.js"></script>
 {% endblock %}

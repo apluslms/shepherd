@@ -2,7 +2,7 @@ from wtforms import Form, StringField, validators, TextAreaField, BooleanField,S
 from wtforms.widgets import html_params
 
 
-class CourseForm(Form):
+class CourseCreateForm(Form):
     key = StringField('Course Key', [validators.InputRequired(),validators.Length(max=50)])
     instance_key = StringField('First Instance Key', [validators.InputRequired(),validators.Length(max=50)])
     name = StringField('Course Name', [validators.InputRequired(),validators.Length(min=1,max=50)])
@@ -13,7 +13,7 @@ class CourseForm(Form):
     # and the current user is the member of
     identity = SelectField('Identity',choices=[(-1, "---")], coerce=int) 
     # The options of the group that owns the course
-    owner_group = SelectField('Owner Group',coerce=int)
+    owner_group = SelectField('Owner Group',choices=[(-1, "---")],coerce=int)
     
 
 class InstanceForm(Form):
@@ -24,3 +24,11 @@ class InstanceForm(Form):
     branch = StringField('Instance Branch', [validators.Length(max=50)])
     config_filename = StringField('Roman Config File', [validators.length(max=127), validators.optional(True)],
                                   render_kw={"placeholder" : "To use default filename(course.yml), leave this empty."})
+
+
+class CourseEditForm(Form):
+    key = StringField('Course Key', [validators.InputRequired(),validators.Length(max=50)])
+    name = StringField('Course Name', [validators.InputRequired(),validators.Length(min=1,max=50)])
+    git_origin = StringField([validators.Optional(),validators.Length(max=255)])
+    identity = SelectField('Identity',choices=[(-1, "---")], coerce=int) 
+    change_all = BooleanField('Change git origin to all instance?')
