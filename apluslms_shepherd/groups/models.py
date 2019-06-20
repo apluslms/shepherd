@@ -116,3 +116,18 @@ class CreateCoursePerm(db.Model):
         return True if re.match(self.pattern,course_name) else False
 
 
+# class ManageCoursePerm(db.Model):
+#     group_id = db.Column(db.Integer, db.ForeignKey('group.id'),primary_key=True)
+#     # The group whose members have the permission to create courses
+#     group = db.relationship("Group", backref=db.backref("course_permission", 
+#                             uselist=False,cascade='all,delete'))
+#     regexp = db.Column(db.Boolean,default=True)
+#     # The course naming rule (a regular expression)
+#     pattern = db.Column(db.String(30))
+
+#     def __repr__(self):
+#         return "<Create Course Permission (group={0}, pattern={1})>,".format(self.group,
+#                                                                             self.pattern)
+
+
+

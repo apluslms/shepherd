@@ -1,16 +1,19 @@
-from flask import request, flash, redirect, url_for
+from flask import request, flash, redirect, url_for,abort, Response
 from flask_login import current_user
 from flask_principal import Permission, RoleNeed
 
 from apluslms_shepherd.extensions import db
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, CreateCoursePerm
-
+from apluslms_shepherd.courses.models import CourseRepository
 from collections import namedtuple
 from functools import partial
 from functools import wraps
 from slugify import slugify
+from json import dumps
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 #-------------------------------------------------------------------------------------------------#
 # Permission objects
@@ -110,8 +113,13 @@ def group_manage_perm(func):
                         break
 
         if not allowed:
-            flash('Permission denied')
-            return redirect(url_for('groups.list_my_groups'))
+            if 'return_error' in request.args:
+                logging.info('return_error')
+                error_message = dumps({'message': 'Permssion Denied'})
+                abort(Response(error_message, 403))
+            else:
+                flash('Permission denied')
+                return redirect(url_for('groups.list_my_groups'))
 
         return func(*args, **kwargs)
 
@@ -133,12 +141,42 @@ def course_create_perm(func):
                                 Group.permissions.any(type=PermType.courses)).all()
         if not identity_groups:
             flash('Permission denied')
-            return redirect('/')
+            return redirect(request.referrer)
 
         kwargs['identity_groups'] = identity_groups
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def course_manage_perm(func):
+    """
+    Check whether the current user can manage a course
+    Permission: the user is a member of the owner groups of the course
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        if "course_key" in request.view_args:
+            course_key = request.view_args['course_key']
+            course = db.session.query(CourseRepository).\
+                            join(CourseRepository.owners).\
+                            filter(CourseRepository.key==course_key).\
+                            filter(Group.members.any(User.id==current_user.id)).one_or_none()
+
+        if not course:
+            if 'return_error' in request.args:
+                error_message = dumps({'message': 'Permssion Denied'})
+                abort(Response(error_message, 403))
+            else:
+                flash('Permission denied')
+                return redirect('/courses/')
+
+        kwargs['course'] = course
+        return func(*args, **kwargs)
+
+    return wrapper
+
 
 # Function for permission checking
 

@@ -1,13 +1,30 @@
-{% extends 'course_create.html' %}
-{% from "_formhelpers.html" import render_field %}
-{% block additional %}
-    {% if instances_num > 0 %}
-        {{ render_field(form.change_all, class='form-control') }}
-    {% endif %}
+{% extends 'base.html' %}
+{% block title %}
+    Edit Course
 {% endblock %}
-{% block button %}
-    <p>
-        <input type=submit class="btn-lg btn-outline-primary " value=Submit>
-        <input type="button" onclick="location.href='/courses/'" class="btn-lg btn-outline-secondary " value=Cancel>
-    </p>
+{% block head %}
+<link rel="shortcut icon" href="">
+{% endblock %}
+{% block body %}
+    <div class="container text-center">
+        {% from "_formhelpers.html" import render_field %}
+        <form action="" method=post>
+            <dl class="form-group">
+                {{ render_field(form.identity, class='form-control') }}
+                {{ render_field(form.key, class='form-control') }}
+                {{ render_field(form.name,class='form-control' ) }}
+                
+                {% if instances_num > 0 %}
+                    {{ render_field(form.git_origin, class='form-control') }}
+                    {{ render_field(form.change_all, class='form-control') }}
+                {% endif %} 
+            </dl>
+            {% block button %}
+                <p><input type=submit class="btn-lg btn-outline-primary " value=Submit>
+                    <input type="button" onclick="location.href='/courses/'" 
+                    class="btn-lg btn-outline-secondary " value=Cancel>
+                </p>
+            {% endblock %}
+        </form>
+    </div>
 {% endblock %}
