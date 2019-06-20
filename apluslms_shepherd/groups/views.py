@@ -208,12 +208,12 @@ def create_course_group():
 #-------------------------------------------------------------------------------------------------#
 # Group management
 
-# @groups_bp.route('delete/<group_id>/', methods=['POST'])
-@groups_bp.route('delete/', methods=['POST'])
+@groups_bp.route('delete/<group_id>/', methods=['POST'])
+# @groups_bp.route('delete/', methods=['POST'])
 @login_required
 @role_permission.require(http_exception=403)
 @group_manage_perm
-def delete_group(*args, **kwargs):
+def delete_group(group_id,**kwargs):
     """Delete a group
     """
     group = kwargs['group']
@@ -230,10 +230,11 @@ def delete_group(*args, **kwargs):
         db.session.commit() 
     except:
         db.session.rollback()
+        logging.info('rollback')
         error_message = dumps({'message': 'Error occurs and could not remove the group'})
         abort(Response(error_message, 501))
 
-    return jsonify(status="success")
+    return jsonify(status='success')
 
 
 
@@ -307,7 +308,8 @@ def edit_group(group_id,**kwargs):
                     group.permissions.remove(perm)
 
             # Set the 'self-administrator' permission
-            if 'self_admin' in perm_new:
+            # If it is the root, it is always self_admin
+            if 'self_admin' in perm_new or group.parent is None:
                 group.self_admin = True
             else:
                 group.self_admin = False
@@ -632,18 +634,37 @@ def parent_options(group_id):
 @login_required
 @role_permission.require(http_exception=403)
 def owner_options():
-    """Get all the possible owner groups for a course
+    """Get all the possible new owner groups for a course 
     """
-    # groups = db.session.query(Group).\
-    #                 join(CreateGroupPerm.members).\
-    #                 filter(User.id==current_user.id).all()
+    old_owner_id = request.args.get('old_owner_id')
+    old_owner = Group.query.filter_by(id=old_owner_id).one_or_none()
+
+    if not old_owner:
+        abort(404,'No such a group')
+    
     groups = current_user.groups
+    groups.remove(old_owner)  # Remove the original owner group from the options
+
+    # OR:
+    # group_table =Group.__table__
+    # old_owner = db.session.query(group_table).filter(
+    #             group_table.c.id==old_owner_id).one_or_none()
+    # groups = db.session.query(Group,group_table).\
+    #         join(Group.members).\
+    #         filter(Group.members.any(User.id==current_user.id)).\
+    #         filter(db.or_(group_table.c.tree_id != old_owner.tree_id,
+    #                     db.and_(
+    #                     group_table.c.tree_id == old_owner.tree_id,
+    #                     group_table.c.lft<old_owner.lft,
+    #                     group_table.c.rgt>old_owner.rgt))).all()
 
     groupArray =[]
 
     for group in groups:
-        groupObj = {'id':group.id,
-                    'name':group_slugify(group.name,group.parent)}
-        groupArray.append(groupObj)
+        # the group could not be the descendant of the original owner group
+        if not group.is_descendant_of(old_owner): 
+            groupObj = {'id':group.id,
+                        'name':group_slugify(group.name,group.parent)}
+            groupArray.append(groupObj)
 
     return jsonify({'owner_options': groupArray})

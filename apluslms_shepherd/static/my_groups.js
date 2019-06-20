@@ -1,43 +1,12 @@
 var old_owner_id = null;
 
-$(function() { // Delete a group and remove it from the group list
 
-    // Trigger the delete event
-    $('.delete').click(function(event) {
-        var group_id = $(this).val();
-        old_owner_id = $(this).val();  // Change the value of old_owner_id for removing courses
-        $.ajax({
-        // Add the group_id query string to the url
-        url: '/groups/delete/'+'?group_id='+group_id,  
-        type: 'POST',
-        success:function(data){  // The group is deleted successfully
-        // Remove the group element
-        var group = $('.group[value='+group_id+']');
-        alert('The group has been deleted');
-        group.remove();
-        },
-        statusCode: {
-            406: function (response) {
-                error = JSON.parse(response.responseText)
-                alert(error.message);
-                $('#moveCourseModal').modal();
-            },
-            501:function (response) {
-                error = JSON.parse(response.responseText)
-                alert(error.message);
-            }}
-        });
-        // Stop the browser from submitting the form.
-        event.preventDefault();
-    });   
-});      
+function fetch_owners_option(old_owner_id){
 
-
-$(function move_courses() {  
-
-    fetch('/groups/options_of_new_owner/')  // Update the dropdown options of new owner group
+    fetch('/groups/options_of_new_owner/?old_owner_id='+old_owner_id)  // Update the dropdown options of new owner group
     .then(function(response){
         if (response.status !== 200) {  
+            alert('Error');
             console.log('Error occurs. Status Code: ' +
                 response.status);
             return;}        
@@ -49,13 +18,51 @@ $(function move_courses() {
             }
         })
     })
+}
 
-    $('#move_courses').click(function(event) { // Post the request of moving courses from the old owner
+$(function() { // Delete a group and remove it from the group list
+    // Post the delete event
+    $('.delete_form').submit(function(event) {
+  
+    event.preventDefault(); // avoid to execute the actual submit of the form
+    
+    group_id = $(this).attr('value'); // Change the value of old_owner_id for removing courses
+    $.ajax({
+    type: 'POST',
+    url: $(this).attr('action')+'?return_error=true', 
+    success: function () {
+    alert('Delete the group successfully');
+    location.reload();
+    },
+    error: function(response){
+        console.log(response.status);
+        if (response.status==406){
+            old_owner_id = group_id;
+            error = JSON.parse(response.responseText)
+            alert(error.message);
+            fetch_owners_option(old_owner_id);
+            $('#moveCourseModal').modal();
+        }
+        else{
+            error = JSON.parse(response.responseText)
+            alert(error.message);
+        }
+       }
+    });
+    }); 
+    });
+
+
+$(function move_courses() {  
+
+    $('#owner_form').submit(function(event) { // Post the request of moving courses from the old owner
+        event.preventDefault(); 
         $.ajax({
         // Add the group_id query string to the url
         url: '/groups/move_course/'+'?old_owner_id='+old_owner_id+'&new_owner_id='+$('#new_owner').val(),  
         type: 'POST',
-        success:function(data){  // The group is deleted successfully
+        success:function(){  // The group is deleted successfully
+        old_owner_id = null;
         alert('The courses have been moved');
         $('#moveCourseModal').modal('hide');
         },
@@ -63,7 +70,5 @@ $(function move_courses() {
             alert('Failed to move the courses');
         }
         });
-        // Stop the browser from submitting the form.
-        event.preventDefault();
     });   
 });      
