@@ -13,6 +13,10 @@ from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.views import list_users,add_member
 from apluslms_shepherd.groups.views import create_group
 from apluslms_shepherd.groups.forms import GroupForm
+
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 
 
@@ -270,8 +274,15 @@ def owner_remove(course_key,**kwargs):
 
     group_id = request.args.get('group_id')
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+    manage_course_perm = db.session.query(ManageCoursePerm).\
+                                    filter_by(course=course,group=group).one_or_none()
 
-    course.owners.remove(group)
+    if not (manage_course_perm and manage_course_perm.type==CourseOwnerType.admin and len(course.owners)<=1):
+        course.owners.remove(group)
+        db.session.delete(manage_course_perm)
+    else:
+        error_message = dumps({'message': 'The only admin group could not be removed'})
+        abort(Response(error_message, 500))
 
     try:
         db.session.commit() 
@@ -324,15 +335,19 @@ def owner_add(course_key,**kwargs):
     course = kwargs['course']
 
     group_id = request.args.get('group_id')
+    owner_type = request.args.get('owner_type')
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
-    course.owners.append(group)
-
+    manage_course_perm = ManageCoursePerm(course=course,group=group,
+                        type=CourseOwnerType[owner_type])
+    
     try:
+        course.owners.append(group)
+        db.session.add(manage_course_perm)
         db.session.commit() 
     except:
         db.session.rollback()
-        error_message = dumps({'message': 'Error occurs and could not remove the owner'})
+        error_message = dumps({'message': 'Error occurs and could not add the owner'})
         abort(Response(error_message, 501))
 
     return jsonify(status='success')
