@@ -6,7 +6,7 @@ from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.forms import GroupForm
 from apluslms_shepherd.groups.models import db, Group, PermType, GroupPermission, \
     CreateGroupPerm, CreateCoursePerm
-from apluslms_shepherd.courses.models import CourseRepository
+from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.groups.utils import group_slugify, slugify, query_end_group, \
         role_permission, subgroup_create_perm, group_manage_perm, course_create_perm, \
         parent_group_check 
