@@ -4,8 +4,7 @@ from flask_login import UserMixin, login_user, LoginManager,current_user
 from apluslms_shepherd.config import DevelopmentConfig
 from collections import namedtuple
 from functools import partial
-from flask_principal import Principal, Identity, AnonymousIdentity, identity_changed,\
-    identity_loaded
+from flask_principal import Identity, identity_changed
 
 login_manager = LoginManager()
 

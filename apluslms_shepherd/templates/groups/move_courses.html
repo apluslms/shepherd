@@ -1,0 +1,26 @@
+
+<div class="modal fade" id="moveCourseModal" tabindex="-1" role="dialog" aria-labelledby="moveCourseModal" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Remove courses</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id='owner_form'>
+                <div class="modal-body">
+                    <dl class="form-group">
+                        <dt><label for="parent_group">New owner</label>
+                            <dd><select  class="form-control" id="new_owner"><option value="-1">---</option></select>
+                            </dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" id="move_courses" class="btn btn-outline-danger are-you-sure" >Submit</button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>

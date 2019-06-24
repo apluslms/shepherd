@@ -1,4 +1,43 @@
 {% extends 'base.html' %}
+{% block head %}
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.js"></script>
+<script src="{{ url_for('static', filename='helpers.js') }}"></script>
+
+<script>
+$(function(){  
+$("#permissions-self_admin").prop('checked', true);
+});
+</script>
+
+<script>
+$(function() {
+// Get the form fields and hidden div
+var checkbox = $("#permissions-courses");
+var hidden = $("#div_course_prefix");
+
+// Hide the fields.
+hidden.hide();
+
+// Setup an event listener for when the state of the 
+// checkbox changes.
+checkbox.change(function() {
+  // Check to see if the checkbox is checked.
+  // If it is, show the fields and populate the input.
+  // If not, hide the fields.
+  if (checkbox.is(':checked')) {
+    // Show the hidden fields.
+    hidden.show();
+  } else {
+    // Make sure that the hidden fields are indeed
+    // hidden.
+    hidden.hide();
+  }
+});
+});  
+</script>
+
+{% endblock %}
+
 {% block title %}
     Add New group
 {% endblock %}
@@ -6,26 +45,23 @@
 {% block body %}
     <div class="container text-center">
         {% from "_formhelpers.html" import render_field %}
-        <form method=post >
+        <form id='group_form' method=post >
             <dl class="form-group">
-                <dt>{{form.name.label}} </dt>
-                <dd>{{ form.name }}</dd>
+                {{ render_field(form.name, class='form-control') }}
                 {% if not parent %}
-                <br>
-                <dt>{{form.parent_path.label}} </dt>
-                <dd>{{ form.parent_path }}</dd>
+                {{ render_field(form.parent_path, class='form-control') }}
                 {% endif %}
-                <div>{{ form.permissions.label }} {{ form.permissions() }}</div>
+                {{ render_field(form.permissions) }}
+                <div id="div_course_prefix">
+                    {{ render_field(form.course_prefix, class='form-control') }}
+                </div>
             </dl>
             {% block button %}
                 <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
                     <input type="button" onclick="location.href='/groups/'" class="btn-lg btn-outline-secondary "
                            value=Cancel>
                 </p>
-
             {% endblock %}
         </form>
     </div>
-
-
 {% endblock %}

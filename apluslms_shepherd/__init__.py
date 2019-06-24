@@ -7,10 +7,10 @@ from flask_login import current_user
 from apluslms_shepherd import config
 
 from apluslms_shepherd.extensions import celery, db, make_celery
-from flask_principal import Principal, Identity, AnonymousIdentity, \
-    identity_changed, identity_loaded, RoleNeed, UserNeed
-from apluslms_shepherd.groups.utils import GroupManageNeed,CourseManageNeed
-from apluslms_shepherd.groups.models import PermType
+
+from flask_principal import Principal, identity_loaded, RoleNeed, UserNeed
+from apluslms_shepherd.groups.models import PermType    
+
 
 __version__ = '0.1'
 
@@ -18,6 +18,7 @@ __version__ = '0.1'
 def create_app():
     app = Flask(__name__)
     app.config.from_object(config.DevelopmentConfig)
+    # adds jinja2 support for break and continue in loops
     app.jinja_env.add_extension('jinja2.ext.loopcontrols')
     with app.app_context():
         from apluslms_shepherd.auth.models import write_user_to_db, login_manager
@@ -44,6 +45,7 @@ def create_app():
         app.register_blueprint(groups_bp)
 
         
+        # Add info to the Identity instance
         @identity_loaded.connect_via(app)
         def on_identity_loaded(sender, identity):
             # Set the identity user object
@@ -58,23 +60,14 @@ def create_app():
                 for role in current_user.roles.split(','):
                     identity.provides.add(RoleNeed(role))
 
-            if hasattr(current_user, 'groups'):
-                for group in current_user.groups:
-                    for perm in group.permissions:
-                        if perm.type == PermType.groups:
-                            identity.provides.add(GroupManageNeed(group_id=str(group.id)))
-                            # identity.provides.add(GroupNeed(action='create',group_id=group.id))
-
-                        if perm.type == PermType.courses:
-                            identity.provides.add(CourseManageNeed(group_id=str(group.id)))
-                            # identity.provides.add(CourseNeed(action='create',group_id=group.id))
-
             app.logger.info(identity)
 
+
+        # Handle HTTP 403 error
         @app.errorhandler(403)
-        def page_not_found(e):
+        def access_forbidden(e):
             session['redirected_from'] = request.url
             flash('Access Forbidden')
-            return redirect(request.referrer)
+            return redirect('/')
         
     return app

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block head %}
-    <script src="../static/are_you_sure.js"></script>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
 {% endblock %}
 {% block title %}
     All Courses
@@ -30,6 +30,7 @@
                             <td>{{ branch.git_origin }}</td>
                             <td>{{ branch.branch }}</td>
                             <td>{{ branch.secret_token }}</td>
+
                             <td>
                                 <form method="post" action="/courses/delete/{{ each.key }}/{{ branch.key }}/">
                                     <button type="button" class="btn btn-outline-primary"
@@ -42,18 +43,15 @@
                                 </form>
                             </td>
                         </tr>
-
                     {% endfor %}
                     </tbody>
                 </table>
-
             </div>
         {% endfor %}
         <table class="text-center table">
             <caption>Courses</caption>
             <thead>
             <tr>
-
                 <th scope="col">Key</th>
                 <th scope="col">Course Name</th>
                 <th scope="col">Operations</th>
@@ -62,12 +60,9 @@
             <tbody>
             {% for each in courses %}
                 <tr>
-
                     <td>{{ each.key }}</td>
                     <td>{{ each.name }}</td>
-
                     <td>
-
                         <form method="post" action="/courses/delete/{{ each.key }}/">
                             <a class=" btn btn-outline-primary" data-toggle="collapse" href="#{{ each.key }}"
                                role="button" aria-expanded="false" aria-controls="collapseExample">
@@ -79,18 +74,26 @@
                             <button type="button" class="btn btn-outline-primary"
                                     onclick="location.href='/courses/create/{{ each.key }}/'">New Instance
                             </button>
+                            <button type="button" class="btn btn-outline-primary owner_groups" value={{each.key}}>Owner groups
+                            </button>
                             <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
                         </form>
                     </td>
-
                 </tr>
-
-
             {% endfor %}
-
             </tbody>
-
         </table>
     </div>
+    
+<div id="content">
+        {% block content %}
+        {% include 'groups/owner_groups.html' %}
+        {% endblock %}
+</div>
+{% endblock %}
 
+{% block scripts %}
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+<script src="{{ url_for('static', filename='owner_groups.js') }}"></script>
+<script src="../static/are_you_sure.js"></script>
 {% endblock %}

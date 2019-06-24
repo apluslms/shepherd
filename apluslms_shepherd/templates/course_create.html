@@ -2,33 +2,66 @@
 {% block title %}
     Add New Course
 {% endblock %}
-
+{% block head %}
+<link rel="shortcut icon" href="">
+{% endblock %}
 {% block body %}
     <div class="container text-center">
         {% from "_formhelpers.html" import render_field %}
-        <form method=post>
+        <form action="" method=post>
             <dl class="form-group">
                 {{ render_field(form.key, class='form-control') }}
                 {{ render_field(form.name,class='form-control' ) }}
-
                 {% block additional %}
                     {% from "_formhelpers.html" import render_field %}
                     {{ render_field(form.instance_key, class='form-control') }}
-
                     {{ render_field(form.branch, class='form-control') }}
-
                 {% endblock %}
                 {{ render_field(form.git_origin, class='form-control') }}
+                {{ render_field(form.identity, class='form-control') }}
+                {{ render_field(form.owner_group, class='form-control') }}
+                <button type="button" id="new_group" class="btn btn-secondary" data-toggle="modal" 
+                data-target="#createGroupModal">Create a new group for the course</button>
             </dl>
             {% block button %}
                 <p><input type=submit class="btn-lg btn-outline-primary " value=Create>
-                    <input type="button" onclick="location.href='/courses/'" class="btn-lg btn-outline-secondary "
-                           value=Cancel>
+                    <input type="button" onclick="location.href='/courses/'" 
+                    class="btn-lg btn-outline-secondary " value=Cancel>
                 </p>
-
             {% endblock %}
         </form>
     </div>
+    
+    <div class="modal fade" id="createGroupModal" tabindex="-1" role="dialog" aria-labelledby="createGroupModal" aria-hidden="true">
+        <form id="group_form" action="url_for('groups.create_course_group')" class="form" method="post">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalLabel">New group for the new course</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                    <dl class="form-group">
+                        <dt><label for="parent_group">Parent Group</label>
+                            <dd><select  class="form-control" id="parent_group" name="parent_group"><option value="-1">---</option></select>
+                            </dd>
+                    {{ render_field(group_form.name, class='form-control') }}
+                    {{ render_field(group_form.permissions) }}
+                    </dl>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-secondary" >Submit</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}
 
-
+{% block scripts %}
+<script src="{{ url_for('static', filename='helpers.js') }}"></script>
+<script src="{{ url_for('static', filename='course_create.js') }}"></script>
 {% endblock %}

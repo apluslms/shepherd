@@ -1,23 +1,53 @@
 {% extends 'base.html' %}
-{% block head %}
-    <!-- <script src="../../../static/are_you_sure.js"></script>
-    <script type="text/javascript" src="../../../static/helpers.js"></script> -->
-    <script src="{{ url_for('static', filename='are_you_sure.js') }}"></script>
-    <script src="{{ url_for('static', filename='helpers.js') }}"></script>
-{% endblock %}
+
 {% block title %}
     Group list
 {% endblock %}
+{% block head %}
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.js"></script>
+<script src="{{ url_for('static', filename='helpers.js') }}"></script>
 
+<link href="{{ url_for('static', filename='group_list.css') }}" rel="stylesheet" type="text/css">
+
+<script>
+     $(function () {
+    $('.tree li:has(ul)').addClass('parent_li').find(' > span').attr('title', 'Collapse this branch');
+    $('.tree li.parent_li > span').on('click', function (e) {
+        var children = $(this).parent('li.parent_li').find(' > ul > li');
+        if (children.is(":visible")) {
+            children.hide('fast');
+            $(this).attr('title', 'Expand this branch').find(' > i').addClass('icon-plus-sign').removeClass('icon-minus-sign');
+        } else {
+            children.show('fast');
+            $(this).attr('title', 'Collapse this branch').find(' > i').addClass('icon-minus-sign').removeClass('icon-plus-sign');
+        }
+        e.stopPropagation();
+    });
+    
+    $(".start-closed").click();
+});
+</script>
+<script>
+$('.tree ul').hide();
+
+$('.check').change(function() {
+    if (checkbox.is(':checked')){
+        $(this).find('ul').slideToggle();
+    }
+   
+});
+</script>
+
+{% endblock %}
 {% block body %}
 <h1 style = "font-size:50px;">
         <strong>{{title}}</strong>
-        {%if group %}
+        {%if node %}
             <button type="button" class="btn btn-outline-primary"
             onclick="goBack()">Return 
             </button>
             <button type="button" class="btn btn-outline-primary"
-            onclick="location.href='/groups/{{ group.id }}/create/'">Create subgroup 
+            onclick="location.href='/groups/{{ node.id }}/create/'">Create subgroup 
             </button>
         {% else %}
         <button type="button" class="btn btn-outline-primary"
@@ -26,34 +56,32 @@
         {% endif %}
 </h1>
     
-    <div  style = "font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
-        <ul>
+    <div class='tree' style = "font-family:georgia,garamond,serif;font-size:30px;font-style:italic;">
+        
             {%- for group in roots recursive %}
-            <li>
-            {% if user in group.members %}
-            {{ '-' * (loop.depth-1) }}{{group.name}} <font size='3'>(member) </font>
+            <ul>
+            {% if group.level==1 %}
+            <li><span ><i class="icon-folder-open"></i>
+            {% elif not group.children %}
+            <li><span ><i class="icon-leaf"></i>
             {% else %}
-            {{ '-' * (loop.depth-1) }}{{group.name}}
-            {% endif %}
-            <br>
-            <!-- <form method="post" action="{{ url_for('groups.delete_group', group_id=group.id) }}"> -->
-                <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/{{ group.id }}/members/'">Members
-                </button>
-                <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
-                </button>
-                <!-- <button type="button" class="btn btn-outline-primary"
-                onclick="location.href='/groups/edit/{{ group.id }}/'">Edit
-                </button>
-                <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>  -->
-            <!-- </form> -->
-           
+            <li><span ><i class="icon-minus-sign"></i>
+            {% endif %} 
+            <input class='check' type="checkbox" />
+            {{group.name}}</span>
+            <button type="button" class="btn btn-outline-primary"
+            onclick="location.href='/groups/{{ group.id }}/members/'">Members
+            </button>
+            <button type="button" class="btn btn-outline-primary"
+            onclick="location.href='/groups/{{ group.id }}/subgroups/'">Subgroups
+            </button>
             </li>
             {%- if group.children -%}
                 {{ loop(group.children) }}
             {%- endif %}
+            </ul>
             {%- endfor %}
-        </ul>
+            
     </div>
+
 {% endblock %}
