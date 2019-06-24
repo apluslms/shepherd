@@ -1,12 +1,11 @@
-from flask import request, flash, redirect, url_for,abort, Response
+from flask import request, flash, redirect, url_for, abort, Response
 from flask_login import current_user
 from flask_principal import Permission, RoleNeed
 
 from apluslms_shepherd.extensions import db
 from apluslms_shepherd.auth.models import User
-from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, \
-    CreateCoursePerm, ManageCoursePerm, CourseOwnerType
-from apluslms_shepherd.courses.models import CourseRepository
+from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, CreateCoursePerm
+from apluslms_shepherd.courses.models import CourseInstance
 from collections import namedtuple
 from functools import partial
 from functools import wraps
@@ -14,14 +13,15 @@ from slugify import slugify
 from json import dumps
 
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
 
-#-------------------------------------------------------------------------------------------------#
+# -------------------------------------------------------------------------------------------------#
 # Permission objects
 
 # Permission types (dict)
-PERM_TYPE = {'self_admin':'self-administrator',
-            'subgroups': 'create subgroups','courses': 'create courses'}
+PERM_TYPE = {'self_admin': 'self-administrator',
+             'subgroups': 'create subgroups', 'courses': 'create courses'}
 # The list of permission tuples (for forms)            
 PERMISSION_LIST = list(perm_tuple for perm_tuple in PERM_TYPE.items())
 
@@ -29,7 +29,8 @@ PERMISSION_LIST = list(perm_tuple for perm_tuple in PERM_TYPE.items())
 role_permission = Permission(RoleNeed('Instructor'), RoleNeed('Mentor'),
                              RoleNeed('Teacher'), RoleNeed('TA'), RoleNeed('TeachingAssistant'))
 
-#-------------------------------------------------------------------------------------------------#
+
+# -------------------------------------------------------------------------------------------------#
 # Decorators for permission checking
 
 def subgroup_create_perm(func):
@@ -39,36 +40,37 @@ def subgroup_create_perm(func):
                 OR
                 2. the group is the target group where subgroups can be created under.
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
-        allowed = False # Init allowed flag
+        allowed = False  # Init allowed flag
 
         if "group_id" in request.view_args:
-            group_id = request.view_args['group_id'] 
-            group =  db.session.query(Group).filter_by(id=group_id).one_or_none()
+            group_id = request.view_args['group_id']
+            group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
             # Check condition 1
             ancestors = group.path_to_root().all()
             for ancestor in ancestors[1:]:
                 if current_user in ancestor.members:
-                        allowed = True
-                        kwargs['group'] = group
-                        break
+                    allowed = True
+                    kwargs['group'] = group
+                    break
 
             # If condition 1 doesn't meet, check condition 2
-            if not allowed:  
-                perms = db.session.query(CreateGroupPerm).\
-                                    join(CreateGroupPerm.group).\
-                                    filter(CreateGroupPerm.target_group_id==group_id).\
-                                    filter(Group.members.any(User.id==current_user.id)).all()
+            if not allowed:
+                perms = db.session.query(CreateGroupPerm). \
+                    join(CreateGroupPerm.group). \
+                    filter(CreateGroupPerm.target_group_id == group_id). \
+                    filter(Group.members.any(User.id == current_user.id)).all()
                 if perms:
-                        allowed = True
-                        kwargs['group'] = group
-                                
+                    allowed = True
+                    kwargs['group'] = group
+
         if not allowed:
             flash('Permission denied')
             return redirect(request.referrer)
-        
+
         return func(*args, **kwargs)
 
     return wrapper
@@ -81,6 +83,7 @@ def group_manage_perm(func):
                 OR
                 2. the user is a member of one of its ancestor groups 
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
 
@@ -105,7 +108,7 @@ def group_manage_perm(func):
             if group.self_admin and current_user in group.members:
                 allowed = True
                 kwargs['group'] = group
-            else: # Check condition 2
+            else:  # Check condition 2
                 ancestors = group.path_to_root().all()
                 for ancestor in ancestors[1:]:
                     if current_user in ancestor.members:
@@ -132,14 +135,14 @@ def course_create_perm(func):
     Check whether the current user can create a course
     Permission: the user is a member of a group with the permission to create courses
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
-
         # Check whether any of the groups that current user is in has the permission
         # group_IDs = [g.id for g in current_user.groups] 
         # allowed = db.session.query(CreateCoursePerm).filter(CreateCoursePerm.group_id.in_(group_IDs)).all()
         identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
-                                Group.permissions.any(type=PermType.courses)).all()
+                                             Group.permissions.any(type=PermType.courses)).all()
         if not identity_groups:
             flash('Permission denied')
             return redirect(request.referrer)
@@ -155,15 +158,16 @@ def course_manage_perm(func):
     Check whether the current user can manage a course
     Permission: the user is a member of the owner groups of the course
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
 
         if "course_key" in request.view_args:
             course_key = request.view_args['course_key']
-            course = db.session.query(CourseRepository).\
-                            join(CourseRepository.owners).\
-                            filter(CourseRepository.key==course_key).\
-                            filter(Group.members.any(User.id==current_user.id)).one_or_none()
+            course = db.session.query(CourseInstance). \
+                join(CourseInstance.owners). \
+                filter(CourseInstance.course_key == course_key). \
+                filter(Group.members.any(User.id == current_user.id)).one_or_none()
 
         if not course:
             if 'return_error' in request.args:
@@ -179,36 +183,6 @@ def course_manage_perm(func):
     return wrapper
 
 
-def course_admin_perm(func):
-    """ 
-    Check whether the current user can take admin actions for a course 
-    Permission: the user is a member of the admin groups of the course 
-    """ 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-
-        if "course_key" in request.view_args:
-            course_key = request.view_args['course_key']
-            course = db.session.query(CourseRepository).\
-                            join(ManageCoursePerm).\
-                            join(ManageCoursePerm.group).\
-                            filter(CourseRepository.key==course_key).\
-                            filter(ManageCoursePerm.type==CourseOwnerType.admin).\
-                            filter(Group.members.any(User.id==current_user.id)).one_or_none()
-       
-        if not course:
-            if 'return_error' in request.args:
-                error_message = dumps({'message': 'Could not take this action'})
-                abort(Response(error_message, 403))
-            else:
-                flash('Permission denied')
-                return redirect('/courses/')
-
-        kwargs['course'] = course
-        return func(*args, **kwargs)
-
-    return wrapper
-
 # Function for permission checking
 
 def parent_group_check(group_name, parent_group):
@@ -221,14 +195,14 @@ def parent_group_check(group_name, parent_group):
         return None
 
     # Check whether there exists such a parent group
-    if parent_group == -1: 
-            flash('No such a parent path')
-            return None
+    if parent_group == -1:
+        flash('No such a parent path')
+        return None
 
     # Check whether the parent group already has a child with the same group name
     if not parent_group:  # The new group is a root 
         g = db.session.query(Group).filter_by(name=group_name,
-                                    parent=parent_group).one_or_none()
+                                              parent=parent_group).one_or_none()
         if g:
             flash('The group already exists.')
             return None
@@ -243,19 +217,20 @@ def parent_group_check(group_name, parent_group):
     ancestors = parent_group.path_to_root().all()
     for ancestor in ancestors[1:]:
         if current_user in ancestor.members:
-                return parent_group
+            return parent_group
 
     # Check whether the parent group is the target group where subgroups can be created under.
-    perms = db.session.query(CreateGroupPerm).\
-                    join(CreateGroupPerm.group).\
-                    filter(CreateGroupPerm.target_group_id==parent_group.id).\
-                    filter(Group.members.any(User.id==current_user.id)).all()
+    perms = db.session.query(CreateGroupPerm). \
+        join(CreateGroupPerm.group). \
+        filter(CreateGroupPerm.target_group_id == parent_group.id). \
+        filter(Group.members.any(User.id == current_user.id)).all()
     if perms:
-            return parent_group
+        return parent_group
 
     return None
 
-#-------------------------------------------------------------------------------------------------#
+
+# -------------------------------------------------------------------------------------------------#
 
 def group_slugify(group_name, parent, separator='.'):
     """
@@ -267,9 +242,9 @@ def group_slugify(group_name, parent, separator='.'):
     """
     regex_pattern = r'[^-a-z0-9_]+'
 
-    if parent is None: # If the group is the root
+    if parent is None:  # If the group is the root
         return slugify(group_name, separator=separator, regex_pattern=regex_pattern)
-    else: 
+    else:
         # Else, first find the path from the root to its parent  
         path_name = [n.name for n in parent.path_to_root().all()][::-1]
         # add the group to the end of the list 
@@ -288,17 +263,17 @@ def query_end_group(group_path):
 
     if group_path == '':  # If the path is null, the new group is the root
         return end_group
-        
+
     # Get the list of groups
-    group_list = group_path.lower().split('.')  
+    group_list = group_path.lower().split('.')
     # Query from the root to the end
     for group_name in group_list:
         q = Group.query.filter_by(name=group_name, parent=end_group).one_or_none()
         if q:
-            end_group = q # Update the group
+            end_group = q  # Update the group
         else:  # The group does not exist in the database (no such group path)
             return -1
 
     return end_group
 
-#-------------------------------------------------------------------------------------------------#
+# -------------------------------------------------------------------------------------------------#

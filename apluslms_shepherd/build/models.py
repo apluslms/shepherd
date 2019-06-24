@@ -19,7 +19,7 @@ class Action(enum.Enum):
 
 # A complete build process for a instance, include 4 steps
 class Build(db.Model):
-    instance_id = db.Column(db.Integer, db.ForeignKey('course_instance.key'), primary_key=True)
+    instance_id = db.Column(db.Integer, db.ForeignKey('course_instance.id'), primary_key=True)
     number = db.Column(db.Integer, primary_key=True)
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)

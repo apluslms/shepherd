@@ -18,7 +18,7 @@ gp_table = db.Table('gp_table', db.Model.metadata,
 # For Group model and CourseRepository model 
 gc_table = db.Table('gc_table', db.Model.metadata,
                     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
-                    db.Column('course_key', db.String, db.ForeignKey('course_repository.key'))
+                    db.Column('course_key', db.String, db.ForeignKey('course_instance.course_key'))
                     )
 
 
@@ -99,7 +99,7 @@ class CreateCoursePerm(db.Model):
     # The group whose members have the permission to create courses
     group = db.relationship("Group", backref=db.backref("course_permission", 
                             uselist=False,cascade='all,delete'))
-    regexp = db.Column(db.Boolean,default=True)
+    regexp = db.Column(db.Boolean, default=True)
     # The course naming rule (a regular expression)
     pattern = db.Column(db.String(30))
 
