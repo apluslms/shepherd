@@ -4,7 +4,8 @@ from flask_principal import Permission, RoleNeed
 
 from apluslms_shepherd.extensions import db
 from apluslms_shepherd.auth.models import User
-from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, CreateCoursePerm
+from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, \
+    CreateCoursePerm, ManageCoursePerm, CourseOwnerType
 from apluslms_shepherd.courses.models import CourseRepository
 from collections import namedtuple
 from functools import partial
@@ -177,6 +178,36 @@ def course_manage_perm(func):
 
     return wrapper
 
+
+def course_admin_perm(func):
+    """ 
+    Check whether the current user can take admin actions for a course 
+    Permission: the user is a member of the admin groups of the course 
+    """ 
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        if "course_key" in request.view_args:
+            course_key = request.view_args['course_key']
+            course = db.session.query(CourseRepository).\
+                            join(ManageCoursePerm).\
+                            join(ManageCoursePerm.group).\
+                            filter(CourseRepository.key==course_key).\
+                            filter(ManageCoursePerm.type==CourseOwnerType.admin).\
+                            filter(Group.members.any(User.id==current_user.id)).one_or_none()
+            logging.info(course)
+        if not course:
+            if 'return_error' in request.args:
+                error_message = dumps({'message': 'Permssion Denied'})
+                abort(Response(error_message, 403))
+            else:
+                flash('Permission denied')
+                return redirect('/courses/')
+
+        kwargs['course'] = course
+        return func(*args, **kwargs)
+
+    return wrapper
 
 # Function for permission checking
 
