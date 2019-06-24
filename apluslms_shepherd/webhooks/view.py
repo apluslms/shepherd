@@ -52,18 +52,13 @@ def gitlab():
         current_build_number = 0 if Build.query.filter_by(instance_id=instance.id).count() is 0 \
             else Build.query.filter_by(instance_id=instance.id).order_by(
             desc(Build.number)).first().number
-
-        pull_s = pull_repo.s(base_path, use_url, git_branch, instance.course_key, instance.key,
+        pull_s = pull_repo.s(base_path, use_url, git_branch, instance.course_key, instance.instance_key,
                              str(current_build_number + 1))
-        build_s = build_repo.s(base_path, instance.course_key, instance.key, str(current_build_number + 1))
+        build_s = build_repo.s(base_path, instance.course_key, instance.instance_key, str(current_build_number + 1))
         deploy_s = deploy.s(config.DevelopmentConfig.COURSE_DEPLOYMENT_PATH, base_path, instance.course_key,
-                            instance.key, str(current_build_number + 1))
+                            instance.instance_key, str(current_build_number + 1))
         clean_s = clean.s(base_path, instance.course_key,
-                          instance.key, str(current_build_number + 1))
-        # pull_repo.apply_async(args=[base_path, use_url, git_branch, instance.course_key, instance.key,
-        #                             str(current_build_number + 1)],
-        #                       retry=False,
-        #                       link=build_s)
+                          instance.instance_key, str(current_build_number + 1))
         res = chain(pull_s, build_s, deploy_s, clean_s)()
     else:
         abort(400, "Invalid payload")

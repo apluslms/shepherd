@@ -10,14 +10,14 @@
         {% from "_formhelpers.html" import render_field %}
         <form action="" method=post>
             <dl class="form-group">
+                {{ render_field(form.course_key, class='form-control') }}
+                {{ render_field(form.name,class='form-control') }}
+                {{ render_field(form.instance_key, class='form-control') }}
+                {{ render_field(form.git_origin, class='form-control') }}
+                {{ render_field(form.branch, class='form-control') }}
                 {{ render_field(form.identity, class='form-control') }}
-                {{ render_field(form.key, class='form-control') }}
-                {{ render_field(form.name,class='form-control' ) }}
-                
-                {% if instances_num > 0 %}
-                    {{ render_field(form.git_origin, class='form-control') }}
-                    {{ render_field(form.change_all, class='form-control') }}
-                {% endif %} 
+                {{ render_field(form.owner_group, class='form-control') }}
+
             </dl>
             {% block button %}
                 <p><input type=submit class="btn-lg btn-outline-primary " value=Submit>

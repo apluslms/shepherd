@@ -35,7 +35,7 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
     logger.info('course_key:{}, instance_key:{}'.format(course_key, instance_key))
     with celery.app.app_context():
         # Get course instance by course key and instance key
-        ins = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first()
+        ins = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first()
         # If no such instance in database, stop the task
         if ins is None:
             logger.error('No such course instance inthe database')
@@ -84,7 +84,7 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
     logger.info('course_key:{}, instance_key:{}'.format(course_key, instance_key))
     with celery.app.app_context():
         # Get the instance id
-        instance_id = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first().id
+        instance_id = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first().id
         # add end time for build entry and buildlog entry, change build state
         print('finished')
         now = datetime.utcnow()
@@ -128,7 +128,7 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
     instance_key = kwargs['args'][-2]
     course_key = kwargs['args'][-3]
     with celery.app.app_context():
-        instance_id = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first().id
+        instance_id = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first().id
 
         # add end time for build entry and buildlog entry, change build state
         print('finished')
