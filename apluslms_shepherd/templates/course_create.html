@@ -10,14 +10,11 @@
         {% from "_formhelpers.html" import render_field %}
         <form action="" method=post>
             <dl class="form-group">
-                {{ render_field(form.key, class='form-control') }}
-                {{ render_field(form.name,class='form-control' ) }}
-                {% block additional %}
-                    {% from "_formhelpers.html" import render_field %}
-                    {{ render_field(form.instance_key, class='form-control') }}
-                    {{ render_field(form.branch, class='form-control') }}
-                {% endblock %}
+                {{ render_field(form.course_key, class='form-control') }}
+                {{ render_field(form.name,class='form-control') }}
+                {{ render_field(form.instance_key, class='form-control') }}
                 {{ render_field(form.git_origin, class='form-control') }}
+                {{ render_field(form.branch, class='form-control') }}
                 {{ render_field(form.identity, class='form-control') }}
                 {{ render_field(form.owner_group, class='form-control') }}
                 <button type="button" id="new_group" class="btn btn-secondary" data-toggle="modal" 
