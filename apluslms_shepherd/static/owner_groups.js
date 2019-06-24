@@ -79,11 +79,10 @@ $(document).on("submit", "form.add_owner_form", function(event){
      if (confirm("Confirm to remove this owner group?")){
          var group_id = $(this).find("select").val();
         console.log(group_id);
-        //  console.log($(this).attr('action')+'?group_id='+group_id);
-         
+        //  console.log($(this).attr('action')+'?group_id='+group_id+'&return_error=true');
         $.ajax({
             type: 'POST',
-            url: "/courses/"+course_key+"/owners/add/"+'?group_id='+group_id,
+            url: "/courses/"+course_key+"/owners/add/"+'?group_id='+group_id+'&return_error=true',
             success: function () {
             alert('Add this owner group successfully');
             add_owner_options(course_key);
@@ -101,13 +100,12 @@ $(document).on("submit", "form.add_owner_form", function(event){
 $(document).on("submit", "form.del_owner_form", function(event){
     event.preventDefault();
     var row = $(this).parents('tr');
-     if (confirm("Confirm to add this owner group?")){
+     if (confirm("Confirm to delete this owner group?")){
          var group_id = $(this).find("button[name='del_owner_btn']").val();
-         console.log($(this).attr('action')+'?group_id='+group_id);
          
         $.ajax({
             type: 'POST',
-            url: $(this).attr('action')+'?group_id='+group_id, 
+            url: $(this).attr('action')+'?group_id='+group_id+'&return_error=true', 
             success: function () {
             alert('Remove this owner group successfully');
             row.remove();

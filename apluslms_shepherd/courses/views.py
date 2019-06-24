@@ -5,9 +5,10 @@ from sqlalchemy import inspect
 from json import dumps
 from apluslms_shepherd.courses.forms import CourseCreateForm, InstanceForm, CourseEditForm
 from apluslms_shepherd.courses.models import CourseRepository, CourseInstance, db
-from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, CreateCoursePerm
+from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, CreateCoursePerm,\
+    ManageCoursePerm, CourseOwnerType
 from apluslms_shepherd.groups.utils import group_slugify,PERMISSION_LIST, \
-    role_permission,course_create_perm, course_manage_perm
+    role_permission,course_create_perm, course_manage_perm, course_admin_perm
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.views import list_users,add_member
 from apluslms_shepherd.groups.views import create_group
@@ -62,8 +63,11 @@ def add_course(**kwargs):
                                     name=form.name.data)
         owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
         new_course.owners.append(owner_group)
+        course_admin_perm = ManageCoursePerm(course=new_course,group=owner_group,
+                                            type=CourseOwnerType.admin)
         try:
             db.session.add(new_course)
+            db.session.add(course_admin_perm)
             db.session.commit()
             flash('New course added.')
         except IntegrityError:
@@ -124,7 +128,7 @@ def add_course_instance(course_key,**kwargs):
 @course_bp.route('edit/<course_key>/', methods=['GET', 'POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@course_manage_perm
+@course_admin_perm
 def edit_course(course_key,**kwargs): 
     course = CourseRepository.query.filter_by(key=course_key)
     course_instances = CourseInstance.query.filter_by(course_key=course_key)
@@ -192,7 +196,7 @@ def edit_instance(course_key, instance_key,**kwargs):
 @course_bp.route('delete/<course_key>/', methods=['POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@course_manage_perm
+@course_admin_perm
 def del_course(course_key,**kwargs):
     if 'course' in kwargs:
         course = kwargs['course']
@@ -258,7 +262,7 @@ def owners_list(course_key,**kwargs):
 @course_bp.route('<course_key>/owners/delete/', methods=['POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@course_manage_perm
+@course_admin_perm
 def owner_remove(course_key,**kwargs):
     """Remove a owner group
     """
@@ -313,7 +317,7 @@ def add_owner_list(course_key,**kwargs):
 @course_bp.route('<course_key>/owners/add/', methods=['POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@course_manage_perm
+@course_admin_perm
 def owner_add(course_key,**kwargs):
     """add a owner group
     """
