@@ -36,7 +36,6 @@ function add_owner_options(course_key){
         console.log(data.owner_options);
         $("#owner_add").html('<option disabled="disabled" selected="selected">Please Select</option>');  // Empty the 'parent_group' option
             for ( group of data.owner_options){  // Add options
-                console.log(group.id);
                 $('#owner_add').append('<option value= ' + group.id + '>' + group.name + '</option>');
             }
         },
@@ -76,13 +75,12 @@ $('#tabs').on("click", "li", function (event) {
 $(document).on("submit", "form.add_owner_form", function(event){
     event.preventDefault();
     // var row = $(this).parents('tr');
-     if (confirm("Confirm to remove this owner group?")){
-         var group_id = $(this).find("select").val();
-        console.log(group_id);
-        //  console.log($(this).attr('action')+'?group_id='+group_id+'&return_error=true');
+     if (confirm("Confirm to add this owner group?")){
+        var group_id = $(this).find("#owner_add").val();
+        var owner_type =  $(this).find("#owner_type").val();
         $.ajax({
             type: 'POST',
-            url: "/courses/"+course_key+"/owners/add/"+'?group_id='+group_id+'&return_error=true',
+            url: "/courses/"+course_key+"/owners/add/"+'?group_id='+group_id+'&owner_type='+owner_type+'&return_error=true',
             success: function () {
             alert('Add this owner group successfully');
             add_owner_options(course_key);
@@ -111,6 +109,7 @@ $(document).on("submit", "form.del_owner_form", function(event){
             row.remove();
             },
             error: function(response){
+                    console.log(response)
                     error = JSON.parse(response.responseText)
                     alert(error.message);
             }

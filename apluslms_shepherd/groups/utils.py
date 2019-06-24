@@ -195,10 +195,10 @@ def course_admin_perm(func):
                             filter(CourseRepository.key==course_key).\
                             filter(ManageCoursePerm.type==CourseOwnerType.admin).\
                             filter(Group.members.any(User.id==current_user.id)).one_or_none()
-            logging.info(course)
+       
         if not course:
             if 'return_error' in request.args:
-                error_message = dumps({'message': 'Permssion Denied'})
+                error_message = dumps({'message': 'Could not take this action'})
                 abort(Response(error_message, 403))
             else:
                 flash('Permission denied')
