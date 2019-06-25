@@ -31,7 +31,7 @@ class Config(object):
     }
     USE_SSH_FOR_GIT = True
     CELERY_RESULT_BACKEND = "db+sqlite:///"+BASE_DIR+"/result.db"
-    CELERY_BROKER_URL = "amqp://guest:guest@172.17.0.2:5672"
+    BROKER_URL = "amqp://guest:guest@172.17.0.2:5672"
     CELERY_NAME = "test"
     CELERY_IMPORTS = ("apluslms_shepherd.celery_tasks.tasks",
                       "apluslms_shepherd.celery_tasks.signals"

@@ -37,15 +37,16 @@ def add_course(**kwargs):
         identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
                                              Group.permissions.any(type=PermType.courses)).all()
     owner_groups = Group.query.filter(Group.members.any(id=current_user.id)).all()
-
     form = CourseForm(request.form)
     form.identity.choices += [(g.id, group_slugify(g.name, g.parent)) for g in identity_groups]
     form.owner_group.choices = [(g.id, group_slugify(g.name, g.parent)) for g in owner_groups]
     group_form = GroupForm(request.form)
     group_form.permissions.choices = [v for v in PERMISSION_LIST if v != ('courses', 'create courses')]
-
+    copied_course = CourseInstance.query.filter(CourseInstance.course_key == request.args.get('course'),
+                                                CourseInstance.instance_key == request.args.get('instance')).first()
+    if copied_course is not None:
+        form = CourseForm(request.form, obj=copied_course)
     if request.method == 'POST' and form.validate():
-
         course_perm = CreateCoursePerm.query.filter_by(group_id=form.identity.data).one_or_none()
         if not course_perm:
             flash('Please choose a valid identity')
@@ -54,23 +55,22 @@ def add_course(**kwargs):
         if not course_perm.pattern_match(form.course_key.data.upper()):
             flash('The course key does not match the naming rule ')
             return redirect(url_for('.add_course'))
-
-        new_course = CourseInstance(course_key=form.course_key.data.upper(),
-                                    instance_key=form.instance_key.data,
-                                    branch=form.instance_key.data,
-                                    git_origin=form.git_origin.data,
-                                    secret_token=None if form.secret_token.data == '' else form.secret_token.data,
-                                    config_filename=None if form.config_filename.data == '' else form.secret_token.data,
-                                    name=form.name.data)
-        owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
-        new_course.owners.append(owner_group)
-        exists = CourseInstance.query.filter_by(course_key=new_course.course_key,
-                                                instance_key=new_course.instance_key).all() is not None
-        # The same duplicated course key and instance key will not cause IntegrityError, check if exist manually.
+        exists = CourseInstance.query.filter(CourseInstance.course_key == form.course_key.data.upper(),
+                                             CourseInstance.instance_key == form.instance_key.data).first()
         if exists:
-            flash(
-                'Course key %s and instance key %s already exists.' % (new_course.course_key, new_course.instance_key))
+            flash('Course key %s and instance key %s already exists.' % (form.course_key.data.upper(), form.instance_key.data))
         else:
+            new_course = CourseInstance(course_key=form.course_key.data.upper(),
+                                        instance_key=form.instance_key.data,
+                                        branch=form.instance_key.data,
+                                        git_origin=form.git_origin.data,
+                                        secret_token=None if form.secret_token.data == '' else form.secret_token.data,
+                                        config_filename=None if form.config_filename.data == '' else form.secret_token.data,
+                                        name=form.name.data)
+            owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
+
+            new_course.owners.append(owner_group)
+        # The same duplicated course key and instance key will not cause IntegrityError, check if exist manually.
             db.session.add(new_course)
             db.session.commit()
             flash('New course added.')
@@ -99,8 +99,8 @@ def edit_course(course_key, instance_key, **kwargs):
         course_perm = CreateCoursePerm.query.filter_by(group_id=form.identity.data).one_or_none()
         if not course_perm:
             flash('Please choose a valid identity group')
-            return redirect(url_for('.edit_course', course_key=course_key))
-        if not course_perm.pattern_match(form.key.data.upper()):
+            return redirect(url_for('.edit_course', course_key=course_key, instance_key=instance_key))
+        if not course_perm.pattern_match(form.course_key.data.upper()):
             flash('The course key does not match the naming rule: {}'.format(course_perm.pattern))
             return redirect(url_for('.edit_course', course_key=course_key))
         course.update(dict(
@@ -150,9 +150,9 @@ def owners_list(course_key, **kwargs):
     group_array = []
 
     for group in groups:
-        groupObj = {'id': group.id,
-                    'name': group_slugify(group.name, group.parent)}
-        group_array.append(groupObj)
+        group_obj = {'id': group.id,
+                     'name': group_slugify(group.name, group.parent)}
+        group_array.append(group_obj)
 
     return jsonify({'owner_groups': group_array})
 

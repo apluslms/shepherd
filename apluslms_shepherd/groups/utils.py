@@ -164,9 +164,10 @@ def course_manage_perm(func):
 
         if "course_key" in request.view_args:
             course_key = request.view_args['course_key']
+            instance_key = request.view_args['instance_key']
             course = db.session.query(CourseInstance). \
                 join(CourseInstance.owners). \
-                filter(CourseInstance.course_key == course_key). \
+                filter(CourseInstance.course_key == course_key, CourseInstance.instance_key == instance_key). \
                 filter(Group.members.any(User.id == current_user.id)).one_or_none()
 
         if not course:
