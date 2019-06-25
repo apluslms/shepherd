@@ -15,10 +15,10 @@ gp_table = db.Table('gp_table', db.Model.metadata,
                     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
                     db.Column('permission_id', db.Integer, db.ForeignKey('group_permission.id'))
                     )
-# For Group model and CourseRepository model 
+# For Group model and CourseInstance model 
 gc_table = db.Table('gc_table', db.Model.metadata,
                     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
-                    db.Column('course_key', db.String, db.ForeignKey('course_instance.course_key'))
+                    db.Column('course_instance_id', db.String, db.ForeignKey('course_instance.id'))
                     )
 
 
@@ -122,10 +122,10 @@ class CourseOwnerType(enum.Enum):
 
 class ManageCoursePerm(db.Model):
 
-    course_key =  db.Column(db.String(50), db.ForeignKey('course_repository.key'),primary_key=True)
+    course_id =  db.Column(db.Integer, db.ForeignKey('course_instance.id'),primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey('group.id'),primary_key=True)
 
-    course = db.relationship('CourseRepository',foreign_keys=[course_key],
+    course = db.relationship('CourseInstance',foreign_keys=[course_id],
                         uselist=False,
                         backref=db.backref("manage_course_perm", cascade='all,delete'))
     group = db.relationship('Group',foreign_keys=[group_id],
