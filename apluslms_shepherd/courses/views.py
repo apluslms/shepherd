@@ -152,13 +152,13 @@ def owners_list(course_key, instance_key, **kwargs):
                     .filter(CourseInstance.course_key == course_key,
                             CourseInstance.instance_key == instance_key).all())
 
-    groupArray = []
+    group_array = []
 
     for perm in perms:
         groupObj = {'id': perm.group.id,
                     'name': group_slugify(perm.group.name, perm.group.parent),
                     'owner_type':perm.type.name}
-        groupArray.append(groupObj)
+        group_array.append(groupObj)
 
     return jsonify({'owner_groups': group_array})
 
@@ -213,14 +213,14 @@ def add_owner_list(course_key, instance_key, **kwargs):
     owner_groups = course_instance.owners
     groups = [g for g in current_user.groups if g not in owner_groups]
 
-    groupArray = []
+    group_array = []
 
     for group in groups:
         groupObj = {'id': group.id,
                     'name': group_slugify(group.name, group.parent)}
-        groupArray.append(groupObj)
+        group_array.append(groupObj)
 
-    return jsonify({'owner_options': groupArray})
+    return jsonify({'owner_options': group_array})
 
 
 @course_bp.route('<course_key>/<instance_key>/owners/add/', methods=['POST'])
