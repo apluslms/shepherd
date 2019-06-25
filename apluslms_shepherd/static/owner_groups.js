@@ -17,7 +17,7 @@ function list_owners(course_key,instance_key){
                 for ( group of data.owner_groups){  // Add options
                     $('#owner_table').append("<tr>"+
                                             "<td>"+group.name+"</td>"+
-                                            "<td>"+"</td>"+
+                                            "<td>"+group.owner_type+"</td>"+
                                             "<td>"+  
                                             "<form class='del_owner_form'>"+
                                             "<button type='submit' name='del_owner_btn' class='btn btn-primary' value="+ group.id+
@@ -67,7 +67,7 @@ $('#Modal').on('hidden.bs.modal', function () {
     instance_key = null;
   })
 
-  
+
 $(".tabbable").tabs();
 $('#tabs').on("click", "li", function (event) {    
     if ($(this).attr('id')=='list_li'){

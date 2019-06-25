@@ -151,16 +151,21 @@ def del_course_instance(course_key, instance_key, **kwargs):
 def owners_list(course_key, instance_key, **kwargs):
     """Get all the owner groups of a course  
     """
-    groups = (db.session.query(Group) 
-                        .join(CourseInstance.owners)
-                        .filter(CourseInstance.course_key == course_key,
-                                CourseInstance.instance_key == instance_key).all())
+    # groups = (db.session.query(Group) 
+    #                     .join(CourseInstance.owners)
+    #                     .filter(CourseInstance.course_key == course_key,
+    #                             CourseInstance.instance_key == instance_key).all())
+    perms = (db.session.query(ManageCoursePerm) 
+                    .join(ManageCoursePerm.course_instance)
+                    .filter(CourseInstance.course_key == course_key,
+                            CourseInstance.instance_key == instance_key).all())
 
     groupArray = []
 
-    for group in groups:
-        groupObj = {'id': group.id,
-                    'name': group_slugify(group.name, group.parent)}
+    for perm in perms:
+        groupObj = {'id': perm.group.id,
+                    'name': group_slugify(perm.group.name, perm.group.parent),
+                    'owner_type':perm.type.name}
         groupArray.append(groupObj)
 
     return jsonify({'owner_groups': groupArray})
