@@ -1,22 +1,20 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, abort, Response
-from flask_login import login_required, current_user
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import inspect
+import logging
 from json import dumps
 
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, abort, Response
+from flask_login import login_required, current_user
+from sqlalchemy.exc import SQLAlchemyError
+
+from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.courses.forms import CourseForm
 from apluslms_shepherd.courses.models import CourseInstance, db
+from apluslms_shepherd.groups.forms import GroupForm
 from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, CreateCoursePerm,\
     ManageCoursePerm, CourseOwnerType
 from apluslms_shepherd.groups.utils import group_slugify, PERMISSION_LIST, \
     role_permission, course_instance_create_perm, \
     course_instance_manage_perm, course_instance_admin_perm
 
-from apluslms_shepherd.auth.models import User
-from apluslms_shepherd.groups.views import list_users, add_member
-from apluslms_shepherd.groups.views import create_group
-from apluslms_shepherd.groups.forms import GroupForm
-import logging
 
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 logger = logging.getLogger(__name__)
@@ -42,15 +40,13 @@ def add_course(**kwargs):
         identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
                                              Group.permissions.any(type=PermType.courses)).all()
     owner_groups = Group.query.filter(Group.members.any(id=current_user.id)).all()
-
     form = CourseForm(request.form)
     form.identity.choices += [(g.id, group_slugify(g.name, g.parent)) for g in identity_groups]
     form.owner_group.choices = [(g.id, group_slugify(g.name, g.parent)) for g in owner_groups]
     group_form = GroupForm(request.form)
     group_form.permissions.choices = [v for v in PERMISSION_LIST if v != ('courses', 'create courses')]
-
+    
     if request.method == 'POST' and form.validate():
-
         course_perm = CreateCoursePerm.query.filter_by(group_id=form.identity.data).one_or_none()
         if not course_perm:
             flash('Please choose a valid identity')
@@ -59,13 +55,11 @@ def add_course(**kwargs):
         if not course_perm.pattern_match(form.course_key.data.upper()):
             flash('The course key does not match the naming rule ')
             return redirect(url_for('.add_course'))
-
         exists = CourseInstance.query.filter(CourseInstance.course_key == form.course_key.data.upper(),
                                              CourseInstance.instance_key == form.instance_key.data).first()
         if exists:
             flash('Course key %s and instance key %s already exists.' % (form.course_key.data.upper(), form.instance_key.data))
         else:
-
             new_course = CourseInstance(course_key=form.course_key.data.upper(),
                                         instance_key=form.instance_key.data,
                                         branch=form.instance_key.data,
@@ -102,26 +96,24 @@ def edit_course(course_key, instance_key, **kwargs):
     form.identity.choices += [(g.id, group_slugify(g.name, g.parent)) for g in identity_groups]
     # The label is changes according to whether user is edit a course or creating a course,
     # When editing a course, it should be changed to follows, or it will be "First instance origin"
-    form.git_origin.label = "New Git Origin for all instance"
     if request.method == 'POST' and form.validate():
         # Check whether the course key match the naming rule
         course_perm = CreateCoursePerm.query.filter_by(group_id=form.identity.data).one_or_none()
         if not course_perm:
             flash('Please choose a valid identity group')
-            return redirect(url_for('.edit_course', course_key=course_key))
-        if not course_perm.pattern_match(form.key.data.upper()):
+            return redirect(url_for('.edit_course', course_key=course_key, instance_key=instance_key))
+        if not course_perm.pattern_match(form.course_key.data.upper()):
             flash('The course key does not match the naming rule: {}'.format(course_perm.pattern))
             return redirect(url_for('.edit_course', course_key=course_key))
         course.update(dict(
             course_key=form.course_key.data.upper(),
-            instance_key=form.instance_key.data.upper,
+            instance_key=form.instance_key.data,
             branch=form.instance_key.data,
             git_origin=form.git_origin.data,
             secret_token=None if form.secret_token.data == '' else form.secret_token.data,
             config_filename=None if form.config_filename.data == '' else form.secret_token.data,
             name=form.name.data
         ))
-
         flash('Course edited.')
         db.session.commit()
         return redirect('/courses/')
@@ -168,7 +160,7 @@ def owners_list(course_key, instance_key, **kwargs):
                     'owner_type':perm.type.name}
         groupArray.append(groupObj)
 
-    return jsonify({'owner_groups': groupArray})
+    return jsonify({'owner_groups': group_array})
 
 
 @course_bp.route('<course_key>/<instance_key>/owners/remove/', methods=['POST'])
@@ -195,9 +187,9 @@ def owner_remove(course_key, instance_key, **kwargs):
 
     try:
         db.session.commit()
-    except:
+    except SQLAlchemyError as e:
         db.session.rollback()
-        error_message = dumps({'message': 'Error occurs and could not remove the owner'})
+        error_message = dumps({'message': 'Error occurs and could not remove the owner, Error:%s' % e})
         abort(Response(error_message, 501))
 
     return jsonify(status='success')
@@ -251,9 +243,9 @@ def owner_add(course_key, instance_key, **kwargs):
         course_instance.owners.append(group)
         db.session.add(manage_course_perm)
         db.session.commit() 
-    except:
+    except SQLAlchemyError as e:
         db.session.rollback()
-        error_message = dumps({'message': 'Error occurs and could not add the owner'})
+        error_message = dumps({'message': 'Error occurs and could not remove the owner. Error:%s' % e})
         abort(Response(error_message, 501))
 
     return jsonify(status='success')

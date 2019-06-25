@@ -1,8 +1,13 @@
-from flask import Blueprint, render_template, url_for, redirect, request, flash,\
-    Response,abort
-from sqlalchemy.exc import IntegrityError
+import logging
+from json import dumps
+
+from flask import Blueprint, render_template, url_for, redirect, request, flash, \
+    Response, abort
+from flask import jsonify
 from flask_login import login_required, current_user
+
 from apluslms_shepherd.auth.models import User
+from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.groups.forms import GroupForm
 from apluslms_shepherd.groups.models import db, Group, PermType, GroupPermission, \
     CreateGroupPerm, CreateCoursePerm
@@ -12,13 +17,12 @@ from apluslms_shepherd.groups.utils import group_slugify, slugify, query_end_gro
 from flask import jsonify
 from json import dumps
 
-import logging
 logging.basicConfig(level=logging.DEBUG)
 
 groups_bp = Blueprint('groups', __name__, url_prefix='/groups')
 
 
-#-------------------------------------------------------------------------------------------------#
+# -------------------------------------------------------------------------------------------------#
 # Group listing 
 
 @groups_bp.route('/', methods=['GET'])
@@ -63,10 +67,10 @@ def list_my_groups():
     return render_template('groups/my_groups.html', title = title, user = current_user, 
                                 groups = zip(groups, group_slugs),PermType = PermType)
 
-#-------------------------------------------------------------------------------------------------#
+# -------------------------------------------------------------------------------------------------#
 # Group Create
 
-def new_group_to_db(group_name,parent_group,form):
+def new_group_to_db(group_name, parent_group, form):
     """The function creates a new group and add it to the database
     """
     # Create a new Group instance
@@ -74,7 +78,7 @@ def new_group_to_db(group_name,parent_group,form):
         new_group = Group(name=group_name, parent_id=parent_group.id)
     else:
         new_group = Group(name=group_name, parent_id=None)
-    
+
     # Add the permissions to the group
     selected_perms = form.permissions.data
     for name, perm_type in PermType.__members__.items():
@@ -90,7 +94,7 @@ def new_group_to_db(group_name,parent_group,form):
         new_group.self_admin = True
     else:
         new_group.self_admin = False
-    
+
     # If the group can create courses, create CreateCoursePerm object
     if 'courses' in selected_perms:
         course_prefix = form.course_prefix.data.upper()
@@ -119,11 +123,11 @@ def create_group():
         parent_group = query_end_group(form.parent_path.data)
 
         # Check whether the new group can be created
-        if not parent_group_check(group_name,parent_group):
+        if not parent_group_check(group_name, parent_group):
             return redirect(url_for('.create_group'))
-        
+
         # Add the group to the database
-        _ = new_group_to_db(group_name,parent_group,form)
+        _ = new_group_to_db(group_name, parent_group, form)
         try:
             db.session.commit()
             flash('The new group is added, and you are set as a member of the new group')
@@ -131,7 +135,7 @@ def create_group():
         except:
             db.session.rollback()
             flash('Could not create the group')
-    
+
     return render_template('groups/group_create.html', form=form, parent=None)
 
 
@@ -139,7 +143,7 @@ def create_group():
 @login_required
 @role_permission.require(http_exception=403)
 @subgroup_create_perm
-def create_subgroup(group_id,**kwargs):
+def create_subgroup(group_id, **kwargs):
     """Create a subgroup by giving the id of a parent group
     """
     if 'group' in kwargs:
@@ -148,7 +152,7 @@ def create_subgroup(group_id,**kwargs):
         parent_group = db.session.query(Group).filter_by(id = group_id).one_or_none()
 
     form = GroupForm(request.form)
-   
+
     if request.method == 'POST' and form.validate():
         # Group name should not be empty
         if form.name.data == '':
@@ -172,7 +176,7 @@ def create_subgroup(group_id,**kwargs):
     return render_template('groups/group_create.html', form = form, parent = parent_group)
 
 
-@groups_bp.route('/course_group/create/', methods=['POST','GET'])
+@groups_bp.route('/course_group/create/', methods=['POST', 'GET'])
 @login_required
 def create_course_group():
     """Create a group for a course
@@ -195,8 +199,8 @@ def create_course_group():
         new_group = new_group_to_db(group_name, parent_group,form)
         try:
             db.session.commit()
-            flash('The new group is added,', 
-                'and you are set as the admin of the new group')
+            flash('The new group is added,',
+                  'and you are set as the admin of the new group')
         except:
             raise Exception('Could not create the group')
 
@@ -204,7 +208,9 @@ def create_course_group():
                     group_slug = group_slugify(new_group.name,new_group.parent))
     else:
         raise Exception("Error occur")
-#-------------------------------------------------------------------------------------------------#
+
+
+# -------------------------------------------------------------------------------------------------#
 # Group management
 
 @groups_bp.route('delete/<group_id>/', methods=['POST'])
@@ -212,7 +218,7 @@ def create_course_group():
 @login_required
 @role_permission.require(http_exception=403)
 @group_manage_perm
-def delete_group(group_id,**kwargs):
+def delete_group(group_id, **kwargs):
     """Delete a group
     """
     group = kwargs['group']
@@ -226,7 +232,7 @@ def delete_group(group_id,**kwargs):
 
     try:
         db.session.delete(group)
-        db.session.commit() 
+        db.session.commit()
     except:
         db.session.rollback()
         logging.info('rollback')
@@ -236,17 +242,16 @@ def delete_group(group_id,**kwargs):
     return jsonify(status='success')
 
 
-
 @groups_bp.route('edit/<group_id>/', methods=['GET', 'POST'])
 @login_required
 @role_permission.require(http_exception=403)
 @group_manage_perm
-def edit_group(group_id,**kwargs):
+def edit_group(group_id, **kwargs):
     if 'group' in kwargs:
         group = kwargs['group']
     else:
         group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-  
+
     group_slug = group_slugify(group.name, group.parent)
     permissions = [perm.type.name for perm in group.permissions]
     form = GroupForm(request.form)
@@ -260,7 +265,7 @@ def edit_group(group_id,**kwargs):
             new_name = slugify(form.name.data, separator='_')
 
             # Check whether the name is unchanged
-            if new_name == group.name:  
+            if new_name == group.name:
                 flash('No changes to make for the group')
                 return redirect(url_for('.edit_group', group_id=group.id))
 
@@ -281,7 +286,7 @@ def edit_group(group_id,**kwargs):
             if new_parent.id == group.parent_id:
                 flash('No changes to make for the group')
             else:
-                if parent_group_check(group.name,new_parent):
+                if parent_group_check(group.name, new_parent):
                     group.parent_id = new_parent.id
 
         # Edit the permissions
@@ -326,10 +331,10 @@ def edit_group(group_id,**kwargs):
                 create_course_perm = db.session.query(CreateGroupPerm).filter(
                                 CreateGroupPerm.group_id == group.id).one_or_none()
                 if create_course_perm:
-                    db.session.delete(create_course_perm)    
+                    db.session.delete(create_course_perm)
 
-        # Update the course prefix  
-        elif request.form['edit'] == 'course prefix': 
+                    # Update the course prefix
+        elif request.form['edit'] == 'course prefix':
             if 'courses' in permissions:
                 course_prefix = form.course_prefix.data.upper()
                 course_pattern = course_prefix + '-[A-Za-z][0-9][0-9][0-9][0-9]'
@@ -337,12 +342,12 @@ def edit_group(group_id,**kwargs):
                 create_course_perm = db.session.query(CreateCoursePerm).filter(
                             CreateCoursePerm.group_id == group.id).one_or_none()
                 if create_course_perm:
-                    create_course_perm.pattern = course_pattern 
+                    create_course_perm.pattern = course_pattern
                 else:
                     create_course_perm = CreateCoursePerm(group = group,pattern = course_pattern)
                     db.session.add(create_course_perm)
             else:
-                flash('Permission Denied')  
+                flash('Permission Denied')
 
         try:
             db.session.commit()
@@ -355,18 +360,18 @@ def edit_group(group_id,**kwargs):
                         form = form, group_slug = group_slug, permissions = permissions)
 
 
-@groups_bp.route('/<group_id>/parents/', methods=['POST','GET'])
+@groups_bp.route('/<group_id>/parents/', methods=['POST', 'GET'])
 @login_required
 @role_permission.require(http_exception=403)
 @group_manage_perm
-def manage_createGroupPerm(group_id,**kwargs):
+def manage_create_group_perm(group_id, **kwargs):
     """Manage createGroupPerms UI
-    """ 
+    """
     if 'group' in kwargs:
         group = kwargs['group']
     else:
         group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-    
+
     # Check whether the group has the permissions to create subgroups
     if PermType.subgroups not in [perm.type for perm in group.permissions]:
         flash('Permission Denied')
@@ -379,10 +384,10 @@ def manage_createGroupPerm(group_id,**kwargs):
     parents_slug =  [group_slugify(g.name,g.parent) for g in parents]
 
     # All the possbile parent groups are those groups the current user is a member of and their children
-    possible_parents = db.session.query(Group).\
-                            join(Group.members).\
-                            filter(User.id == current_user.id).all()
-    possible_parents_slug =  [group_slugify(g.name,g.parent) for g in possible_parents]
+    possible_parents = db.session.query(Group). \
+        join(Group.members). \
+        filter(User.id == current_user.id).all()
+    possible_parents_slug = [group_slugify(g.name, g.parent) for g in possible_parents]
 
     return render_template('groups/groupPerm_manage.html',
                         group_id = group_id,
@@ -394,8 +399,7 @@ def manage_createGroupPerm(group_id,**kwargs):
 @login_required
 @role_permission.require(http_exception=403)
 @group_manage_perm
-def add_createGroupPerm(group_id,**kwargs):
-
+def add_create_group_perm(group_id, **kwargs):
     if 'group' in kwargs:
         group = kwargs['group']
     else:
@@ -431,8 +435,7 @@ def add_createGroupPerm(group_id,**kwargs):
 @login_required
 @role_permission.require(http_exception=403)
 @group_manage_perm
-def del_createGroupPerm(group_id,**kwargs):
-
+def del_create_group_perm(group_id, **kwargs):
     if 'group' in kwargs:
         group = kwargs['group']
     else:
@@ -457,7 +460,8 @@ def del_createGroupPerm(group_id,**kwargs):
 
     return redirect(url_for('.manage_createGroupPerm', group_id = group_id))
 
-#-------------------------------------------------------------------------------------------------#
+
+# -------------------------------------------------------------------------------------------------#
 # Group membership management
 
 @groups_bp.route('<group_id>/members/', methods=['GET'])
@@ -479,7 +483,7 @@ def list_members(group_id):
     allow_manage = False
     if group.self_admin and current_user in group.members:
         allow_manage = True
-    else: 
+    else:
         ancestors = group.path_to_root().all()
         for ancestor in ancestors[1:]:
             if current_user in ancestor.members:
@@ -504,7 +508,7 @@ def list_users(group_id):
         conditions.append(User.roles.contains(role))
 
     available_users = db.session.query(User).filter(db.or_(*conditions),
-                                            db.not_(User.groups.any(Group.id == group.id))).all()
+                                                    db.not_(User.groups.any(Group.id == group.id))).all()
 
     return render_template('members/members_add.html', group = group, users = available_users)
 
@@ -513,7 +517,7 @@ def list_users(group_id):
 @login_required
 @role_permission.require(http_exception=403)
 @group_manage_perm
-def add_member(group_id,**kwargs):
+def add_member(group_id, **kwargs):
     """Add a member to a group
     """
     if 'group' in kwargs:
@@ -528,11 +532,11 @@ def add_member(group_id,**kwargs):
         conditions.append(User.roles.contains(role))
 
     new_member = db.session.query(User).filter(User.id == user_id,
-                                        db.or_(*conditions), ).one_or_none()
+                                               db.or_(*conditions), ).one_or_none()
     if new_member is None:
         flash('No such a user')
         return redirect(url_for('.list_users', group_id=group.id))
-    
+
     group.members.append(new_member)
 
     try:
@@ -549,7 +553,7 @@ def add_member(group_id,**kwargs):
 @login_required
 @role_permission.require(http_exception=403)
 @group_manage_perm
-def delete_member(group_id,**kwargs):
+def delete_member(group_id, **kwargs):
     """Remove a member from a group
     """
     if 'group' in kwargs:
@@ -571,11 +575,11 @@ def delete_member(group_id,**kwargs):
     except:
         db.session.rollback()
         flash('Could not remove this user')
-        
+
     return redirect(url_for('.list_members', group_id=group.id))
 
 
-@groups_bp.route('/move_course/', methods=['POST','GET'])
+@groups_bp.route('/move_course/', methods=['POST', 'GET'])
 @login_required
 @role_permission.require(http_exception=403)
 @group_manage_perm
@@ -595,14 +599,15 @@ def move_course(**kwargs):
         c.owners.remove(old_owner)
         c.owners.append(new_owner)
     try:
-        db.session.commit() 
+        db.session.commit()
     except:
         db.session.rollback()
         raise Exception('Could not change the owner of the courses')
 
-    return jsonify(status="success")    
+    return jsonify(status="success")
 
-#-------------------------------------------------------------------------------------------------#
+
+# -------------------------------------------------------------------------------------------------#
 # Helper views
 
 @groups_bp.route('perm/<group_id>/parents/', methods=['GET'])
@@ -619,11 +624,11 @@ def parent_options(group_id):
     groupArray = []
 
     for group in groups:
-        groupObj = {'id':group.id,
-                    'name':group_slugify(group.name,group.parent)}
-        groupArray.append(groupObj)
+        group_obj = {'id': group.id,
+                     'name': group_slugify(group.name, group.parent)}
+        group_array.append(group_obj)
 
-    return jsonify({'parent_options': groupArray})
+    return jsonify({'parent_options': group_array})
 
 
 @groups_bp.route('/options_of_new_owner/', methods=['GET'])
@@ -636,8 +641,8 @@ def owner_options():
     old_owner = Group.query.filter_by(id = old_owner_id).one_or_none()
 
     if not old_owner:
-        abort(404,'No such a group')
-    
+        abort(404, 'No such a group')
+
     groups = current_user.groups
     groups.remove(old_owner)  # Remove the original owner group from the options
 
@@ -658,9 +663,9 @@ def owner_options():
 
     for group in groups:
         # the group could not be the descendant of the original owner group
-        if not group.is_descendant_of(old_owner): 
-            groupObj = {'id':group.id,
-                        'name':group_slugify(group.name,group.parent)}
-            groupArray.append(groupObj)
+        if not group.is_descendant_of(old_owner):
+            group_obj = {'id': group.id,
+                         'name': group_slugify(group.name, group.parent)}
+            group_array.append(group_obj)
 
-    return jsonify({'owner_options': groupArray})
+    return jsonify({'owner_options': group_array})
