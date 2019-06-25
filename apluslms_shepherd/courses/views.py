@@ -8,8 +8,9 @@ from apluslms_shepherd.courses.forms import CourseForm
 from apluslms_shepherd.courses.models import CourseInstance, db
 from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, CreateCoursePerm,\
     ManageCoursePerm, CourseOwnerType
-from apluslms_shepherd.groups.utils import group_slugify,PERMISSION_LIST, \
-    role_permission,course_create_perm, course_manage_perm, course_admin_perm
+from apluslms_shepherd.groups.utils import group_slugify, PERMISSION_LIST, \
+    role_permission, course_instance_create_perm, \
+    course_instance_manage_perm, course_instance_admin_perm
 
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.groups.views import list_users, add_member
@@ -33,7 +34,7 @@ def list_course():
 @course_bp.route('create/', methods=['GET', 'POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@course_create_perm
+@course_instance_create_perm
 def add_course(**kwargs):
     if 'identity_groups' in kwargs:
         identity_groups = kwargs['identity_groups']
@@ -59,31 +60,30 @@ def add_course(**kwargs):
             flash('The course key does not match the naming rule ')
             return redirect(url_for('.add_course'))
 
-        new_course = CourseInstance(course_key=form.course_key.data.upper(),
-                                    instance_key=form.instance_key.data,
-                                    branch=form.instance_key.data,
-                                    git_origin=form.git_origin.data,
-                                    secret_token=None if form.secret_token.data == '' else form.secret_token.data,
-                                    config_filename=None if form.config_filename.data == '' else form.secret_token.data,
-                                    name=form.name.data)
-        owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
-        new_course.owners.append(owner_group)
-        course_admin_perm = ManageCoursePerm(course=new_course,group=owner_group,
-                                            type=CourseOwnerType.admin)
-        exists = CourseInstance.query.filter_by(course_key=new_course.course_key, instance_key=new_course.instance_key).all() is not None
-        print([i for i in CourseInstance.query.filter_by(course_key=new_course.course_key, instance_key=new_course.instance_key).all()])
+        exists = CourseInstance.query.filter(CourseInstance.course_key == form.course_key.data.upper(),
+                                             CourseInstance.instance_key == form.instance_key.data).first()
         if exists:
-            flash('Course key %s and instance key %s already exists.' % (new_course.course_key, new_course.instance_key))
-            return redirect('/courses/')
-        try:
+            flash('Course key %s and instance key %s already exists.' % (form.course_key.data.upper(), form.instance_key.data))
+        else:
+
+            new_course = CourseInstance(course_key=form.course_key.data.upper(),
+                                        instance_key=form.instance_key.data,
+                                        branch=form.instance_key.data,
+                                        git_origin=form.git_origin.data,
+                                        secret_token=None if form.secret_token.data == '' else form.secret_token.data,
+                                        config_filename=None if form.config_filename.data == '' else form.secret_token.data,
+                                        name=form.name.data)
+            owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
+
+            new_course.owners.append(owner_group)
+            course_admin_perm = ManageCoursePerm(course_instance = new_course,group = owner_group,
+                                                type = CourseOwnerType.admin)
+        
             db.session.add(new_course)
             db.session.add(course_admin_perm)
             db.session.commit()
             flash('New course added.')
-        except IntegrityError:
-            flash('Course key already exists.')
-        # Also add a new instance with the course, the instance kay and course key is combined primary key of the
-        # CourseInstance model
+        
         return redirect('/courses/')
     return render_template('course_create.html', form=form, group_form=group_form)
 
@@ -91,7 +91,7 @@ def add_course(**kwargs):
 @course_bp.route('edit/<course_key>/<instance_key>/', methods=['GET', 'POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@course_manage_perm
+@course_instance_admin_perm
 def edit_course(course_key, instance_key, **kwargs):
     # Get course from db
     course = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key)
@@ -131,30 +131,30 @@ def edit_course(course_key, instance_key, **kwargs):
 @course_bp.route('delete/<course_key>/<instance_key>/', methods=['POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@course_manage_perm
+@course_instance_admin_perm
 def del_course_instance(course_key, instance_key, **kwargs):
-    instance = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first()
-    if instance is None:
-        flash('There is no such course under this user')
-    else:
-        db.session.delete(instance)
-        db.session.commit()
-        flash(
-            'Instance with key: ' + instance_key + ' belonging to course with key: ' + course_key + ' has been deleted.')
+
+    course_instance = kwargs['course_instance']
+
+    db.session.delete(course_instance)
+    db.session.commit()
+    flash(
+        'Instance with key: ' + instance_key + ' belonging to course with key: ' + course_key + ' has been deleted.')
     return redirect('/courses/')
 
 # -------------------------------------------------------------------------------------------------#
 # Ownership management
 
-@course_bp.route('<course_key>/owners/', methods=['GET'])
+@course_bp.route('<course_key>/<instance_key>/owners/', methods=['GET'])
 @login_required
 @role_permission.require(http_exception=403)
-def owners_list(course_key, **kwargs):
+def owners_list(course_key, instance_key, **kwargs):
     """Get all the owner groups of a course  
     """
-    groups = db.session.query(Group). \
-        join(CourseInstance.owners). \
-        filter(CourseInstance.course_key == course_key).all()
+    groups = (db.session.query(Group) 
+                        .join(CourseInstance.owners)
+                        .filter(CourseInstance.course_key == course_key,
+                                CourseInstance.instance_key == instance_key).all())
 
     groupArray = []
 
@@ -166,22 +166,23 @@ def owners_list(course_key, **kwargs):
     return jsonify({'owner_groups': groupArray})
 
 
-@course_bp.route('<course_key>/owners/delete/', methods=['POST'])
+@course_bp.route('<course_key>/<instance_key>/owners/remove/', methods=['POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@course_admin_perm
-def owner_remove(course_key,**kwargs):
-    """Remove a owner group
+@course_instance_admin_perm
+def owner_remove(course_key, instance_key, **kwargs):
+    """Remove an owner group
     """
-    course = kwargs['course']
+    course_instance = kwargs['course_instance']
 
     group_id = request.args.get('group_id')
     group = db.session.query(Group).filter_by(id=group_id).one_or_none()
-    manage_course_perm = db.session.query(ManageCoursePerm).\
-                                    filter_by(course=course,group=group).one_or_none()
-
-    if not (manage_course_perm and manage_course_perm.type==CourseOwnerType.admin and len(course.owners)<=1):
-        course.owners.remove(group)
+    manage_course_perm = (db.session.query(ManageCoursePerm)
+                                   .filter_by(course_instance = course_instance,
+                                            group = group).one_or_none())
+    # If the group is the only admin group of the course, it can not be removed
+    if not (manage_course_perm and manage_course_perm.type==CourseOwnerType.admin and len(course_instance.owners)<=1):
+        course_instance.owners.remove(group)
         db.session.delete(manage_course_perm)
     else:
         error_message = dumps({'message': 'The only admin group could not be removed'})
@@ -197,22 +198,22 @@ def owner_remove(course_key,**kwargs):
     return jsonify(status='success')
 
 
-@course_bp.route('<course_key>/owners/options/', methods=['GET'])
+@course_bp.route('<course_key>/<instance_key>/add_owners/options/', methods=['GET'])
 @login_required
 @role_permission.require(http_exception=403)
-def add_owner_list(course_key, **kwargs):
+def add_owner_list(course_key, instance_key, **kwargs):
     """Get all the possible owner groups could be added for a course
     """
-    course = db.session.query(CourseInstance). \
-        join(CourseInstance.owners). \
-        filter(CourseInstance.course_key == course_key). \
-        filter(Group.members.any(User.id == current_user.id)). \
-        one_or_none()
-    if not course:
-        error_message = dumps({'message': 'Error'})
+    course_instance = (db.session.query(CourseInstance)
+                        .join(CourseInstance.owners)
+                        .filter(CourseInstance.course_key == course_key,
+                                CourseInstance.instance_key == instance_key)
+                        .filter(Group.members.any(User.id == current_user.id)).one_or_none())
+    if not course_instance:
+        error_message = dumps({'message': 'The course instance does not exist under the user'})
         abort(Response(error_message, 501))
 
-    owner_groups = course.owners
+    owner_groups = course_instance.owners
     groups = [g for g in current_user.groups if g not in owner_groups]
 
     groupArray = []
@@ -225,24 +226,24 @@ def add_owner_list(course_key, **kwargs):
     return jsonify({'owner_options': groupArray})
 
 
-@course_bp.route('<course_key>/owners/add/', methods=['POST'])
+@course_bp.route('<course_key>/<instance_key>/owners/add/', methods=['POST'])
 @login_required
 @role_permission.require(http_exception=403)
-@course_admin_perm
-def owner_add(course_key,**kwargs):
+@course_instance_admin_perm
+def owner_add(course_key, instance_key, **kwargs):
     """add a owner group
     """
-    course = kwargs['course']
+    course_instance = kwargs['course_instance']
 
     group_id = request.args.get('group_id')
     owner_type = request.args.get('owner_type')
-    group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+    group = db.session.query(Group).filter_by(id = group_id).one_or_none()
 
-    manage_course_perm = ManageCoursePerm(course=course,group=group,
-                        type=CourseOwnerType[owner_type])
+    manage_course_perm = ManageCoursePerm(course_instance = course_instance, group = group,
+                        type = CourseOwnerType[owner_type])
     
     try:
-        course.owners.append(group)
+        course_instance.owners.append(group)
         db.session.add(manage_course_perm)
         db.session.commit() 
     except:

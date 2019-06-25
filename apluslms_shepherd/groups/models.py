@@ -122,10 +122,10 @@ class CourseOwnerType(enum.Enum):
 
 class ManageCoursePerm(db.Model):
 
-    course_id =  db.Column(db.Integer, db.ForeignKey('course_instance.id'),primary_key=True)
+    course__instance_id =  db.Column(db.Integer, db.ForeignKey('course_instance.id'),primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey('group.id'),primary_key=True)
 
-    course = db.relationship('CourseInstance',foreign_keys=[course_id],
+    course_instance = db.relationship('CourseInstance',foreign_keys=[course__instance_id],
                         uselist=False,
                         backref=db.backref("manage_course_perm", cascade='all,delete'))
     group = db.relationship('Group',foreign_keys=[group_id],
