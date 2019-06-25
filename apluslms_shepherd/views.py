@@ -26,7 +26,7 @@ def main_page():
         group_by(Build.instance_id)
     newest_builds = [
         FrontendBuild(instance_id=instance.id,
-                      instance_key=instance.key,
+                      instance_key=instance.instance_key,
                       course_key=instance.course_key,
                       number=0 if len(recent_build_entries.filter_by(instance_id=instance.id).all()) is 0
                       else recent_build_entries.filter_by(instance_id=instance.id).first().number,
