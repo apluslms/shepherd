@@ -80,7 +80,8 @@
                             <button type="button" class="btn btn-outline-primary"
                                     onclick="location.href='/courses/create/?course={{ each.course_key }}&instance={{ each.instance_key }}'">Duplicate
                             </button>
-                            <button type="button" class="btn btn-outline-primary owner_groups" value={{each.course_key}}>Owner groups
+                            <button type="button" class="btn btn-outline-primary owner_groups" 
+                                    data-course={{each.course_key}} data-instance={{each.instance_key}}>Owner groups
                             </button>
                             <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
                         </form>

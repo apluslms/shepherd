@@ -15,10 +15,10 @@ gp_table = db.Table('gp_table', db.Model.metadata,
                     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
                     db.Column('permission_id', db.Integer, db.ForeignKey('group_permission.id'))
                     )
-# For Group model and CourseRepository model 
+# For Group model and CourseInstance model 
 gc_table = db.Table('gc_table', db.Model.metadata,
                     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
-                    db.Column('course_key', db.String, db.ForeignKey('course_instance.course_key'))
+                    db.Column('course_instance_id', db.String, db.ForeignKey('course_instance.id'))
                     )
 
 
@@ -116,18 +116,22 @@ class CreateCoursePerm(db.Model):
         return True if re.match(self.pattern,course_name) else False
 
 
-# class ManageCoursePerm(db.Model):
-#     group_id = db.Column(db.Integer, db.ForeignKey('group.id'),primary_key=True)
-#     # The group whose members have the permission to create courses
-#     group = db.relationship("Group", backref=db.backref("course_permission", 
-#                             uselist=False,cascade='all,delete'))
-#     regexp = db.Column(db.Boolean,default=True)
-#     # The course naming rule (a regular expression)
-#     pattern = db.Column(db.String(30))
+class CourseOwnerType(enum.Enum):
+    admin = 1
+    assistant = 2 
 
-#     def __repr__(self):
-#         return "<Create Course Permission (group={0}, pattern={1})>,".format(self.group,
-#                                                                             self.pattern)
+class ManageCoursePerm(db.Model):
 
+    course__instance_id =  db.Column(db.Integer, db.ForeignKey('course_instance.id'),primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('group.id'),primary_key=True)
+
+    course_instance = db.relationship('CourseInstance',foreign_keys=[course__instance_id],
+                        uselist=False,
+                        backref=db.backref("manage_course_perm", cascade='all,delete'))
+    group = db.relationship('Group',foreign_keys=[group_id],
+                        uselist=False,
+                        backref=db.backref("manage_course_perm", cascade='all,delete'))
+    
+    type = db.Column(db.Enum(CourseOwnerType))
 
 

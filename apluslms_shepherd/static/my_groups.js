@@ -1,3 +1,5 @@
+//  This file is for my_groups.html
+
 var old_owner_id = null;
 
 
