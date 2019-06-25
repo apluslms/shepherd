@@ -27,7 +27,7 @@ logger = get_task_logger(__name__)
 
 @celery.task
 def update_state(instance_id, build_number, state, action, log):
-    print("Sending state to frontend")
+    logger.info("Sending state to frontend")
     """
     Take the updated state to MQ, this task is not going to the worker
     """
@@ -65,7 +65,7 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
         return '-1|The clone task was failed, aborting the build task'
     log = "The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, instance_key)
     logger.info(log)
-    ins = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first()
+    ins = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first()
     update_frontend(ins.id, build_number, task_action_mapping['build_repo'], State.RUNNING,
                     log)
     number_list = get_current_build_number_list()
@@ -82,14 +82,16 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     except (ValueError, TypeError):
         logger.error("Cannot compare current  build number with max number in the queue")
     shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/build_roman.sh')
-    cmd = [shell_script_path, base_path, course_key, instance_key, build_number, ins.config_filename]
+    none_to_empty = lambda s: '' if s is None else str(s)
+    cmd = [shell_script_path, base_path, course_key, instance_key, build_number, none_to_empty(ins.config_filename)]
     proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     o, e = proc.communicate()
     update_frontend(ins.id, build_number, task_action_mapping['build_repo'], State.RUNNING,
                     o.decode('ascii'))
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
-    return str(proc.returncode) + "|" + "Build Succeed" if proc.returncode == 0 else str(proc.returncode) + "|" + "Build Failed"
+    return str(proc.returncode) + "|" + "Build Succeed" if proc.returncode == 0 else str(
+        proc.returncode) + "|" + "Build Failed"
 
 
 @celery.task
@@ -158,7 +160,7 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     current_build_number = res[-1]
     print('course_key:{}, instance_key:{}'.format(course_key, instance_key))
     now = datetime.utcnow()
-    ins = CourseInstance.query.filter_by(course_key=course_key, key=instance_key).first()
+    ins = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first()
     if ins is None:
         print('No such course instance in the database')
         revoke(info["id"], terminate=True)
