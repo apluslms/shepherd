@@ -14,6 +14,7 @@ from apluslms_shepherd.groups.models import Group, PermType, CreateCoursePerm, \
 from apluslms_shepherd.groups.utils import group_slugify, PERMISSION_LIST, \
     role_permission, course_instance_create_perm, \
     course_instance_admin_perm
+from apluslms_shepherd.repos.models import GitRepository
 
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 logger = logging.getLogger(__name__)
@@ -68,16 +69,20 @@ def add_course(**kwargs):
                                         config_filename=None if form.config_filename.data == '' else form.secret_token.data,
                                         name=form.name.data)
             owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
-
             new_course.owners.append(owner_group)
             course_admin_perm = ManageCoursePerm(course_instance=new_course, group=owner_group,
                                                  type=CourseOwnerType.admin)
 
             db.session.add(new_course)
             db.session.add(course_admin_perm)
+            repository = GitRepository.query.filter(GitRepository.origin == form.git_origin.data).one_or_none()
+            if repository is None:
+                new_repository = GitRepository(origin=form.git_origin.data)
+                new_repository.save()
+            else:
+                new_course.git_repository = repository
             db.session.commit()
             flash('New course added.')
-
         return redirect('/courses/')
     return render_template('course_create.html', form=form, group_form=group_form)
 
@@ -126,7 +131,13 @@ def edit_course(course_key, instance_key, **kwargs):
 @course_instance_admin_perm
 def del_course_instance(course_key, instance_key, **kwargs):
     course_instance = kwargs['course_instance']
-
+    repo = GitRepository.query.filter_by(origin=course_instance.git_origin).one_or_none()
+    print(repo.origin)
+    print(repo.courses.count())
+    if repo.courses.count() == 1:
+        print(repo.origin)
+        print(repo.courses)
+        db.session.delete(repo)
     db.session.delete(course_instance)
     db.session.commit()
     flash(
