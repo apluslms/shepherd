@@ -1,19 +1,17 @@
+import logging
+from functools import wraps
+from json import dumps
+
 from flask import request, flash, redirect, url_for, abort, Response
 from flask_login import current_user
 from flask_principal import Permission, RoleNeed
-
-from apluslms_shepherd.extensions import db
-from apluslms_shepherd.auth.models import User
-from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, \
-    CreateCoursePerm, ManageCoursePerm, CourseOwnerType
-from apluslms_shepherd.courses.models import CourseInstance
-from collections import namedtuple
-from functools import partial
-from functools import wraps
 from slugify import slugify
-from json import dumps
 
-import logging
+from apluslms_shepherd.auth.models import User
+from apluslms_shepherd.courses.models import CourseInstance
+from apluslms_shepherd.extensions import db
+from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, \
+    ManageCoursePerm, CourseOwnerType
 
 logging.basicConfig(level=logging.DEBUG)
 

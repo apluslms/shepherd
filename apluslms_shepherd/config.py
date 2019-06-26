@@ -1,5 +1,5 @@
-from builtins import object, frozenset
 import string
+from builtins import object, frozenset
 from os.path import dirname
 
 
@@ -30,14 +30,13 @@ class Config(object):
         }
     }
     USE_SSH_FOR_GIT = True
-    CELERY_RESULT_BACKEND = "db+sqlite:///"+BASE_DIR+"/result.db"
+    CELERY_RESULT_BACKEND = "db+sqlite:///" + BASE_DIR + "/result.db"
     BROKER_URL = "amqp://guest:guest@172.17.0.2:5672"
     CELERY_NAME = "test"
     CELERY_IMPORTS = ("apluslms_shepherd.celery_tasks.tasks",
                       "apluslms_shepherd.celery_tasks.signals"
                       )
-    COURSE_REPO_BASEPATH = BASE_DIR+"/../../shepherd_test_clone/"
-
+    COURSE_REPO_BASEPATH = BASE_DIR + "/../../shepherd_test_clone/"
 
 
 class ProductionConfig(Config):
@@ -48,7 +47,7 @@ class DevelopmentConfig(Config):
     DEBUG = True
     BUILD_WEBHOOK_TOKEN = "Secret"
     BUILD_WEBHOOK_URL = "http://127.0.0.1:5000/webhooks/state/"
-    COURSE_DEPLOYMENT_PATH = Config.BASE_DIR+"/../../shepherd_deploy/"
+    COURSE_DEPLOYMENT_PATH = Config.BASE_DIR + "/../../shepherd_deploy/"
 
 
 class TestingConfig(Config):

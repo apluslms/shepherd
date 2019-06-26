@@ -17,19 +17,18 @@ class Action(enum.Enum):
     CLEAN = 4
 
 
-# A complete build process for a instance, include 4 steps
 class Build(db.Model):
+    """A complete build process for a instance, include 4 steps"""
     instance_id = db.Column(db.Integer, db.ForeignKey('course_instance.id'), primary_key=True)
     number = db.Column(db.Integer, primary_key=True)
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
     state = db.Column(db.Enum(State))
     action = db.Column(db.Enum(Action))
-    # log = db.relationship('BuildLog', backref='build', cascade="all,delete")
 
 
-# A single step in Build, i.e.: clone
 class BuildLog(db.Model):
+    """A single step in Build, i.e.: clone"""
     instance_id = db.Column(db.Integer, db.ForeignKey('build.instance_id'), primary_key=True)
     number = db.Column(db.Integer, db.ForeignKey('build.number'), primary_key=True)
     action = db.Column(db.Enum(Action), primary_key=True)
