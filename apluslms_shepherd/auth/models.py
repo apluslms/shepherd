@@ -1,12 +1,12 @@
-from flask import flash,current_app
-from apluslms_shepherd.extensions import db
-from flask_login import UserMixin, login_user, LoginManager,current_user
-from apluslms_shepherd.config import DevelopmentConfig
-from collections import namedtuple
-from functools import partial
+from flask import flash, current_app
+from flask_login import UserMixin, login_user, LoginManager
 from flask_principal import Identity, identity_changed
 
+from apluslms_shepherd.config import DevelopmentConfig
+from apluslms_shepherd.extensions import db
+
 login_manager = LoginManager()
+
 
 @login_manager.user_loader
 def load_user(id):
@@ -36,7 +36,7 @@ def write_user_to_db(*args, **kwargs):
     login_user(user)
     # Tell Flask-Principal the identity changed
     identity_changed.send(current_app._get_current_object(),
-                            identity=Identity(user.id))
+                          identity=Identity(user.id))
     flash('Login Success!')
 
 

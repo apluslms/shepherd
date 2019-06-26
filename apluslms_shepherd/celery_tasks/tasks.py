@@ -20,7 +20,7 @@ from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery, db
 from apluslms_shepherd.config import DevelopmentConfig
 
-from .helper import get_current_build_number_list, WebHook, update_frontend
+from .helper import get_current_build_number_list, update_frontend
 
 logger = get_task_logger(__name__)
 

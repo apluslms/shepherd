@@ -1,7 +1,9 @@
-from celery.utils.log import get_task_logger
-from celery.signals import task_prerun, task_postrun, task_failure
 from datetime import datetime
+
+from celery.signals import task_prerun, task_postrun, task_failure
+from celery.utils.log import get_task_logger
 from celery.worker.control import revoke
+
 from apluslms_shepherd.build.models import Build, BuildLog, State, Action
 from apluslms_shepherd.celery_tasks.helper import update_frontend
 from apluslms_shepherd.courses.models import CourseInstance
@@ -145,4 +147,4 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
         build_log.end_time = now
         db.session.commit()
         update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], State.FAILED,
-'Task' + sender.__name__ + 'is Failed')
+                        'Task' + sender.__name__ + 'is Failed')

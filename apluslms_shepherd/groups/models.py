@@ -1,7 +1,9 @@
-from apluslms_shepherd.extensions import db
-from sqlalchemy_mptt.mixins import BaseNestedSets
 import enum
 import re
+
+from sqlalchemy_mptt.mixins import BaseNestedSets
+
+from apluslms_shepherd.extensions import db
 
 # db.metadata.clear()
 # Association tables for ManyToMany relationships

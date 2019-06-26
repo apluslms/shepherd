@@ -1,18 +1,17 @@
+import logging
+from functools import wraps
+from json import dumps
+
 from flask import request, flash, redirect, url_for, abort, Response
 from flask_login import current_user
 from flask_principal import Permission, RoleNeed
-
-from apluslms_shepherd.extensions import db
-from apluslms_shepherd.auth.models import User
-from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, CreateCoursePerm
-from apluslms_shepherd.courses.models import CourseInstance
-from collections import namedtuple
-from functools import partial
-from functools import wraps
 from slugify import slugify
-from json import dumps
 
-import logging
+from apluslms_shepherd.auth.models import User
+from apluslms_shepherd.courses.models import CourseInstance
+from apluslms_shepherd.extensions import db
+from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, \
+    ManageCoursePerm, CourseOwnerType
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -59,10 +58,10 @@ def subgroup_create_perm(func):
 
             # If condition 1 doesn't meet, check condition 2
             if not allowed:
-                perms = db.session.query(CreateGroupPerm). \
-                    join(CreateGroupPerm.group). \
-                    filter(CreateGroupPerm.target_group_id == group_id). \
-                    filter(Group.members.any(User.id == current_user.id)).all()
+                perms = (db.session.query(CreateGroupPerm)
+                                    .join(CreateGroupPerm.group)
+                                    .filter(CreateGroupPerm.target_group_id == group_id)
+                                    .filter(Group.members.any(User.id == current_user.id)).all())
                 if perms:
                     allowed = True
                     kwargs['group'] = group
@@ -92,16 +91,20 @@ def group_manage_perm(func):
         # Get the group
         if "group_id" in request.view_args:
             group_id = request.view_args['group_id']
-            group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+            group = db.session.query(Group).filter_by(id = group_id).one_or_none()
         elif "group_id" in request.args:
             group_id = request.args.get('group_id')
-            group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+            group = db.session.query(Group).filter_by(id = group_id).one_or_none()
         elif "old_owner_id" in request.args:
             group_id = request.args.get('old_owner_id')
-            group = db.session.query(Group).filter_by(id=group_id).one_or_none()
+            group = db.session.query(Group).filter_by(id = group_id).one_or_none()
         else:
-            flash('Could not get the group info')
-            return redirect(url_for('groups.list_my_groups'))
+            if 'return_error' in request.args:
+                error_message = dumps({'message': 'Could not get the group info'})
+                abort(Response(error_message, 403))
+            else:
+                flash('Could not get the group info')
+                return redirect(url_for('groups.list_my_groups'))
 
         if group:
             # Check condtion 1 
@@ -118,7 +121,6 @@ def group_manage_perm(func):
 
         if not allowed:
             if 'return_error' in request.args:
-                logging.info('return_error')
                 error_message = dumps({'message': 'Permssion Denied'})
                 abort(Response(error_message, 403))
             else:
@@ -130,7 +132,7 @@ def group_manage_perm(func):
     return wrapper
 
 
-def course_create_perm(func):
+def course_instance_create_perm(func):
     """
     Check whether the current user can create a course
     Permission: the user is a member of a group with the permission to create courses
@@ -141,8 +143,8 @@ def course_create_perm(func):
         # Check whether any of the groups that current user is in has the permission
         # group_IDs = [g.id for g in current_user.groups] 
         # allowed = db.session.query(CreateCoursePerm).filter(CreateCoursePerm.group_id.in_(group_IDs)).all()
-        identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
-                                             Group.permissions.any(type=PermType.courses)).all()
+        identity_groups = Group.query.filter(Group.members.any(id = current_user.id),
+                                             Group.permissions.any(type = PermType.courses)).all()
         if not identity_groups:
             flash('Permission denied')
             return redirect(request.referrer)
@@ -153,7 +155,7 @@ def course_create_perm(func):
     return wrapper
 
 
-def course_manage_perm(func):
+def course_instance_manage_perm(func):
     """
     Check whether the current user can manage a course
     Permission: the user is a member of the owner groups of the course
@@ -162,15 +164,16 @@ def course_manage_perm(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
 
-        if "course_key" in request.view_args:
+        if "course_key" in request.view_args and 'instance_key' in request.view_args:
             course_key = request.view_args['course_key']
             instance_key = request.view_args['instance_key']
-            course = db.session.query(CourseInstance). \
-                join(CourseInstance.owners). \
-                filter(CourseInstance.course_key == course_key, CourseInstance.instance_key == instance_key). \
-                filter(Group.members.any(User.id == current_user.id)).one_or_none()
+            course_instance = (db.session.query(CourseInstance)
+                                .join(CourseInstance.owners)
+                                .filter(CourseInstance.course_key == course_key, 
+                                        CourseInstance.instance_key == instance_key) 
+                                .filter(Group.members.any(User.id == current_user.id)).one_or_none())
 
-        if not course:
+        if not course_instance:
             if 'return_error' in request.args:
                 error_message = dumps({'message': 'Permssion Denied'})
                 abort(Response(error_message, 403))
@@ -178,11 +181,43 @@ def course_manage_perm(func):
                 flash('Permission denied')
                 return redirect('/courses/')
 
-        kwargs['course'] = course
+        kwargs['course_instance'] = course_instance
         return func(*args, **kwargs)
 
     return wrapper
 
+
+def course_instance_admin_perm(func):
+    """ 
+    Check whether the current user can take admin actions for a course 
+    Permission: the user is a member of the admin groups of the course 
+    """ 
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        if "course_key" in request.view_args and 'instance_key' in request.view_args:
+            course_key = request.view_args['course_key']
+            instance_key = request.view_args['instance_key']
+            course_instance = (db.session.query(CourseInstance)
+                                .join(ManageCoursePerm)
+                                .join(ManageCoursePerm.group)
+                                .filter(CourseInstance.course_key == course_key,
+                                        CourseInstance.instance_key == instance_key) 
+                                .filter(ManageCoursePerm.type == CourseOwnerType.admin)
+                                .filter(Group.members.any(User.id == current_user.id)).one_or_none())
+       
+            if not course_instance:
+                if 'return_error' in request.args:
+                    error_message = dumps({'message': 'Permission Denied'})
+                    abort(Response(error_message, 403))
+                else:
+                    flash('Permission denied')
+                    return redirect('/courses/')
+
+        kwargs['course_instance'] = course_instance
+        return func(*args, **kwargs)
+
+    return wrapper
 
 # Function for permission checking
 
@@ -202,8 +237,8 @@ def parent_group_check(group_name, parent_group):
 
     # Check whether the parent group already has a child with the same group name
     if not parent_group:  # The new group is a root 
-        g = db.session.query(Group).filter_by(name=group_name,
-                                              parent=parent_group).one_or_none()
+        g = db.session.query(Group).filter_by(name = group_name,
+                                              parent = parent_group).one_or_none()
         if g:
             flash('The group already exists.')
             return None
@@ -221,10 +256,10 @@ def parent_group_check(group_name, parent_group):
             return parent_group
 
     # Check whether the parent group is the target group where subgroups can be created under.
-    perms = db.session.query(CreateGroupPerm). \
-        join(CreateGroupPerm.group). \
-        filter(CreateGroupPerm.target_group_id == parent_group.id). \
-        filter(Group.members.any(User.id == current_user.id)).all()
+    perms = (db.session.query(CreateGroupPerm)
+                        .join(CreateGroupPerm.group)
+                        .filter(CreateGroupPerm.target_group_id == parent_group.id)
+                        .filter(Group.members.any(User.id == current_user.id)).all())
     if perms:
         return parent_group
 
@@ -232,6 +267,7 @@ def parent_group_check(group_name, parent_group):
 
 
 # -------------------------------------------------------------------------------------------------#
+# Helpers
 
 def group_slugify(group_name, parent, separator='.'):
     """
