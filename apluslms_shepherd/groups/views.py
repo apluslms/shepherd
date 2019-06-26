@@ -11,11 +11,8 @@ from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.groups.forms import GroupForm
 from apluslms_shepherd.groups.models import db, Group, PermType, GroupPermission, \
     CreateGroupPerm, CreateCoursePerm
-from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.groups.utils import group_slugify, slugify, query_end_group, \
     role_permission, subgroup_create_perm, group_manage_perm, parent_group_check
-from flask import jsonify
-from json import dumps
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -622,7 +619,7 @@ def parent_options(group_id):
               .join(CreateGroupPerm.target_group)
               .filter(CreateGroupPerm.group_id == group_id).all())
 
-    groupArray = []
+    group_array = []
 
     for group in groups:
         group_obj = {'id': group.id,
@@ -660,7 +657,7 @@ def owner_options():
     #                     group_table.c.lft<old_owner.lft,
     #                     group_table.c.rgt>old_owner.rgt))).all()
 
-    groupArray = []
+    group_array = []
 
     for group in groups:
         # the group could not be the descendant of the original owner group

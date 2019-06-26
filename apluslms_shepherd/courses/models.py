@@ -1,5 +1,4 @@
 from apluslms_shepherd.extensions import db
-from apluslms_shepherd.config import DevelopmentConfig
 from apluslms_shepherd.groups.models import gc_table
 
 

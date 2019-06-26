@@ -1,8 +1,7 @@
-from flask import current_app,session
-from apluslms_shepherd.extensions import db
 from flask import (Blueprint, render_template, redirect, flash)
+from flask import current_app, session
 from flask_login import login_required, current_user, logout_user
-from flask_principal import AnonymousIdentity,identity_changed
+from flask_principal import AnonymousIdentity, identity_changed
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth/')
 
