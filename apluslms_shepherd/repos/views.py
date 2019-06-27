@@ -15,4 +15,4 @@ logger = logging.getLogger(__name__)
 @role_permission.require(http_exception=403)
 def list_repos():
     all_repos = GitRepository.query.all()
-    return render_template('repo_list.html', user=current_user, repos=all_repos)
+    return render_template('repos/repo_list.html', user=current_user, repos=all_repos)

@@ -13,4 +13,4 @@ def instance_log(instance_id):
     if instance is None:
         flash('No such instance in the database, please refresh the page.')
         redirect('')
-    return render_template('instance_log.html', instance=instance.__dict__, user=current_user)
+    return render_template('builds/instance_log.html', instance=instance.__dict__, user=current_user)
