@@ -12,4 +12,3 @@ class CourseInstance(db.Model):
     secret_token = db.Column(db.String(127))
     config_filename = db.Column(db.String(127))
     branch = db.Column(db.String, default='master')
-    builds = db.relationship('Build', lazy='select', backref=db.backref('course', lazy='joined'))
