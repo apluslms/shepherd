@@ -2,22 +2,19 @@ import os
 import shutil
 import subprocess
 
-from apluslms_shepherd.celery_tasks.signals import task_action_mapping
+from apluslms_shepherd.celery_tasks.build.signals import task_action_mapping
 
 try:
     from subprocess import DEVNULL  # Python 3
 except ImportError:
     DEVNULL = open(os.devnull, 'r+b', 0)
-from datetime import datetime
 
 from celery.result import AsyncResult
-from celery.signals import before_task_publish
 from celery.utils.log import get_task_logger
-from celery.worker.control import revoke
 
-from apluslms_shepherd.build.models import Build, BuildLog, State, Action
+from apluslms_shepherd.build.models import State
 from apluslms_shepherd.courses.models import CourseInstance
-from apluslms_shepherd.extensions import celery, db
+from apluslms_shepherd.extensions import celery
 from apluslms_shepherd.config import DevelopmentConfig
 
 from .helper import get_current_build_number_list, update_frontend
@@ -27,10 +24,10 @@ logger = get_task_logger(__name__)
 
 @celery.task
 def update_state(instance_id, build_number, state, action, log):
-    logger.info("Sending state to frontend")
     """
     Take the updated state to MQ, this task is not going to the worker
     """
+    logger.info("Sending state to frontend")
 
 
 @celery.task
@@ -139,54 +136,6 @@ def clean(res, base_path, course_key, instance_key, build_number):
     except (FileNotFoundError, IOError, OSError) as why:
         logger.info('Error:' + why.strerror)
         return '-1|Error when cleaning local worktree files,'
-
-
-# For some reason this func is not working if in signal.py. Other signal handling functions works fine
-@before_task_publish.connect(sender='apluslms_shepherd.celery_tasks.tasks.pull_repo')
-def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
-    """
-    information about task are located in headers for task messages
-    Only be triggered when publish the "pull_repo" task
-    """
-    # using the task protocol version 2.
-    info = headers if 'task' in headers else body
-    print('before_task_publish for task id {info[id]}'.format(
-        info=info,
-    ))
-    # Get course key and instance_key from the header
-    res = eval(headers['argsrepr'])
-    course_key = res[-3]
-    instance_key = res[-2]
-    current_build_number = res[-1]
-    print('course_key:{}, instance_key:{}'.format(course_key, instance_key))
-    now = datetime.utcnow()
-    ins = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first()
-    if ins is None:
-        print('No such course instance in the database')
-        revoke(info["id"], terminate=True)
-        return
-    # Create new build entry and buildlog entry
-    build = Build(instance_id=ins.id, start_time=now,
-                  state=State.PUBLISH,
-                  action=Action.CLONE, number=current_build_number)
-    new_log_entry = BuildLog(
-        instance_id=ins.id,
-        start_time=now,
-        number=current_build_number,
-        action=Action.CLONE
-    )
-    print('clone_log')
-    db.session.add(new_log_entry)
-    db.session.add(build)
-    db.session.commit()
-    print('Task sent')
-    update_frontend(ins.id, current_build_number, Action.CLONE, State.PUBLISH,
-                    "-------------------------------------------------New Build Start-------------------------------------------------\n"
-                    "Instance with course_key:{}, instance_key:{} entering task queue, this is build No.{}".format(
-                        course_key,
-                        instance_key,
-                        current_build_number))
-    print('Current state sent to frontend')
 
 
 @celery.task

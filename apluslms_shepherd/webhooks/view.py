@@ -6,7 +6,7 @@ from sqlalchemy import desc
 
 from apluslms_shepherd import config
 from apluslms_shepherd.build.models import Build
-from apluslms_shepherd.celery_tasks.tasks import pull_repo, build_repo, error_handler, clean, deploy
+from apluslms_shepherd.celery_tasks.build.tasks import pull_repo, build_repo, error_handler, clean, deploy
 from apluslms_shepherd.courses.models import CourseInstance
 
 webhooks_bp = Blueprint('webhooks', __name__, url_prefix='/hooks/')
