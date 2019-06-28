@@ -13,7 +13,7 @@
             {%- for group1,slug1 in possible_parents %}
             <li class="form-inline">
             {{slug1}} &nbsp; &nbsp;
-            <form method="post" action="{{ url_for('groups.add_createGroupPerm', group_id=group_id) }}"> 
+            <form method="post" action="{{ url_for('groups.add_create_group_perm', group_id=group_id) }}"> 
                 <button type="submit" id='add_perm' name='new_parent' value={{group1.id}} class="btn btn-outline-danger are-you-sure">Set</button>
             </form> 
             </li>
@@ -30,7 +30,7 @@
         {%- for group2,slug2 in parents %}
         <li class="form-inline">
         {{slug2}} &nbsp; &nbsp;
-        <form method="post" action="{{ url_for('groups.del_createGroupPerm', group_id=group_id) }}"> 
+        <form method="post" action="{{ url_for('groups.del_create_group_perm', group_id=group_id) }}"> 
             <button type="submit" id='del_perm' name='del_parent' value={{group2.id}} class="btn btn-outline-danger are-you-sure">Remove</button>
         </form> 
         </li>

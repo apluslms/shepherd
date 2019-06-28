@@ -11,7 +11,7 @@ from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import db
 from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, \
-    ManageCoursePerm, CourseOwnerType
+    CreateCoursePerm, ManageCoursePerm, CourseOwnerType
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -134,8 +134,7 @@ def group_manage_perm(func):
 
 def course_instance_create_perm(func):
     """
-    Check whether the current user can create a course
-    Permission: the user is a member of a group with the permission to create courses
+    Check whether the current user is a member of a group with the permission to create courses
     """
 
     @wraps(func)
@@ -265,6 +264,57 @@ def parent_group_check(group_name, parent_group):
 
     return None
 
+
+def course_instance_create_check(form):
+    """
+    Check whether the new course instance can be created
+    """
+    # Check whether the course_key match the naming rule
+    course_perm = CreateCoursePerm.query.filter_by(group_id=form.identity.data).one_or_none()
+    if not course_perm.pattern_match(form.course_key.data.upper()):
+            flash('The course key does not match the naming rule ')
+            return False
+    
+    # Check whether the course_instance already exists
+    exists = CourseInstance.query.filter(CourseInstance.course_key == form.course_key.data.upper(),
+                                             CourseInstance.instance_key == form.instance_key.data).first()
+    if exists:
+        flash('Course key %s and instance key %s already exists.' % (form.course_key.data.upper(), form.instance_key.data))
+        return False
+
+    # Check that there is no other courses (instances) with same course key. 
+    # If there are, then user needs to have **write** permission to at least one of them.
+    course_query = (db.session.query(CourseInstance)
+                            .filter(CourseInstance.course_key == form.course_key.data.upper()).subquery())
+    
+    course_instances = db.session.query(course_query).all()
+    if course_instances:
+        perms = (db.session.query(ManageCoursePerm)
+                        .join(CourseInstance, ManageCoursePerm.course_instance_id == CourseInstance.id)
+                        .join(course_query, CourseInstance.id == course_query.c.id)
+                        .join(ManageCoursePerm.group)
+                        .filter(ManageCoursePerm.type == CourseOwnerType.admin)
+                        .filter(Group.members.any(User.id == current_user.id)).all())
+        if not perms:
+            return False
+
+    # Check that there is no other courses (instances) with same repo url. 
+    # If there are, then user needs to have **read** permission to at least one of them.
+    url_query =  (db.session.query(CourseInstance)
+                            .filter(CourseInstance.git_origin == form.git_origin.data).subquery())
+    url_instances = db.session.query(url_query).all()
+
+    if url_instances:
+        perms = (db.session.query(ManageCoursePerm)
+                        .join(CourseInstance, ManageCoursePerm.course_instance_id == CourseInstance.id)
+                        .join(url_query, CourseInstance.id == url_query.c.id)
+                        .join(ManageCoursePerm.group)
+                        .filter(ManageCoursePerm.type == CourseOwnerType.admin)
+                        .filter(Group.members.any(User.id == current_user.id)).all())
+        if not perms:
+            return False
+
+    return True
 
 # -------------------------------------------------------------------------------------------------#
 # Helpers

@@ -55,7 +55,6 @@
                 <th scope="col">Course Key</th>
                 <th scope="col">Instance Key</th>
                 <th scope="col">Name</th>
-                <th scope="col">Identity</th>
                 <th scope="col">Git</th>
                 <th scope="col">Operations</th>
             </tr>
@@ -66,7 +65,6 @@
                     <td>{{ each.course_key }}</td>
                     <td>{{ each.instance_key }}</td>
                     <td>{{ each.name }}</td>
-                    <td>{{ each.owners }}</td>
                     <td>{{ each.git_origin }}:{{ each.branch }}</td>
                     <td>
                         <form method="post" action="/courses/delete/{{ each.course_key }}/{{ each.instance_key }}/">

@@ -2,18 +2,18 @@ import logging
 from json import dumps
 
 from flask import Blueprint, render_template, url_for, redirect, request, flash, \
-    Response, abort
-from flask import jsonify
+    Response, abort, jsonify
 from flask_login import login_required, current_user
 
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.groups.forms import GroupForm
 from apluslms_shepherd.groups.models import db, Group, PermType, GroupPermission, \
-    CreateGroupPerm, CreateCoursePerm
+    CreateGroupPerm, CreateCoursePerm, CourseOwnerType, ManageCoursePerm 
 from apluslms_shepherd.groups.utils import group_slugify, slugify, query_end_group, \
     role_permission, subgroup_create_perm, group_manage_perm, parent_group_check
 
+from sqlalchemy.exc import IntegrityError
 logging.basicConfig(level=logging.DEBUG)
 
 groups_bp = Blueprint('groups', __name__, url_prefix='/groups')
@@ -410,7 +410,7 @@ def add_create_group_perm(group_id, **kwargs):
         filter_by(group_id=group_id, target_group_id=target_group_id).one_or_none()
     if q:
         flash('The permission has been set')
-        return redirect(url_for('.manage_createGroupPerm', group_id=group.id))
+        return redirect(url_for('.manage_create_group_perm', group_id=group.id))
 
     target_group = db.session.query(Group).filter_by(id=target_group_id).one_or_none()
     group_perm = CreateGroupPerm(group=group, target_group=target_group)
@@ -426,7 +426,7 @@ def add_create_group_perm(group_id, **kwargs):
         db.session.rollback()
         flash('Could not add the permission')
 
-    return redirect(url_for('.manage_createGroupPerm', group_id=group_id))
+    return redirect(url_for('.manage_create_group_perm', group_id=group_id))
 
 
 @groups_bp.route('<group_id>/parents/remove/', methods=['POST'])
@@ -446,7 +446,7 @@ def del_create_group_perm(group_id, **kwargs):
         filter_by(group_id=group_id, target_group_id=target_group_id).one_or_none()
     if not group_perm:
         flash('No such a permission')
-        return redirect(url_for('.manage_createGroupPerm', group_id=group.id))
+        return redirect(url_for('.manage_create_group_perm', group_id=group.id))
 
     try:
         db.session.delete(group_perm)
@@ -456,7 +456,7 @@ def del_create_group_perm(group_id, **kwargs):
         db.session.rollback()
         flash('Could not remove the permission')
 
-    return redirect(url_for('.manage_createGroupPerm', group_id=group_id))
+    return redirect(url_for('.manage_create_group_perm', group_id=group_id))
 
 
 # -------------------------------------------------------------------------------------------------#
@@ -564,6 +564,12 @@ def delete_member(group_id, **kwargs):
     if member is None:
         flash('No such a user')
         return redirect(url_for('.list_members', group_id=group.id))
+    
+    # If the group is the root and the user is the only member, 
+    # it could not be removed
+    if (not group.parent) and (len(group.members)==1):
+        flash('The only member of the root group could not be removed')
+        return redirect(url_for('.list_members', group_id=group.id))
 
     group.members.remove(member)
 
@@ -587,15 +593,38 @@ def move_course(**kwargs):
     old_owner = kwargs['group']
 
     new_owner_id = request.args.get('new_owner_id')
-    new_owner = db.session.query(Group). \
-        filter_by(id=new_owner_id).one_or_none()
+    new_owner = (db.session.query(Group)
+                        .filter_by(id=new_owner_id).one_or_none())
 
     course_instances = (db.session.query(CourseInstance)
                         .join(CourseInstance.owners)
                         .filter(Group.id == old_owner.id).all())
+
     for c in course_instances:
-        c.owners.remove(old_owner)
-        c.owners.append(new_owner)
+            c.owners.remove(old_owner)
+            c.owners.append(new_owner)
+
+    course_manage_perms = (db.session.query(ManageCoursePerm)
+                        .filter(ManageCoursePerm.group_id == old_owner.id))
+    course_instance_ids = [p.course_instance_id for p in course_manage_perms]
+
+    q = (db.session.query(ManageCoursePerm)
+                        .filter(ManageCoursePerm.course_instance_id.in_(course_instance_ids))
+                        .filter(ManageCoursePerm.group_id == new_owner_id))
+    if not q.all():
+        course_manage_perms.update({'group_id':new_owner_id})
+    else:
+        q_course_instances = {p.course_instance_id: p for p in q}
+        for perm in course_manage_perms.all():
+            if perm.course_instance_id in q_course_instances:
+                new_perm = q_course_instances[perm.course_instance_id]
+                if not new_perm.type == CourseOwnerType.admin:
+                    if perm.type == CourseOwnerType.admin:
+                        new_perm.type = CourseOwnerType.admin
+                    
+                db.session.delete(perm)
+            else:
+                perm.group = new_owner
     try:
         db.session.commit()
     except:

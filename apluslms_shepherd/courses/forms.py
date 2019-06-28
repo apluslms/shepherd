@@ -16,13 +16,9 @@ class CourseForm(Form):
                                   render_kw={"placeholder": "To use default filename(course.yml), leave this empty."})
     # The options of the identity group which has the permission to create new courses 
     # and the current user is the member of
-    identity = SelectField('Identity', choices=[(-1, "---")], coerce=int)
+    identity = SelectField('Identity', choices=[(-1, "Please select an identity")], coerce=int)
     # The options of the group that owns the course
     owner_group = SelectField('Owner Group', choices=[(-1, "---")], coerce=int)
 
 
-class CourseEditForm(Form):
-    key = StringField('Course Key', [validators.InputRequired(), validators.Length(max=50)])
-    name = StringField('Course Name', [validators.InputRequired(), validators.Length(min=1, max=50)])
-    git_origin = StringField([validators.Optional(), validators.Length(max=255)])
-    identity = SelectField('Identity', choices=[(-1, "---")], coerce=int)
+

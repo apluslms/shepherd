@@ -61,4 +61,10 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='helpers.js') }}"></script>
 <script src="{{ url_for('static', filename='course_create.js') }}"></script>
+<script>
+    $(function(){
+        $("select#identity option[value=-1]").attr("disabled", true);
+        $("select#parent_group option[value=-1]").attr("disabled", true);
+    })
+</script>
 {% endblock %}
