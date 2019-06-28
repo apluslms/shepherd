@@ -96,6 +96,7 @@ def add_course(**kwargs):
 def edit_course(course_key, instance_key, **kwargs):
     # Get course from db
     course = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key)
+    git_origin_prev = course.first().git_origin
     form = CourseForm(request.form, obj=course.first())
     # Get the options of identity groups
     identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
@@ -112,17 +113,30 @@ def edit_course(course_key, instance_key, **kwargs):
         if not course_perm.pattern_match(form.course_key.data.upper()):
             flash('The course key does not match the naming rule: {}'.format(course_perm.pattern))
             return redirect(url_for('.edit_course', course_key=course_key))
+        git_origin_new = form.git_origin.data
         course.update(dict(
             course_key=form.course_key.data.upper(),
             instance_key=form.instance_key.data,
             branch=form.instance_key.data,
-            git_origin=form.git_origin.data,
+            git_origin=git_origin_new,
             secret_token=None if form.secret_token.data == '' else form.secret_token.data,
             config_filename=None if form.config_filename.data == '' else form.secret_token.data,
             name=form.name.data
         ))
         flash('Course edited.')
         db.session.commit()
+        logger.info('Course edited')
+        # Check if has change on origin
+        if git_origin_new != git_origin_prev:
+            # Delete old, if old repo becomes an orphan repository.
+            if CourseInstance.query.filter_by(git_origin=git_origin_prev).one_or_none() is None:
+                logger.info(
+                    'This edit makes the repository %s becomes an orphan repository, cleaning this repository.' % git_origin_prev)
+                clean_unused_repo.delay(git_origin_prev)
+            # Create new, is this new repo is not in db yet.
+            if GitRepository.query.filter_by(origin=git_origin_new).one_or_none() is None:
+                logger.info('This new repository is not exists in database,add it to database')
+                GitRepository(origin=git_origin_new).save()
         return redirect('/courses/')
     return render_template('courses/course_edit.html', form=form)
 
@@ -144,6 +158,8 @@ def del_course_instance(course_key, instance_key, **kwargs):
     db.session.commit()
     if repo_number_before_del == 1:
         # start delete celery task
+        logger.info(
+            'The repository %s becomes an orphan repository after deleting the course instance, cleaning this repository.' % course_instance.git_origin)
         clean_unused_repo.delay(course_instance.git_origin)
     flash('Instance with key: ' + instance_key + ' belonging to course with key: ' + course_key + ' has been deleted.')
     return redirect('/courses/')
