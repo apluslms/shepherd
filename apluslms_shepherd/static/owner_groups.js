@@ -65,6 +65,7 @@ function add_owner_options(course_key,instance_key){
 $('#Modal').on('hidden.bs.modal', function () {
     course_key = null;
     instance_key = null;
+    location.reload();
   })
 
 
