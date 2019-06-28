@@ -33,7 +33,9 @@ def list_course():
                             .filter(CourseInstance.git_origin.in_(git_origins))
                             .order_by(CourseInstance.course_key).all())
 
-    return render_template('course_list.html', user=current_user, courses=course_instances)
+    return render_template('course_list.html', user=current_user, 
+                                            courses=course_instances,
+                                            own_course_instances = own_course_instances)
 
 
 @course_bp.route('create/', methods=['GET', 'POST'])

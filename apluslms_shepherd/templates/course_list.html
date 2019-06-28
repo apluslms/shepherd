@@ -56,6 +56,7 @@
                 <th scope="col">Instance Key</th>
                 <th scope="col">Name</th>
                 <th scope="col">Git</th>
+                <th scope="col">Owner</th>
                 <th scope="col">Operations</th>
             </tr>
             </thead>
@@ -66,24 +67,47 @@
                     <td>{{ each.instance_key }}</td>
                     <td>{{ each.name }}</td>
                     <td>{{ each.git_origin }}:{{ each.branch }}</td>
-                    <td>
-                        <form method="post" action="/courses/delete/{{ each.course_key }}/{{ each.instance_key }}/">
-{#                            <a class=" btn btn-outline-primary" data-toggle="collapse" href="#{{ each.key }}"#}
-{#                               role="button" aria-expanded="false" aria-controls="collapseExample">#}
-{#                                View instances#}
-{#                            </a>#}
-                            <button type="button" class="btn btn-outline-primary"
-                                    onclick="location.href='/courses/edit/{{ each.course_key }}/{{ each.instance_key }}/'">Edit
-                            </button>
-                            <button type="button" class="btn btn-outline-primary"
-                                    onclick="location.href='/courses/create/?course={{ each.course_key }}&instance={{ each.instance_key }}'">Duplicate
-                            </button>
-                            <button type="button" class="btn btn-outline-primary owner_groups" 
-                                    data-course={{each.course_key}} data-instance={{each.instance_key}}>Owner groups
-                            </button>
-                            <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
-                        </form>
-                    </td>
+                    {% if each in own_course_instances %}
+                        <td>Yes</td>
+                        <td>
+                            <form method="post" action="/courses/delete/{{ each.course_key }}/{{ each.instance_key }}/">
+    {#                            <a class=" btn btn-outline-primary" data-toggle="collapse" href="#{{ each.key }}"#}
+    {#                               role="button" aria-expanded="false" aria-controls="collapseExample">#}
+    {#                                View instances#}
+    {#                            </a>#}
+                                <button type="button" class="btn btn-outline-primary"
+                                        onclick="location.href='/courses/edit/{{ each.course_key }}/{{ each.instance_key }}/'">Edit
+                                </button>
+                                <button type="button" class="btn btn-outline-primary"
+                                        onclick="location.href='/courses/create/?course={{ each.course_key }}&instance={{ each.instance_key }}'">Duplicate
+                                </button>
+                                <button type="button" class="btn btn-outline-primary owner_groups" 
+                                        data-course={{each.course_key}} data-instance={{each.instance_key}}>Owner groups
+                                </button>
+                                <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
+                            </form>
+                        </td>
+                    {% else %}
+                        <td>No</td>
+                        <td>
+                            <form method="post" action="/courses/delete/{{ each.course_key }}/{{ each.instance_key }}/">
+    {#                            <a class=" btn btn-outline-primary" data-toggle="collapse" href="#{{ each.key }}"#}
+    {#                               role="button" aria-expanded="false" aria-controls="collapseExample">#}
+    {#                                View instances#}
+    {#                            </a>#}
+                                <button type="button" class="btn btn-outline-primary" disabled
+                                        onclick="location.href='/courses/edit/{{ each.course_key }}/{{ each.instance_key }}/'">Edit
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" disabled
+                                        onclick="location.href='/courses/create/?course={{ each.course_key }}&instance={{ each.instance_key }}'">Duplicate
+                                </button>
+                                <button type="button" class="btn btn-outline-primary owner_groups" 
+                                        data-course={{each.course_key}} data-instance={{each.instance_key}}>Owner groups
+                                </button>
+                                <button type="submit" class="btn btn-outline-danger are-you-sure" disabled  >Delete</button>
+                            </form>
+                        </td>
+                    {% endif %}
                 </tr>
             {% endfor %}
             </tbody>
