@@ -13,7 +13,7 @@ from apluslms_shepherd.groups.models import db, Group, PermType, GroupPermission
     CreateGroupPerm, CreateCoursePerm
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.groups.utils import group_slugify, slugify, query_end_group, \
-        role_permission, subgroup_create_perm, group_manage_perm, parent_group_check 
+    role_permission, subgroup_create_perm, group_manage_perm, parent_group_check
 from flask import jsonify
 from json import dumps
 
@@ -33,8 +33,8 @@ def list_all_groups():
     """
     title = "Group list"
     roots = Group.query.filter_by(parent_id=None).all()
-    return render_template('groups/group_list.html', title = title, user = current_user, 
-                                                    roots = roots, node = None)
+    return render_template('groups/group_list.html', title=title, user=current_user,
+                           roots=roots, node=None)
 
 
 @groups_bp.route('<group_id>/subgroups/', methods=['GET'])
@@ -51,8 +51,8 @@ def list_subgroups(group_id):
     # roots = Group.query.filter_by(parent_id=group.id).all()
     roots = group.children
     title = 'Group: ' + group_slugify(group.name, group.parent)
-    return render_template('groups/group_list.html', title = title, user = current_user, 
-                                                    roots = roots, node = group)
+    return render_template('groups/group_list.html', title=title, user=current_user,
+                           roots=roots, node=group)
 
 
 @groups_bp.route('/my_groups/', methods=['GET'])
@@ -64,8 +64,9 @@ def list_my_groups():
     title = "My Groups"
     groups = Group.query.join(Group.members).filter(User.id == current_user.id).all()
     group_slugs = [group_slugify(g.name, g.parent) for g in groups]
-    return render_template('groups/my_groups.html', title = title, user = current_user, 
-                                groups = zip(groups, group_slugs),PermType = PermType)
+    return render_template('groups/my_groups.html', title=title, user=current_user,
+                           groups=zip(groups, group_slugs), PermType=PermType)
+
 
 # -------------------------------------------------------------------------------------------------#
 # Group Create
@@ -149,7 +150,7 @@ def create_subgroup(group_id, **kwargs):
     if 'group' in kwargs:
         parent_group = kwargs['group']
     else:
-        parent_group = db.session.query(Group).filter_by(id = group_id).one_or_none()
+        parent_group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
     form = GroupForm(request.form)
 
@@ -157,14 +158,14 @@ def create_subgroup(group_id, **kwargs):
         # Group name should not be empty
         if form.name.data == '':
             flash('The group name can not be empty!')
-            return redirect(url_for('.create_subgroup', group_id = group_id))
+            return redirect(url_for('.create_subgroup', group_id=group_id))
 
         group_name = slugify(form.name.data, separator='_')
         if group_name in [g.name for g in parent_group.children]:
             flash('The group already exists.')
-            return redirect(url_for('.create_subgroup', group_id = group_id))
-        
-        _ = new_group_to_db(group_name, parent_group,form)
+            return redirect(url_for('.create_subgroup', group_id=group_id))
+
+        _ = new_group_to_db(group_name, parent_group, form)
         try:
             db.session.commit()
             flash('The new group is added, and you are set as a member of the new group')
@@ -173,7 +174,7 @@ def create_subgroup(group_id, **kwargs):
             db.session.rollback()
             flash('Could not create the group')
 
-    return render_template('groups/group_create.html', form = form, parent = parent_group)
+    return render_template('groups/group_create.html', form=form, parent=parent_group)
 
 
 @groups_bp.route('/course_group/create/', methods=['POST', 'GET'])
@@ -192,11 +193,11 @@ def create_course_group():
         group_name = slugify(form.name.data, separator='_')
 
         # Check whether the group already exists
-        parent_group = Group.query.filter_by(id = group_id).one_or_none()
+        parent_group = Group.query.filter_by(id=group_id).one_or_none()
         if group_name in [g.name for g in parent_group.children]:
             raise Exception('The group already exists.')
 
-        new_group = new_group_to_db(group_name, parent_group,form)
+        new_group = new_group_to_db(group_name, parent_group, form)
         try:
             db.session.commit()
             flash('The new group is added,',
@@ -204,8 +205,8 @@ def create_course_group():
         except:
             raise Exception('Could not create the group')
 
-        return jsonify(group_id = new_group.id,
-                    group_slug = group_slugify(new_group.name,new_group.parent))
+        return jsonify(group_id=new_group.id,
+                       group_slug=group_slugify(new_group.name, new_group.parent))
     else:
         raise Exception("Error occur")
 
@@ -222,10 +223,10 @@ def delete_group(group_id, **kwargs):
     """Delete a group
     """
     group = kwargs['group']
-   
+
     courses = (db.session.query(CourseInstance)
-                        .filter(CourseInstance.owners.any(id = group.id)).all())
-    
+               .filter(CourseInstance.owners.any(id=group.id)).all())
+
     if courses:
         error_message = dumps({'message': 'You need to remove the courses to another group'})
         abort(Response(error_message, 406))
@@ -270,8 +271,8 @@ def edit_group(group_id, **kwargs):
                 return redirect(url_for('.edit_group', group_id=group.id))
 
             # Check whether there has been a group with the same name
-            q = db.session.query(Group).filter_by(name = new_name,
-                                        parent_id = group.parent_id).one_or_none()
+            q = db.session.query(Group).filter_by(name=new_name,
+                                                  parent_id=group.parent_id).one_or_none()
             if q:
                 flash('A group with the same name has been under the same parent')
                 return redirect(url_for('.edit_group', group_id=group.id))
@@ -323,13 +324,13 @@ def edit_group(group_id, **kwargs):
             if ('courses' not in perm_origin) and ('courses' in perm_new):
                 course_prefix = form.course_prefix.data.upper()
                 course_pattern = course_prefix + '-[A-Za-z][0-9][0-9][0-9][0-9]'
-                course_perm = CreateCoursePerm(group = group,pattern = course_pattern)
+                course_perm = CreateCoursePerm(group=group, pattern=course_pattern)
                 db.session.add(course_perm)
 
             # Delete the CreateCoursePermission if the 'courses' permission is removed
             if ('courses' in perm_origin) and ('courses' not in perm_new):
                 create_course_perm = db.session.query(CreateGroupPerm).filter(
-                                CreateGroupPerm.group_id == group.id).one_or_none()
+                    CreateGroupPerm.group_id == group.id).one_or_none()
                 if create_course_perm:
                     db.session.delete(create_course_perm)
 
@@ -340,11 +341,11 @@ def edit_group(group_id, **kwargs):
                 course_pattern = course_prefix + '-[A-Za-z][0-9][0-9][0-9][0-9]'
 
                 create_course_perm = db.session.query(CreateCoursePerm).filter(
-                            CreateCoursePerm.group_id == group.id).one_or_none()
+                    CreateCoursePerm.group_id == group.id).one_or_none()
                 if create_course_perm:
                     create_course_perm.pattern = course_pattern
                 else:
-                    create_course_perm = CreateCoursePerm(group = group,pattern = course_pattern)
+                    create_course_perm = CreateCoursePerm(group=group, pattern=course_pattern)
                     db.session.add(create_course_perm)
             else:
                 flash('Permission Denied')
@@ -356,8 +357,8 @@ def edit_group(group_id, **kwargs):
         except:
             flash('The group edit failed')
 
-    return render_template('groups/group_edit.html', group_id = group_id, 
-                        form = form, group_slug = group_slug, permissions = permissions)
+    return render_template('groups/group_edit.html', group_id=group_id,
+                           form=form, group_slug=group_slug, permissions=permissions)
 
 
 @groups_bp.route('/<group_id>/parents/', methods=['POST', 'GET'])
@@ -378,10 +379,10 @@ def manage_create_group_perm(group_id, **kwargs):
         return redirect(request.referrer)
 
     # The existing parent groups
-    parents = db.session.query(Group).\
-                        join(CreateGroupPerm.target_group).\
-                        filter(CreateGroupPerm.group_id == group_id).all()
-    parents_slug =  [group_slugify(g.name,g.parent) for g in parents]
+    parents = db.session.query(Group). \
+        join(CreateGroupPerm.target_group). \
+        filter(CreateGroupPerm.group_id == group_id).all()
+    parents_slug = [group_slugify(g.name, g.parent) for g in parents]
 
     # All the possbile parent groups are those groups the current user is a member of and their children
     possible_parents = db.session.query(Group). \
@@ -390,9 +391,9 @@ def manage_create_group_perm(group_id, **kwargs):
     possible_parents_slug = [group_slugify(g.name, g.parent) for g in possible_parents]
 
     return render_template('groups/groupPerm_manage.html',
-                        group_id = group_id,
-                        parents = zip(parents,parents_slug),
-                        possible_parents = zip(possible_parents,possible_parents_slug))
+                           group_id=group_id,
+                           parents=zip(parents, parents_slug),
+                           possible_parents=zip(possible_parents, possible_parents_slug))
 
 
 @groups_bp.route('<group_id>/parents/add/', methods=['POST'])
@@ -403,19 +404,19 @@ def add_create_group_perm(group_id, **kwargs):
     if 'group' in kwargs:
         group = kwargs['group']
     else:
-        group = db.session.query(Group).filter_by(id = group_id).one_or_none()
+        group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
     target_group_id = request.form['new_parent']
 
     # Check whether the permission already exists
-    q = db.session.query(CreateGroupPerm).\
-                    filter_by(group_id = group_id,target_group_id = target_group_id).one_or_none()
+    q = db.session.query(CreateGroupPerm). \
+        filter_by(group_id=group_id, target_group_id=target_group_id).one_or_none()
     if q:
         flash('The permission has been set')
         return redirect(url_for('.manage_createGroupPerm', group_id=group.id))
 
-    target_group = db.session.query(Group).filter_by(id = target_group_id).one_or_none()
-    group_perm = CreateGroupPerm(group=group,target_group = target_group)
+    target_group = db.session.query(Group).filter_by(id=target_group_id).one_or_none()
+    group_perm = CreateGroupPerm(group=group, target_group=target_group)
 
     try:
         db.session.add(group_perm)
@@ -439,17 +440,17 @@ def del_create_group_perm(group_id, **kwargs):
     if 'group' in kwargs:
         group = kwargs['group']
     else:
-        group = db.session.query(Group).filter_by(id = group_id).one_or_none()
+        group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
     target_group_id = request.form['del_parent']
     # Check whether the permission exists
     flash(group.id, target_group_id)
-    group_perm = db.session.query(CreateGroupPerm).\
-                    filter_by(group_id = group_id,target_group_id = target_group_id).one_or_none()
+    group_perm = db.session.query(CreateGroupPerm). \
+        filter_by(group_id=group_id, target_group_id=target_group_id).one_or_none()
     if not group_perm:
         flash('No such a permission')
-        return redirect(url_for('.manage_createGroupPerm', group_id = group.id))
-    
+        return redirect(url_for('.manage_createGroupPerm', group_id=group.id))
+
     try:
         db.session.delete(group_perm)
         db.session.commit()
@@ -458,7 +459,7 @@ def del_create_group_perm(group_id, **kwargs):
         db.session.rollback()
         flash('Could not remove the permission')
 
-    return redirect(url_for('.manage_createGroupPerm', group_id = group_id))
+    return redirect(url_for('.manage_createGroupPerm', group_id=group_id))
 
 
 # -------------------------------------------------------------------------------------------------#
@@ -490,8 +491,8 @@ def list_members(group_id):
                 allow_manage = True
                 break
 
-    return render_template('members/member_list.html', title = title, user = current_user, 
-                        group = group, members = members, allow_manage=allow_manage)
+    return render_template('members/member_list.html', title=title, user=current_user,
+                           group=group, members=members, allow_manage=allow_manage)
 
 
 @groups_bp.route('/<group_id>/add_members/', methods=['GET'])
@@ -500,7 +501,7 @@ def list_members(group_id):
 def list_users(group_id):
     """Listing the possible users who can be added as the members of a group
     """
-    group = db.session.query(Group).filter_by(id = group_id).one_or_none()
+    group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
     # The possible users are those with role permission and not are the members of the group
     conditions = []
@@ -510,7 +511,7 @@ def list_users(group_id):
     available_users = db.session.query(User).filter(db.or_(*conditions),
                                                     db.not_(User.groups.any(Group.id == group.id))).all()
 
-    return render_template('members/members_add.html', group = group, users = available_users)
+    return render_template('members/members_add.html', group=group, users=available_users)
 
 
 @groups_bp.route('<group_id>/members/add/', methods=['POST'])
@@ -523,7 +524,7 @@ def add_member(group_id, **kwargs):
     if 'group' in kwargs:
         group = kwargs['group']
     else:
-        group = db.session.query(Group).filter_by(id = group_id).one_or_none()
+        group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
     user_id = request.form['user']
     # Query the user by id and roles
@@ -546,7 +547,7 @@ def add_member(group_id, **kwargs):
         db.session.rollback()
         flash('Could not add this user')
 
-    return redirect(url_for('.list_users', group_id = group.id))
+    return redirect(url_for('.list_users', group_id=group.id))
 
 
 @groups_bp.route('/<group_id>/members/delete/', methods=['POST'])
@@ -559,10 +560,10 @@ def delete_member(group_id, **kwargs):
     if 'group' in kwargs:
         group = kwargs['group']
     else:
-        group = db.session.query(Group).filter_by(id = group_id).one_or_none()
+        group = db.session.query(Group).filter_by(id=group_id).one_or_none()
 
     user_id = request.form['user']
-    member = db.session.query(User).filter_by(id = user_id).one_or_none()
+    member = db.session.query(User).filter_by(id=user_id).one_or_none()
     if member is None:
         flash('No such a user')
         return redirect(url_for('.list_members', group_id=group.id))
@@ -589,8 +590,8 @@ def move_course(**kwargs):
     old_owner = kwargs['group']
 
     new_owner_id = request.args.get('new_owner_id')
-    new_owner =  db.session.query(Group).\
-                filter_by(id = new_owner_id).one_or_none()
+    new_owner = db.session.query(Group). \
+        filter_by(id=new_owner_id).one_or_none()
 
     course_instances = (db.session.query(CourseInstance)
                         .join(CourseInstance.owners)
@@ -618,8 +619,8 @@ def parent_options(group_id):
     for a group has the create subgroup permission  
     """
     groups = (db.session.query(Group)
-                    .join(CreateGroupPerm.target_group)
-                    .filter(CreateGroupPerm.group_id == group_id).all())
+              .join(CreateGroupPerm.target_group)
+              .filter(CreateGroupPerm.group_id == group_id).all())
 
     groupArray = []
 
@@ -638,7 +639,7 @@ def owner_options():
     """Get all the possible new owner groups for a course 
     """
     old_owner_id = request.args.get('old_owner_id')
-    old_owner = Group.query.filter_by(id = old_owner_id).one_or_none()
+    old_owner = Group.query.filter_by(id=old_owner_id).one_or_none()
 
     if not old_owner:
         abort(404, 'No such a group')
