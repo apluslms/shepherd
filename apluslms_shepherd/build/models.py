@@ -25,6 +25,8 @@ class Build(db.Model):
     end_time = db.Column(db.DateTime)
     state = db.Column(db.Enum(State))
     action = db.Column(db.Enum(Action))
+    instance = db.relationship('CourseInstance', backref=db.backref('builds', cascade="save-update, merge, "
+                                                                                      "delete"))
 
 
 class BuildLog(db.Model):

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block head %}
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+{% endblock %}
+{% block title %}
+    All Courses
+{% endblock %}
+
+{% block body %}
+    <div class="container text-center">
+        <div>User id:{{ user.id }}</div>
+        course_list.html
+        <table class="text-center table">
+            <caption>Repositories</caption>
+            <thead>
+            <tr>
+                <th scope="col">Git origin</th>
+                <th scope="col">Public Key</th>
+                <th scope="col">Courses</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for each in repos %}
+                <tr>
+                    <td>{{ each.origin }}</td>
+                    <td>{{ each.public_key }}</td>
+                    <td>
+                        <ul style="list-style-type: none">
+                            {% for each_course in each.courses %}
+                                <li> {{ each_course.name }}</li>
+                            {% endfor %}
+                        </ul>
+
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="content">
+        {% block content %}
+            {% include 'groups/owner_groups.html' %}
+        {% endblock %}
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+    <script src="{{ url_for('static', filename='owner_groups.js') }}"></script>
+    <script src="../../static/are_you_sure.js"></script>
+{% endblock %}

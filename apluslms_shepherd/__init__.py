@@ -1,16 +1,12 @@
-from flask import Flask,request,session,redirect,url_for,flash
+from flask import Flask, request, session, redirect, flash
+from flask_login import current_user
 from flask_lti_login import lti, lti_login_authenticated
 from flask_migrate import Migrate
-
-from flask_login import current_user
+from flask_principal import Principal, identity_loaded, RoleNeed, UserNeed
 
 from apluslms_shepherd import config
-
 from apluslms_shepherd.extensions import celery, db, make_celery
-
-from flask_principal import Principal, identity_loaded, RoleNeed, UserNeed
-from apluslms_shepherd.groups.models import PermType    
-
+from apluslms_shepherd.groups.models import PermType
 
 __version__ = '0.1'
 
@@ -28,6 +24,7 @@ def create_app():
         from apluslms_shepherd.build.views import build_log_bp
         from apluslms_shepherd.webhooks.view import webhooks_bp
         from apluslms_shepherd.groups.views import groups_bp
+        from apluslms_shepherd.repos.views import repo_bp
         login_manager.init_app(app=app)
         db.init_app(app=app)
         migrate = Migrate(app, db, render_as_batch=True)
@@ -35,7 +32,7 @@ def create_app():
         # Flask-Principal: ---  Setup ------------------------------------
         principals = Principal(app)
         principals.init_app(app)
-        #-----------------------------------------------------------------
+        # -----------------------------------------------------------------
         app.register_blueprint(main_bp)
         app.register_blueprint(build_log_bp)
         app.register_blueprint(course_bp)
@@ -43,7 +40,7 @@ def create_app():
         app.register_blueprint(auth_bp)
         app.register_blueprint(webhooks_bp)
         app.register_blueprint(groups_bp)
-
+        app.register_blueprint(repo_bp)
         
         # Add info to the Identity instance
         @identity_loaded.connect_via(app)
@@ -69,5 +66,8 @@ def create_app():
             session['redirected_from'] = request.url
             flash('Access Forbidden')
             return redirect('/')
+
+        from apluslms_shepherd.groups.utils import group_slugify
+        app.jinja_env.filters['group_slugify'] = group_slugify
         
     return app

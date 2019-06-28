@@ -6,6 +6,8 @@ from flask_login import login_required, current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from apluslms_shepherd.auth.models import User
+from apluslms_shepherd.build.models import BuildLog
+from apluslms_shepherd.celery_tasks.repos.tasks import clean_unused_repo
 from apluslms_shepherd.courses.forms import CourseForm
 from apluslms_shepherd.courses.models import CourseInstance, db
 from apluslms_shepherd.groups.forms import GroupForm
@@ -14,7 +16,7 @@ from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, Cr
 from apluslms_shepherd.groups.utils import group_slugify, PERMISSION_LIST, \
     role_permission, course_instance_create_perm, \
     course_instance_manage_perm, course_instance_admin_perm, course_instance_create_check
-
+from apluslms_shepherd.repos.models import GitRepository
 
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 logger = logging.getLogger(__name__)
@@ -33,7 +35,7 @@ def list_course():
                             .filter(CourseInstance.git_origin.in_(git_origins))
                             .order_by(CourseInstance.course_key).all())
 
-    return render_template('course_list.html', user=current_user, 
+    return render_template('courses/course_list.html', user=current_user, 
                                             courses=course_instances,
                                             own_course_instances = own_course_instances)
 
@@ -73,11 +75,17 @@ def add_course(**kwargs):
     
         db.session.add(new_course)
         db.session.add(course_admin_perm)
+        repository = GitRepository.query.filter(GitRepository.origin == form.git_origin.data).one_or_none()
+        if repository is None:
+            new_repository = GitRepository(origin=form.git_origin.data)
+            new_repository.save()
+        else:
+            new_course.git_repository = repository
         db.session.commit()
         flash('New course added.')
         
         return redirect('/courses/')
-    return render_template('course_create.html', form=form, group_form=group_form)
+    return render_template('courses/course_create.html', form=form, group_form=group_form)
 
 
 @course_bp.route('edit/<course_key>/<instance_key>/', methods=['GET', 'POST'])
@@ -115,7 +123,7 @@ def edit_course(course_key, instance_key, **kwargs):
         flash('Course edited.')
         db.session.commit()
         return redirect('/courses/')
-    return render_template('course_edit.html', form=form)
+    return render_template('courses/course_edit.html', form=form)
 
 
 @course_bp.route('delete/<course_key>/<instance_key>/', methods=['POST'])
@@ -125,11 +133,19 @@ def edit_course(course_key, instance_key, **kwargs):
 def del_course_instance(course_key, instance_key, **kwargs):
 
     course_instance = kwargs['course_instance']
-
+    repo = GitRepository.query.filter_by(origin=course_instance.git_origin).one_or_none()
+    repo_number_before_del = 0
+    if repo is None:
+        logger.error("No matching repo in the database")
+    else:
+        repo_number_before_del = repo.courses.count()
     db.session.delete(course_instance)
+    BuildLog.query.filter_by(instance_id=course_instance.id).delete()
     db.session.commit()
-    flash(
-        'Instance with key: ' + instance_key + ' belonging to course with key: ' + course_key + ' has been deleted.')
+    if repo_number_before_del == 1:
+        # start delete celery task
+        clean_unused_repo.delay(course_instance.git_origin)
+    flash('Instance with key: ' + instance_key + ' belonging to course with key: ' + course_key + ' has been deleted.')
     return redirect('/courses/')
 
 # -------------------------------------------------------------------------------------------------#
