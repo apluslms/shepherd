@@ -53,24 +53,26 @@ def add_course(**kwargs):
     
     if request.method == 'POST' and form.validate():
 
-        if course_instance_create_check(form):
-            new_course = CourseInstance(course_key=form.course_key.data.upper(),
-                                        instance_key=form.instance_key.data,
-                                        branch=form.instance_key.data,
-                                        git_origin=form.git_origin.data,
-                                        secret_token=None if form.secret_token.data == '' else form.secret_token.data,
-                                        config_filename=None if form.config_filename.data == '' else form.secret_token.data,
-                                        name=form.name.data)
-            owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
+        if not course_instance_create_check(form):
+            return redirect(url_for('.add_course'))
+            
+        new_course = CourseInstance(course_key=form.course_key.data.upper(),
+                                    instance_key=form.instance_key.data,
+                                    branch=form.instance_key.data,
+                                    git_origin=form.git_origin.data,
+                                    secret_token=None if form.secret_token.data == '' else form.secret_token.data,
+                                    config_filename=None if form.config_filename.data == '' else form.secret_token.data,
+                                    name=form.name.data)
+        owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
 
-            new_course.owners.append(owner_group)
-            course_admin_perm = ManageCoursePerm(course_instance = new_course,group = owner_group,
-                                                type = CourseOwnerType.admin)
-        
-            db.session.add(new_course)
-            db.session.add(course_admin_perm)
-            db.session.commit()
-            flash('New course added.')
+        new_course.owners.append(owner_group)
+        course_admin_perm = ManageCoursePerm(course_instance = new_course,group = owner_group,
+                                            type = CourseOwnerType.admin)
+    
+        db.session.add(new_course)
+        db.session.add(course_admin_perm)
+        db.session.commit()
+        flash('New course added.')
         
         return redirect('/courses/')
     return render_template('course_create.html', form=form, group_form=group_form)

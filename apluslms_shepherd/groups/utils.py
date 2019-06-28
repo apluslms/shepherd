@@ -296,6 +296,7 @@ def course_instance_create_check(form):
                         .filter(ManageCoursePerm.type == CourseOwnerType.admin)
                         .filter(Group.members.any(User.id == current_user.id)).all())
         if not perms:
+            flash("You don't have the 'write' permission to this course key")
             return False
 
     # Check that there is no other courses (instances) with same repo url. 
@@ -312,6 +313,7 @@ def course_instance_create_check(form):
                         .filter(ManageCoursePerm.type == CourseOwnerType.admin)
                         .filter(Group.members.any(User.id == current_user.id)).all())
         if not perms:
+            flash("You don't have the 'write' permission to this git origin url")
             return False
 
     return True
