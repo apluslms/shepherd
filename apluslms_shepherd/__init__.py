@@ -22,7 +22,7 @@ def create_app():
         from apluslms_shepherd.auth.views import auth_bp
         from apluslms_shepherd.courses.views import course_bp
         from apluslms_shepherd.build.views import build_log_bp
-        from apluslms_shepherd.webhooks.view import webhooks_bp
+        from apluslms_shepherd.webhooks.views import webhooks_bp
         from apluslms_shepherd.groups.views import groups_bp
         from apluslms_shepherd.repos.views import repo_bp
         login_manager.init_app(app=app)
