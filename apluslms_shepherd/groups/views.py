@@ -602,7 +602,8 @@ def move_course(**kwargs):
 
     for c in course_instances:
             c.owners.remove(old_owner)
-            c.owners.append(new_owner)
+            if new_owner not in c.owners:
+                c.owners.append(new_owner)
 
     course_manage_perms = (db.session.query(ManageCoursePerm)
                         .filter(ManageCoursePerm.group_id == old_owner.id))
