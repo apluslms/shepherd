@@ -70,11 +70,11 @@ $('#Modal').on('hidden.bs.modal', function () {
 
 
 $(".tabbable").tabs();
-$('#tabs').on("click", "li", function (event) {    
-    if ($(this).attr('id')=='list_li'){
+$('#tabs').on("click", "li", function () {
+    if ($(this).attr('id') === 'list_li'){
         list_owners(course_key,instance_key);
     }
-    if ($(this).attr('id')=='manage_li'){
+    if ($(this).attr('id') === 'manage_li'){
         add_owner_options(course_key,instance_key);
     }
 });
@@ -88,13 +88,14 @@ $(document).on("submit", "form.add_owner_form", function(event){
         var owner_type =  $(this).find("#owner_type").val();
         $.ajax({
             type: 'POST',
-            url: "/courses/"+course_key+"/"+instance_key+"/owners/add/"+'?group_id='+group_id+'&owner_type='+owner_type+'&return_error=true',
+            url: "/courses/"+course_key+"/"+instance_key+"/owners/add/"+'?group_id='+group_id +
+                '&owner_type='+owner_type+'&return_error=true',
             success: function () {
             alert('Add this owner group successfully');
             add_owner_options(course_key,instance_key);
             },
             error: function(response){
-                    error = JSON.parse(response.responseText)
+                    var error = JSON.parse(response.responseText);
                     alert(error.message);
             }
             });
@@ -110,14 +111,14 @@ $(document).on("submit", "form.del_owner_form", function(event){
          
         $.ajax({
             type: 'POST',
-            url: "/courses/"+course_key+"/"+instance_key+"/owners/remove/"+'?group_id='+group_id+'&owner_type='+owner_type+'&return_error=true',
+            url: "/courses/"+course_key+"/"+instance_key+"/owners/remove/"+'?group_id='+group_id+
+                '&owner_type='+owner_type+'&return_error=true',
             success: function () {
             alert('Remove this owner group successfully');
             row.remove();
             },
             error: function(response){
-                    console.log(response)
-                    error = JSON.parse(response.responseText)
+                    var error = JSON.parse(response.responseText);
                     alert(error.message);
             }
             });

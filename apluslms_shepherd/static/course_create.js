@@ -20,8 +20,9 @@ $(function() {
 // when the identity changes
 $(function(){  
     // Init
-    if ($("#identity").val() != -1){
-        fetch('/groups/perm/'+$("#identity").val()+'/parents/')  // fetch the groups from the database
+    var $identity = $("#identity");
+    if ($identity.val() !== -1){
+        fetch('/groups/perm/' + $identity.val() + '/parents/')  // fetch the groups from the database
         .then(function(response){
             if (response.status !== 200) {  
                 console.log('Error occurs. Status Code: ' +
@@ -29,16 +30,17 @@ $(function(){
                 return;}        
             response.json().then(function(data){
                 // Update the html of the 'parent_group' element
-                $("#parent_group").html('');  // Empty the 'parent_group' option
+                var $parent_group = $("#parent_group");
+                $parent_group.html('');  // Empty the 'parent_group' option
                 // var optionHTML = '';
                 for ( group of data.parent_options){  // Add options
-                    $('#parent_group').append('<option value= ' + group.id + '>' + group.name + '</option>');
+                    $parent_group.append('<option value= ' + group.id + '>' + group.name + '</option>');
                 }
             })
         })
     };
     // Onchange event
-    $("#identity").change(function(){
+    $identity.change(function(){
 
         fetch('/groups/perm/'+$(this).val()+'/parents/')  // fetch the groups from the database
         .then(function(response){
@@ -48,13 +50,14 @@ $(function(){
                 return;}        
             response.json().then(function(data){
                 // Update the html of the 'parent_group' element
-                $("#parent_group").html('');  // Empty the 'parent_group' option
+                var $parent_group = $("#parent_group");
+                $parent_group.html('');  // Empty the 'parent_group' option
                 // var optionHTML = '';
                 for ( group of data.parent_options){  // Add options
 
                     // var option = new Option(group.name, group.id); 
                     // $('#parent_group').append($(option));
-                    $('#parent_group').append('<option value= ' + group.id + '>' + group.name + '</option>');
+                    $parent_group.append('<option value= ' + group.id + '>' + group.name + '</option>');
                     // optionHTML += '<option value= ' + group.id + '>' + group.name + '</option>';
                 }
                 // $("#parent_group").html(optionHTML);
@@ -81,13 +84,13 @@ $(function() {
         success:function(data){  // The new group is created successfully
         // Update 'owner_group' dorpdown list 
         alert('New group is added successfully');
-        select = document.getElementById('owner_group');
+        var select = document.getElementById('owner_group');
         var opt = document.createElement('option');
         opt.value = data.group_id;
         opt.innerHTML = data.group_slug;
         select.add(opt);
         // Set the selected value
-        $('#owner_group').val(data.group_id);
+        select.value = data.group_id;
         // Hide the elements
         $('#createGroupModal').modal('hide');
         },

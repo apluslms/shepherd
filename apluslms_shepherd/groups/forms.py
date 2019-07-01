@@ -1,6 +1,8 @@
+# 3rd party libs
 from wtforms import Form, StringField, validators, SelectMultipleField
 from wtforms.widgets import html_params, ListWidget, CheckboxInput
 
+# from this project
 from apluslms_shepherd.groups.utils import PERMISSION_LIST
 
 
@@ -34,7 +36,7 @@ class GroupForm(Form):
     # The options of parent groups
     # parent_group = SelectField('Parent Group',choices=[(-1, "---")], coerce=int)
     # The permission types
-    permissions = SelectMultipleField('Permisson', choices=PERMISSION_LIST, widget=select_multi_checkbox)
+    permissions = SelectMultipleField('Permission', choices=PERMISSION_LIST, widget=select_multi_checkbox)
     # If the group is permitted to create courses, 
     # the naming constraints of course names
     course_prefix = StringField('Course Prefix', [validators.Optional()])

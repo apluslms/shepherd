@@ -14,9 +14,10 @@ function fetch_owners_option(old_owner_id){
             return;}        
         response.json().then(function(data){
             // Update the html of the 'parent_group' element
-            $("#new_owner").html('');  // Empty the 'parent_group' option
+            var $new_owner = $("#new_owner");
+            $new_owner.html('');  // Empty the 'parent_group' option
             for ( group of data.owner_options){  // Add options
-                $('#new_owner').append('<option value= ' + group.id + '>' + group.name + '</option>');
+                $new_owner.append('<option value= ' + group.id + '>' + group.name + '</option>');
             }
         })
     })
@@ -28,7 +29,7 @@ $(function() { // Delete a group and remove it from the group list
   
     event.preventDefault(); // avoid to execute the actual submit of the form
     
-    group_id = $(this).attr('value'); // Change the value of old_owner_id for removing courses
+    var group_id = $(this).attr('value'); // Change the value of old_owner_id for removing courses
     $.ajax({
     type: 'POST',
     url: $(this).attr('action')+'?return_error=true', 
@@ -38,15 +39,15 @@ $(function() { // Delete a group and remove it from the group list
     },
     error: function(response){
         console.log(response.status);
-        if (response.status==406){
+        if (response.status === 406){
             old_owner_id = group_id;
-            error = JSON.parse(response.responseText)
+            var error = JSON.parse(response.responseText);
             alert(error.message);
             fetch_owners_option(old_owner_id);
             $('#moveCourseModal').modal();
         }
         else{
-            error = JSON.parse(response.responseText)
+            var error = JSON.parse(response.responseText);
             alert(error.message);
         }
        }

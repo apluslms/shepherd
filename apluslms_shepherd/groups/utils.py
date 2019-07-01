@@ -1,17 +1,26 @@
+# standard libs
 import logging
 from functools import wraps
 from json import dumps
 
+# 3rd party libs
 from flask import request, flash, redirect, url_for, abort, Response
 from flask_login import current_user
 from flask_principal import Permission, RoleNeed
 from slugify import slugify
 
+# from this project
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import db
-from apluslms_shepherd.groups.models import Group, PermType, CreateGroupPerm, \
-    CreateCoursePerm, ManageCoursePerm, CourseOwnerType
+from apluslms_shepherd.groups.models import (
+    Group,
+    PermType,
+    CreateGroupPerm,
+    CreateCoursePerm,
+    ManageCoursePerm,
+    CourseOwnerType,
+)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -107,7 +116,7 @@ def group_manage_perm(func):
                 return redirect(url_for('groups.list_my_groups'))
 
         if group:
-            # Check condtion 1 
+            # Check condition 1
             if group.self_admin and current_user in group.members:
                 allowed = True
                 kwargs['group'] = group
@@ -121,7 +130,7 @@ def group_manage_perm(func):
 
         if not allowed:
             if 'return_error' in request.args:
-                error_message = dumps({'message': 'Permssion Denied'})
+                error_message = dumps({'message': 'Permission Denied'})
                 abort(Response(error_message, 403))
             else:
                 flash('Permission denied')
@@ -142,8 +151,8 @@ def course_instance_create_perm(func):
         # Check whether any of the groups that current user is in has the permission
         # group_IDs = [g.id for g in current_user.groups] 
         # allowed = db.session.query(CreateCoursePerm).filter(CreateCoursePerm.group_id.in_(group_IDs)).all()
-        identity_groups = Group.query.filter(Group.members.any(id = current_user.id),
-                                             Group.permissions.any(type = PermType.courses)).all()
+        identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
+                                             Group.permissions.any(type=PermType.courses)).all()
         if not identity_groups:
             flash('Permission denied')
             return redirect(request.referrer)
@@ -174,7 +183,7 @@ def course_instance_manage_perm(func):
 
         if not course_instance:
             if 'return_error' in request.args:
-                error_message = dumps({'message': 'Permssion Denied'})
+                error_message = dumps({'message': 'Permission Denied'})
                 abort(Response(error_message, 403))
             else:
                 flash('Permission denied')
@@ -220,6 +229,7 @@ def course_instance_admin_perm(func):
 
 # Function for permission checking
 
+
 def parent_group_check(group_name, parent_group):
     """
     Check whether the group with group_name can be create under the parent group
@@ -236,8 +246,8 @@ def parent_group_check(group_name, parent_group):
 
     # Check whether the parent group already has a child with the same group name
     if not parent_group:  # The new group is a root 
-        g = db.session.query(Group).filter_by(name = group_name,
-                                              parent = parent_group).one_or_none()
+        g = db.session.query(Group).filter_by(name=group_name,
+                                              parent=parent_group).one_or_none()
         if g:
             flash('The group already exists.')
             return None
@@ -272,12 +282,12 @@ def course_instance_create_check(form):
     # Check whether the course_key match the naming rule
     course_perm = CreateCoursePerm.query.filter_by(group_id=form.identity.data).one_or_none()
     if not course_perm.pattern_match(form.course_key.data.upper()):
-            flash('The course key does not match the naming rule ')
-            return False
+        flash('The course key does not match the naming rule ')
+        return False
     
     # Check whether the course_instance already exists
     exists = CourseInstance.query.filter(CourseInstance.course_key == form.course_key.data.upper(),
-                                             CourseInstance.instance_key == form.instance_key.data).first()
+                                         CourseInstance.instance_key == form.instance_key.data).first()
     if exists:
         flash('Course key %s and instance key %s already exists.' % (form.course_key.data.upper(), form.instance_key.data))
         return False
@@ -285,33 +295,33 @@ def course_instance_create_check(form):
     # Check that there is no other courses (instances) with same course key. 
     # If there are, then user needs to have **write** permission to at least one of them.
     course_query = (db.session.query(CourseInstance)
-                            .filter(CourseInstance.course_key == form.course_key.data.upper()).subquery())
+                              .filter(CourseInstance.course_key == form.course_key.data.upper()).subquery())
     
     course_instances = db.session.query(course_query).all()
     if course_instances:
         perms = (db.session.query(ManageCoursePerm)
-                        .join(CourseInstance, ManageCoursePerm.course_instance_id == CourseInstance.id)
-                        .join(course_query, CourseInstance.id == course_query.c.id)
-                        .join(ManageCoursePerm.group)
-                        .filter(ManageCoursePerm.type == CourseOwnerType.admin)
-                        .filter(Group.members.any(User.id == current_user.id)).all())
+                           .join(CourseInstance, ManageCoursePerm.course_instance_id == CourseInstance.id)
+                           .join(course_query, CourseInstance.id == course_query.c.id)
+                           .join(ManageCoursePerm.group)
+                           .filter(ManageCoursePerm.type == CourseOwnerType.admin)
+                           .filter(Group.members.any(User.id == current_user.id)).all())
         if not perms:
             flash("You don't have the 'write' permission to this course key")
             return False
 
     # Check that there is no other courses (instances) with same repo url. 
     # If there are, then user needs to have **read** permission to at least one of them.
-    url_query =  (db.session.query(CourseInstance)
-                            .filter(CourseInstance.git_origin == form.git_origin.data).subquery())
+    url_query = (db.session.query(CourseInstance)
+                           .filter(CourseInstance.git_origin == form.git_origin.data).subquery())
     url_instances = db.session.query(url_query).all()
 
     if url_instances:
         perms = (db.session.query(ManageCoursePerm)
-                        .join(CourseInstance, ManageCoursePerm.course_instance_id == CourseInstance.id)
-                        .join(url_query, CourseInstance.id == url_query.c.id)
-                        .join(ManageCoursePerm.group)
-                        .filter(ManageCoursePerm.type == CourseOwnerType.admin)
-                        .filter(Group.members.any(User.id == current_user.id)).all())
+                           .join(CourseInstance, ManageCoursePerm.course_instance_id == CourseInstance.id)
+                           .join(url_query, CourseInstance.id == url_query.c.id)
+                           .join(ManageCoursePerm.group)
+                           .filter(ManageCoursePerm.type == CourseOwnerType.admin)
+                           .filter(Group.members.any(User.id == current_user.id)).all())
         if not perms:
             flash("You don't have the 'write' permission to this git origin url")
             return False
@@ -320,6 +330,7 @@ def course_instance_create_check(form):
 
 # -------------------------------------------------------------------------------------------------#
 # Helpers
+
 
 def group_slugify(group_name, parent, separator='.'):
     """

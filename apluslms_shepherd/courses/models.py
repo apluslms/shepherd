@@ -1,3 +1,4 @@
+# from this project
 from apluslms_shepherd.extensions import db
 from apluslms_shepherd.groups.models import gc_table
 

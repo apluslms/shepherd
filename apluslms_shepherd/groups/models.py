@@ -1,11 +1,14 @@
+# standard libs
 import enum
 import re
 
+# 3rd party libs
 from sqlalchemy_mptt.mixins import BaseNestedSets
 
+# from this project
 from apluslms_shepherd.extensions import db
 
-# db.metadata.clear()
+
 # Association tables for ManyToMany relationships
 # For Group model and User model
 gm_table = db.Table('gm_table', db.Model.metadata,
