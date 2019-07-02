@@ -107,15 +107,16 @@ def add_course(**kwargs):
 @role_permission.require(http_exception=403)
 @course_instance_admin_perm
 def edit_course(course_key, instance_key, **kwargs):
-
-    course = kwargs['course_instance']
+    # Get course from db
+    course = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key)
     form = CourseForm(request.form, obj=course.first())
     # Get the options of identity groups
     identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
                                          Group.permissions.any(type=PermType.courses)).all()
     form.identity.choices += [(g.id, group_slugify(g.name, g.parent)) for g in identity_groups]
-    # The label is changes according to whether user is edit a course or creating a course,
-    # When editing a course, it should be changed to follows, or it will be "First instance origin"
+    # Set a default value for owner group to make form validated (owner groups are not edited here)
+    form.owner_group.data = -1
+
     if request.method == 'POST' and form.validate():
         # Check whether the course key match the naming rule
         course_perm = CreateCoursePerm.query.filter_by(group_id=form.identity.data).one_or_none()
