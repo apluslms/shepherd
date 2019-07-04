@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+from urllib.parse import quote
 
 from apluslms_shepherd.celery_tasks.build.signals import task_action_mapping
 
@@ -36,11 +37,12 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     Clone bear repo to local, or update local one, generate working tree.
     """
     logger.info('url:{}, branch:{} course_key:{} instance_key{}'.format(url, branch, course_key, instance_key))
-    folder = url.split('/')[-1]
+    folder = quote(url).split('/')[-1]
     logger.info("Pulling from {}".format(url))
     shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/pull_bare.sh')
     cmd = [shell_script_path, base_path, folder, url, branch,
-           course_key, instance_key, build_number]
+           course_key, instance_key, build_number,
+           os.path.join(DevelopmentConfig.REPO_KEYS_PATH, quote(url), 'private.pem')]
     proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             env=dict(os.environ, SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0"))
     o, e = proc.communicate()
@@ -117,7 +119,7 @@ def deploy(build_result, deploy_base_path, base_path, course_key, instance_key, 
         deploy_path = os.path.join(deploy_base_path, course_key, instance_key, build_number)
         shutil.move(build_path, deploy_path)
     except (FileNotFoundError, OSError, IOError) as why:
-        logger.info('Error:' + why.strerror)
+        logger.error('Error:' + why.strerror)
         return '-1|Error when deploying files'
     return '0' + '|File successfully moved to deployment folder.'
 

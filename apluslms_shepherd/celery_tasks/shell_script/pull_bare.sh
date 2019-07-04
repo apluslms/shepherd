@@ -7,20 +7,33 @@ branch=$4
 course=$5
 instance=$6
 build_number=$7
-
+private_key=$8
 
 cd $base
 if [ -d $dir ]; then
   echo "Local repo found, fetching updates"
   cd $dir
-  git fetch origin $branch:$branch
+  if [ -z "$8" ]
+  then
+          git fetch origin $branch:$branch
+  else
+    echo"Found local private key"
+    ssh-agent sh -c "ssh-add $private_key; git fetch origin $branch:$branch"
+
+  fi
   res=$?
   if [ $res -ne 0 ] ; then
     exit $res
     fi
 else
   echo "No local repo found, cloning the repo from remote."
-  git clone --bare $git_origin
+  if [ -z "$8" ]
+  then
+    git clone --bare $git_origin
+  else
+    echo"Found local private key"
+    ssh-agent sh -c "ssh-add $private_key; git clone --bare $git_origin"
+  fi
   res=$?
    if [ $res -ne 0 ] ; then
      echo "Clone failed, error."
