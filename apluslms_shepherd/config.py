@@ -48,6 +48,7 @@ class DevelopmentConfig(Config):
     BUILD_WEBHOOK_TOKEN = "Secret"
     BUILD_WEBHOOK_URL = "http://127.0.0.1:5000/webhooks/state/"
     COURSE_DEPLOYMENT_PATH = Config.BASE_DIR + "/../../shepherd_deploy/"
+    REPO_KEYS_PATH = Config.BASE_DIR + "/../../shepherd_repo_keys/"
 
 
 class TestingConfig(Config):

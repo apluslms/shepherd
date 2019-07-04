@@ -1,9 +1,17 @@
 {% extends 'base.html' %}
 {% block head %}
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <style>
+        .pubkey {
+            width: 100%;
+        }
+    </style>
+
 {% endblock %}
 {% block title %}
-    All Courses
+    All Repositories
 {% endblock %}
 
 {% block body %}
@@ -23,7 +31,20 @@
             {% for each in repos %}
                 <tr>
                     <td>{{ each.origin }}</td>
-                    <td>{{ each.public_key }}</td>
+                    <td>{% if each.public_key == None %}
+                        Public key is now generating...
+                    {% else %}
+                        <div class="input-group">
+                            <input class="form-control pubkey" id="{{ loop.index }}"
+                                   readonly value="{{ each.public_key }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary fa fa-clipboard" type="button"
+                                        onclick="copyToClipboard({{ loop.index }})"></button>
+                            </div>
+                        </div>
+
+                    {% endif %}
+                    </td>
                     <td>
                         <ul style="list-style-type: none">
                             {% for each_course in each.courses %}
@@ -49,4 +70,18 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
     <script src="{{ url_for('static', filename='owner_groups.js') }}"></script>
     <script src="../../static/are_you_sure.js"></script>
+    <script>
+        function copyToClipboard(loopId) {
+            var copyText = document.getElementById(loopId);
+            console.log(loopId);
+            copyText.select();
+            try {
+                var successful = document.execCommand('copy');
+                var msg = successful ? 'successful' : 'unsuccessful';
+                console.log('Copying text command was ' + msg);
+            } catch (err) {
+                console.log('Oops, unable to copy');
+            }
+        }
+    </script>
 {% endblock %}

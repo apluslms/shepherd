@@ -17,7 +17,7 @@ def get_current_build_number_list():
 
 
 def update_frontend(instance_id, build_number, action, state, log=None):
-    celery.send_task('apluslms_shepherd.celery_tasks.tasks.update_state', queue='celery_state',
+    celery.send_task('apluslms_shepherd.celery_tasks.build.tasks.update_state', queue='celery_state',
                      args=[instance_id, build_number, action.name, state.name, log])
 
 

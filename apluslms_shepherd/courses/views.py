@@ -7,7 +7,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.build.models import BuildLog
-from apluslms_shepherd.celery_tasks.repos.tasks import clean_unused_repo
+from apluslms_shepherd.celery_tasks.repos.tasks import clean_unused_repo, generate_deploy_key
+from apluslms_shepherd.config import DevelopmentConfig
 from apluslms_shepherd.courses.forms import CourseForm
 from apluslms_shepherd.courses.models import CourseInstance, db
 from apluslms_shepherd.groups.forms import GroupForm
@@ -27,7 +28,6 @@ logger = logging.getLogger(__name__)
 @role_permission.require(http_exception=403)
 def list_course():
     all_courses = CourseInstance.query.all()
-
     return render_template('courses/course_list.html', user=current_user, courses=all_courses)
 
 
@@ -65,7 +65,7 @@ def add_course(**kwargs):
         else:
             new_course = CourseInstance(course_key=form.course_key.data.upper(),
                                         instance_key=form.instance_key.data,
-                                        branch=form.instance_key.data,
+                                        branch=form.branch.data,
                                         git_origin=form.git_origin.data,
                                         secret_token=None if form.secret_token.data == '' else form.secret_token.data,
                                         config_filename=None if form.config_filename.data == '' else form.secret_token.data,
@@ -81,6 +81,8 @@ def add_course(**kwargs):
             if repository is None:
                 new_repository = GitRepository(origin=form.git_origin.data)
                 new_repository.save()
+                # Start generating key pair for this repository.
+                generate_deploy_key.apply_async(args=[DevelopmentConfig.REPO_KEYS_PATH, form.git_origin.data])
             else:
                 new_course.git_repository = repository
             db.session.commit()
@@ -137,6 +139,7 @@ def edit_course(course_key, instance_key, **kwargs):
             if GitRepository.query.filter_by(origin=git_origin_new).one_or_none() is None:
                 logger.info('This new repository is not exists in database,add it to database')
                 GitRepository(origin=git_origin_new).save()
+                generate_deploy_key.apply_async(args=[DevelopmentConfig.REPO_KEYS_PATH, git_origin_new])
         return redirect('/courses/')
     return render_template('courses/course_edit.html', form=form)
 
