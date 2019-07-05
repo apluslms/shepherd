@@ -1,9 +1,16 @@
+import enum
 import os
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
 from apluslms_shepherd.config import DevelopmentConfig
 from apluslms_shepherd.extensions import db
+
+
+class State(enum.Enum):
+    VALID = 1
+    NO_MATCHING_PAIR = 2
+    NO_ACCESS_TO_REMOTE = 3
 
 
 class CRUD(object):
@@ -22,6 +29,7 @@ class GitRepository(db.Model, CRUD):
     courses = db.relationship('CourseInstance', backref='git_repository', lazy='dynamic')
     public_key = db.Column(db.Text)
     last_validation = db.Column(db.DateTime)
+    state = db.Column(db.Enum(State))
 
     @property
     def folder_name(self):
