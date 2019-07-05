@@ -221,8 +221,8 @@ def delete_group(group_id, **kwargs):
     """
     group = kwargs['group']
 
-    courses = db.session.query(CourseInstance). \
-        filter(CourseInstance.owners.any(id=group.id)).all()
+    courses = (db.session.query(CourseInstance)
+               .filter(CourseInstance.owners.any(id=group.id)).all())
 
     if courses:
         error_message = dumps({'message': 'You need to remove the courses to another group'})
@@ -584,19 +584,16 @@ def delete_member(group_id, **kwargs):
 def move_course(**kwargs):
     """Move courses of a group to another group
     """
-    # old_owner_id = request.args.get('old_owner_id')
-    # old_owner =  db.session.query(Group).\
-    #             filter_by(id=old_owner_id).one_or_none()
     old_owner = kwargs['group']
 
     new_owner_id = request.args.get('new_owner_id')
     new_owner = db.session.query(Group). \
         filter_by(id=new_owner_id).one_or_none()
 
-    courses = db.session.query(CourseInstance). \
-        join(CourseInstance.owners). \
-        filter(Group.id == old_owner.id).all()
-    for c in courses:
+    course_instances = (db.session.query(CourseInstance)
+                        .join(CourseInstance.owners)
+                        .filter(Group.id == old_owner.id).all())
+    for c in course_instances:
         c.owners.remove(old_owner)
         c.owners.append(new_owner)
     try:
@@ -618,9 +615,9 @@ def parent_options(group_id):
     """Get all the possible parent groups of subgroups 
     for a group has the create subgroup permission  
     """
-    groups = db.session.query(Group). \
-        join(CreateGroupPerm.target_group). \
-        filter(CreateGroupPerm.group_id == group_id).all()
+    groups = (db.session.query(Group)
+              .join(CreateGroupPerm.target_group)
+              .filter(CreateGroupPerm.group_id == group_id).all())
 
     group_array = []
 
