@@ -17,7 +17,8 @@ from apluslms_shepherd.repos.models import GitRepository
 logger = get_task_logger(__name__)
 
 task_result_mapping = {True: 1, False: 0}
-validate_logging_mapping = {True: 'Validation succeed', False: 'Validation failed, regenerating key pair'}
+validate_logging_mapping = {True: 'Validation succeed', False: 'Validation failed'}
+
 
 @celery.task
 def clean_unused_repo(origin):
@@ -44,7 +45,6 @@ def clean_unused_repo(origin):
         db.session.commit()
         shutil.rmtree(private_key_path)
         logger.warning("Database entry with origin: %s has been deleted" % origin)
-
     return 0
 
 
@@ -56,7 +56,6 @@ def generate_deploy_key(key_path, git_origin):
         return -1
     logger.info('Start generating file')
     final_path = os.path.join(key_path, quote(git_origin))
-    print(final_path)
     private_key_path = os.path.join(final_path, "private.pem")
     # Generate private key
     key = rsa.generate_private_key(
@@ -83,23 +82,19 @@ def generate_deploy_key(key_path, git_origin):
         f.write(private_key)
     os.chmod(private_key_path, stat.S_IREAD)
     celery.add_periodic_task(10.0, validate_deploy_key.s(key_path, git_origin), name='validate_%s' % quote(git_origin))
-    print(key_path, git_origin)
     celery.send_task("apluslms_shepherd.celery_tasks.repos.tasks.validate_deploy_key", args=[key_path, git_origin])
-    # Add periodic task to validate the key pair.
-
     return 0
 
 
 @celery.task
 def validate_deploy_key(key_path, git_origin):
-    ret = task_result_mapping[verify_key_pair(key_path, git_origin)]
-    celery.send_task("apluslms_shepherd.celery_tasks.repos.tasks.validate_deploy_key_scheduled")
+    ret = task_result_mapping[verify_key_pair(key_path, git_origin, logger)]
     return ret
 
 
 @celery.task
 def validate_deploy_key_scheduled(key_path):
-    logger.info("Validation task started, Scanning all existing repo under ", key_path)
+    logger.info("Validation task started, Scanning all existing repo under %s", key_path)
     for each in GitRepository.query.all():
         period = datetime.utcnow() - each.last_validation
         if period > timedelta(days=0, hours=0, seconds=1):
@@ -109,5 +104,5 @@ def validate_deploy_key_scheduled(key_path):
                         period.days,
                         period.seconds
                         )
-            res = verify_key_pair(key_path, each.origin)
+            res = verify_key_pair(key_path, each.origin, logger)
             logger.warning(validate_logging_mapping[res])
