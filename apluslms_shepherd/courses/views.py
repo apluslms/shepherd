@@ -81,9 +81,12 @@ def add_course(**kwargs):
                                     secret_token=None if form.secret_token.data == '' else form.secret_token.data,
                                     config_filename=None if form.config_filename.data == '' else form.secret_token.data,
                                     name=form.name.data)
+        # Generate and save a jwt token
+        new_course.jwt_token = new_course.generate_jwt_token()
+        # Add the owner group
         owner_group = Group.query.filter(Group.id == form.owner_group.data).one_or_none()
-
         new_course.owners.append(owner_group)
+        # Add the course admin permission
         course_admin_perm = ManageCoursePerm(course_instance=new_course,group=owner_group,
                                              type=CourseOwnerType.admin)
     
@@ -284,3 +287,21 @@ def owner_add(course_key, instance_key, **kwargs):
         abort(Response(error_message, 501))
 
     return jsonify(status='success')
+
+
+@course_bp.route('<course_key>/<instance_key>/obtain_jwt/', methods=['GET'])
+@login_required
+@role_permission.require(http_exception=403)
+@course_instance_admin_perm
+def obtain_jwt_token(course_key, instance_key, **kwargs):
+    """Get a jwt token of a course
+    """
+    course_instance = kwargs['course_instance']
+
+    try:
+        jwt_token = course_instance.generate_jwt_token()
+    except Exception as e:
+        error_message = dumps({'message': 'Failed to obtain a JWT token. Error:%s' % e})
+        abort(Response(error_message, 501))
+
+    return jsonify({'jwt_token':jwt_token})

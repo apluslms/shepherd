@@ -111,8 +111,8 @@ $(document).on("submit", "form.del_owner_form", function(event){
          
         $.ajax({
             type: 'POST',
-            url: "/courses/"+course_key+"/"+instance_key+"/owners/remove/"+'?group_id='+group_id+
-                '&owner_type='+owner_type+'&return_error=true',
+            url: "/courses/"+course_key+"/"+instance_key+"/owners/remove/"+"?group_id="+group_id+
+                "&return_error=true",
             success: function () {
             alert('Remove this owner group successfully');
             row.remove();

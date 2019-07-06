@@ -56,6 +56,9 @@
                                 <button type="button" class="btn btn-outline-primary owner_groups" 
                                         data-course={{each.course_key}} data-instance={{each.instance_key}}>Owner groups
                                 </button>
+                                 <button type="button" class="btn btn-outline-primary jwt_token"
+                                        data-course={{each.course_key}} data-instance={{each.instance_key}}>Obtain JWT token
+                                </button>
                                 <button type="submit" class="btn btn-outline-danger are-you-sure">Delete</button>
                             </form>
                         </td>
@@ -77,6 +80,9 @@
                                 <button type="button" class="btn btn-outline-primary owner_groups" 
                                         data-course={{each.course_key}} data-instance={{each.instance_key}}>Owner groups
                                 </button>
+                                <button type="button" class="btn btn-outline-primary jwt_token" disabled
+                                        data-course={{each.course_key}} data-instance={{each.instance_key}}>Obtain JWT token
+                                </button>
                                 <button type="submit" class="btn btn-outline-danger are-you-sure" disabled  >Delete</button>
                             </form>
                         </td>
@@ -90,6 +96,7 @@
 <div id="content">
         {% block content %}
         {% include 'groups/owner_groups.html' %}
+        {% include 'courses/course_jwt.html' %}
         {% endblock %}
 </div>
 {% endblock %}
@@ -99,8 +106,25 @@
 <script src="{{ url_for('static', filename='owner_groups.js') }}"></script>
 <script src="../../static/are_you_sure.js"></script>
 <script>
-    function group_slugify(group){
-        return group.name;
-    }
+(function(){
+    $('.jwt_token').click(function(){
+        course_key = $(this).attr('data-course');
+        instance_key =  $(this).attr('data-instance');
+
+        $.ajax({
+        type: 'GET',
+        url: "/courses/"+course_key+"/"+instance_key+"/obtain_jwt/",
+        dataType: 'JSON',
+        success: function (data) {
+            $("#jwt_token").html(data.jwt_token);
+             $('#jwt_modal').modal();
+        },
+        error: function(response){
+            var error = JSON.parse(response.responseText);
+            alert(error.message);
+        }
+        });
+    });
+})();
 </script>
 {% endblock %}
