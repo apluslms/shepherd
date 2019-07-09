@@ -1,3 +1,4 @@
+import os
 import string
 from builtins import object, frozenset
 from os.path import dirname
@@ -7,7 +8,7 @@ class Config(object):
     DEBUG = False
     TESTING = False
     BASE_DIR = dirname(__file__)
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + BASE_DIR + '/shepherd.db'
+    SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
     LOGIN_REDIRECT_URL = "/auth/success/"
     LOGIN_DISABLED = False
     BASE_CHARACTERS = string.ascii_letters + string.digits
@@ -30,8 +31,7 @@ class Config(object):
         }
     }
     USE_SSH_FOR_GIT = True
-    CELERY_RESULT_BACKEND = "db+sqlite:///" + BASE_DIR + "/result.db"
-    BROKER_URL = "amqp://guest:guest@172.17.0.2:5672"
+    BROKER_URL = os.environ['BROKER_URL']
     CELERY_NAME = "test"
     CELERY_IMPORTS = ("apluslms_shepherd.celery_tasks.build",
                       "apluslms_shepherd.celery_tasks.repos"
