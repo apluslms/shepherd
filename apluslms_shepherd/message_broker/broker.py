@@ -35,4 +35,4 @@ async def get_state():
 
 if __name__ == "__main__":
     sio.start_background_task(get_state)
-    web.run_app(app, port=5001)
+    web.run_app(app, host='0.0.0.0', port=5001)
