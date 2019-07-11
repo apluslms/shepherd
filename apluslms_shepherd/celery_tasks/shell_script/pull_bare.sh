@@ -13,11 +13,12 @@ cd $base
 if [ -d $dir ]; then
   echo "Local repo found, fetching updates"
   cd $dir
+
   if [ -z "$8" ]
   then
-          git fetch origin $branch:$branch
+       git fetch origin $branch:$branch
   else
-    echo"Found local private key"
+    echo "Found local private key"
     ssh-agent sh -c "ssh-add $private_key; git fetch origin $branch:$branch"
 
   fi
@@ -31,7 +32,7 @@ else
   then
     git clone --bare $git_origin
   else
-    echo"Found local private key"
+    echo "Found local private key"
     ssh-agent sh -c "ssh-add $private_key; git clone --bare $git_origin"
   fi
   res=$?
@@ -46,7 +47,7 @@ else
     exit $res
   fi
 fi
-echo 'Generating worktree'
+echo "Generating worktree"
 #git --no-pager log --pretty=format:"------------;Commit metadata;;Hash:;%H;Subject:;%s;Body:;%b;Committer:;%ai;%ae;Author:;%ci;%cn;%ce;------------;" -1 | tr ';' '\n'
 git worktree add -f ../builds/$course/$instance/$build_number $branch
 cd ../builds/$course/$instance/$build_number

@@ -4,17 +4,17 @@ from celery.signals import task_prerun, task_postrun, task_failure, before_task_
 from celery.utils.log import get_task_logger
 from celery.worker.control import revoke
 
-from apluslms_shepherd.build.models import Build, BuildLog, State, Action
+from apluslms_shepherd.build.models import Build, BuildLog, BuildAction, BuildState
 from apluslms_shepherd.celery_tasks.build.helper import update_frontend
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery, db
 
 logger = get_task_logger(__name__)
 
-task_action_mapping = {'build_repo': Action.BUILD,
-                       'pull_repo': Action.CLONE,
-                       'clean': Action.CLEAN,
-                       'deploy': Action.DEPLOY}
+task_action_mapping = {'build_repo': BuildAction.BUILD,
+                       'pull_repo': BuildAction.CLONE,
+                       'clean': BuildAction.CLEAN,
+                       'deploy': BuildAction.DEPLOY}
 
 build_tasks = ['pull_repo', 'build_repo', 'deploy', 'clean']
 
@@ -45,20 +45,20 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
         return
     # Create new build entry and buildlog entry
     build = Build(instance_id=ins.id, start_time=now,
-                  state=State.PUBLISH,
-                  action=Action.CLONE, number=current_build_number)
+                  state=BuildState.PUBLISH,
+                  action=BuildAction.CLONE, number=current_build_number)
     new_log_entry = BuildLog(
         instance_id=ins.id,
         start_time=now,
         number=current_build_number,
-        action=Action.CLONE
+        action=BuildAction.CLONE
     )
     logger.warning('clone_log')
     db.session.add(new_log_entry)
     db.session.add(build)
     db.session.commit()
     logger.warning('Task sent')
-    update_frontend(ins.id, current_build_number, Action.CLONE, State.PUBLISH,
+    update_frontend(ins.id, current_build_number, BuildAction.CLONE, BuildState.PUBLISH,
                     "-------------------------------------------------New Build Start-------------------------------------------------\n"
                     "Instance with course_key:{}, instance_key:{} entering task queue, this is build No.{}".format(
                         course_key,
@@ -108,10 +108,10 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
         # will be published before clone task runs, so the state in of Build table will be changed too early.
         # In this case, we create the BuildLog and change the state in the Build table of Build task in this function
         build.action = task_action_mapping[sender.__name__]
-        build.state = State.RUNNING
+        build.state = BuildState.RUNNING
         db.session.commit()
         # Send the state to frontend
-        update_frontend(ins.id, current_build_number, task_action_mapping[sender.__name__], State.RUNNING,
+        update_frontend(ins.id, current_build_number, task_action_mapping[sender.__name__], BuildState.RUNNING,
                         'Task {} for course_key:{}, instance_key:{} starts running'.format(sender.__name__, course_key,
                                                                                            instance_key))
 
@@ -150,10 +150,10 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
         # The state code is in the beginning, divided with main part by "|"
         if isinstance(retval, str):
             build_log.log_text = retval
-            build.state = State.FINISHED if str(retval).split('|')[0] == '0' else State.FAILED
+            build.state = BuildState.FINISHED if str(retval).split('|')[0] == '0' else BuildState.FAILED
         else:
             logger.warning('return is not str or int')
-            build.state = State.FAILED
+            build.state = BuildState.FAILED
             build_log.log_text = str(retval)
         # If this is the end of clone task, no need to set end time for Build entry, because the whole task is not
         # done yet(Still have Build and Deployment left)
@@ -192,9 +192,9 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
                                              number=current_build_number,
                                              action=task_action_mapping[sender.__name__]).first()
         # Change the state to failed, set the end time
-        build.state = State.FAILED
+        build.state = BuildState.FAILED
         build.end_time = now
         build_log.end_time = now
         db.session.commit()
-        update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], State.FAILED,
+        update_frontend(instance_id, current_build_number, task_action_mapping[sender.__name__], BuildState.FAILED,
                         'Task' + sender.__name__ + 'is Failed')

@@ -9,7 +9,7 @@ sio.attach(app)
 
 async def get_state():
     # connect to the RabbitMQ broker
-    connection = await asynqp.connect('172.17.0.2', 5672, username='guest', password='guest')
+    connection = await asynqp.connect('localhost', 5672, username='guest', password='guest')
 
     # Open a communications channel
     channel = await connection.open_channel()

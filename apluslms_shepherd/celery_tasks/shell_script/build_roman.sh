@@ -12,7 +12,7 @@ if [ $retVal -ne 0 ]; then
     echo "Error"
 fi
 if [ -z $file_name ] || [ $file_name -e "course.yml" ]; then
-    roman
+    roman -vv -c /srv/shepherd/roman_config.yml
 else
     echo "Roman with file name"
     roman -f $file_name

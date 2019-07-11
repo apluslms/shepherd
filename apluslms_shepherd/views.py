@@ -23,7 +23,7 @@ class FrontendBuild(object):
 def main_page():
     instances = CourseInstance.query.all()
     recent_build_entries = db.session.query(db.func.max(Build.number), Build.instance_id, Build.state, Build.action, Build.number). \
-        group_by(Build.instance_id)
+        group_by(Build.instance_id, Build.state, Build.action, Build.number)
     newest_builds = [
         FrontendBuild(instance_id=instance.id,
                       instance_key=instance.instance_key,

@@ -5,7 +5,7 @@ class CourseForm(Form):
     course_key = StringField('Course Key', [validators.InputRequired(), validators.Length(max=50)])
     instance_key = StringField('Instance Key', [validators.InputRequired(), validators.Length(max=50)])
     name = StringField('Course Name', [validators.InputRequired(), validators.Length(min=1, max=50)])
-    git_origin = StringField('Git Repo', [validators.InputRequired(), validators.Length(max=255)])
+    origin = StringField('Git Repo', [validators.InputRequired(), validators.Length(max=255)])
     secret_token = StringField('Secret Token', [validators.length(max=127), validators.optional(True)],
                                render_kw={
                                    "placeholder": "If no secret token set for GitHub/Gitlab webhook, leave this empty."
@@ -24,5 +24,5 @@ class CourseForm(Form):
 class CourseEditForm(Form):
     key = StringField('Course Key', [validators.InputRequired(), validators.Length(max=50)])
     name = StringField('Course Name', [validators.InputRequired(), validators.Length(min=1, max=50)])
-    git_origin = StringField([validators.Optional(), validators.Length(max=255)])
+    origin = StringField([validators.Optional(), validators.Length(max=255)])
     identity = SelectField('Identity', choices=[(-1, "---")], coerce=int)

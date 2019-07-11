@@ -13,7 +13,7 @@ except ImportError:
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 
-from apluslms_shepherd.build.models import State
+from apluslms_shepherd.build.models import BuildState
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery
 from apluslms_shepherd.config import DevelopmentConfig
@@ -39,7 +39,7 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     logger.info('url:{}, branch:{} course_key:{} instance_key{}'.format(url, branch, course_key, instance_key))
     folder = quote(url).split('/')[-1]
     logger.info("Pulling from {}".format(url))
-    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/pull_bare.sh')
+    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'apluslms_shepherd/celery_tasks/shell_script/pull_bare.sh')
     cmd = [shell_script_path, base_path, folder, url, branch,
            course_key, instance_key, build_number,
            os.path.join(DevelopmentConfig.REPO_KEYS_PATH, quote(url), 'private.pem')]
@@ -65,11 +65,11 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     log = "The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, instance_key)
     logger.info(log)
     ins = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first()
-    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], State.RUNNING,
+    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
                     log)
     number_list = get_current_build_number_list()
     log = "Current build task number of this instance in the queue:{}".format(number_list)
-    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], State.RUNNING,
+    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
                     log)
     try:
         if int(build_number) < max(number_list):
@@ -80,12 +80,12 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
                 build_number)
     except (ValueError, TypeError):
         logger.error("Cannot compare current  build number with max number in the queue")
-    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/build_roman.sh')
+    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'apluslms_shepherd/celery_tasks/shell_script/build_roman.sh')
     none_to_empty = lambda s: '' if s is None else str(s)
     cmd = [shell_script_path, base_path, course_key, instance_key, build_number, none_to_empty(ins.config_filename)]
     proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     o, e = proc.communicate()
-    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], State.RUNNING,
+    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
                     o.decode('ascii'))
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))

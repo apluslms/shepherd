@@ -3,7 +3,7 @@ flask-script
 flask-sqlalchemy
 flask-login
 flask-migrate
-apluslms-roman
+git+https://github.com/JohnDing1995/roman.git@milestone0.3
 git+https://github.com/apluslms/flask-lti-login.git
 flask-socketio
 aiohttp
