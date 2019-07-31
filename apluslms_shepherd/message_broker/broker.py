@@ -1,10 +1,13 @@
-import asynqp
-import socketio
-from aiohttp import web
+from flask_socketio import SocketIO
+from flask import Flask
+from flask_cors import CORS
 
-sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins=['127.0.0.1:5001', '127.0.0.1:5000'])
-app = web.Application()
-sio.attach(app)
+import asynqp
+
+app = Flask(__name__)
+CORS(app)
+app.config['SECRET_KEY'] = 'secret!'
+sio = SocketIO(app)
 
 
 async def get_state():
@@ -22,17 +25,18 @@ async def get_state():
         try:
             print(received_message.json())  # get JSON from incoming messages easily
             received_message.ack()
-            await sio.emit('update', {
+            sio.emit('update', {
                 'instance_id': received_message.json()[0][0],
                 'build_number': received_message.json()[0][1],
                 'current_action': received_message.json()[0][2],
                 'current_state': received_message.json()[0][3]})
 
-            await sio.emit(received_message.json()[0][0], {'log': received_message.json()[0][4]+'\n'})
+            sio.emit(received_message.json()[0][0], {'log': received_message.json()[0][4] + '\n'})
         except AttributeError:
             pass
 
 
 if __name__ == "__main__":
     sio.start_background_task(get_state)
-    web.run_app(app, host='0.0.0.0', port=5001)
+    sio.run(app, host='0.0.0.0', port=5001)
+
