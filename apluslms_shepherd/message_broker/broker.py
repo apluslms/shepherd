@@ -2,7 +2,7 @@ import asynqp
 import socketio
 from aiohttp import web
 
-sio = socketio.AsyncServer(async_mode='aiohttp')
+sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins=['127.0.0.1:5001', '127.0.0.1:5000'])
 app = web.Application()
 sio.attach(app)
 
