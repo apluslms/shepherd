@@ -1,4 +1,12 @@
-var socket = io.connect('http://127.0.0.1:5001');
+var socket = io('http://127.0.0.1:5001', {
+  transports: ['websocket'],  transportOptions: {
+    polling: {
+      extraHeaders: {
+        'Access-Control-Allow-Origin': '*'
+      }
+    }
+  }
+});
     socket.on('update', function(data) {
         console.log(data);
         $("#"+data.instance_id+".table-number").html(data.build_number);
