@@ -22,18 +22,17 @@ class FrontendBuild(object):
 @login_required
 def main_page():
     instances = CourseInstance.query.all()
-    recent_build_entries = db.session.query(db.func.max(Build.number), Build.instance_id, Build.state, Build.action, Build.number). \
-        group_by(Build.instance_id, Build.state, Build.action, Build.number)
+    sorted_build_entries = Build.query.order_by(Build.number.desc())
     newest_builds = [
         FrontendBuild(instance_id=instance.id,
                       instance_key=instance.instance_key,
                       course_key=instance.course_key,
-                      number=0 if len(recent_build_entries.filter_by(instance_id=instance.id).all()) is 0
-                      else recent_build_entries.filter_by(instance_id=instance.id).first().number,
-                      state=None if len(recent_build_entries.filter_by(instance_id=instance.id).all()) is 0
-                      else recent_build_entries.filter_by(instance_id=instance.id).first().state,
-                      action=None if len(recent_build_entries.filter_by(instance_id=instance.id).all()) is 0
-                      else recent_build_entries.filter_by(instance_id=instance.id).first().action
+                      number=0 if len(sorted_build_entries.filter_by(instance_id=instance.id).all()) is 0
+                      else sorted_build_entries.filter_by(instance_id=instance.id).first().number,
+                      state=None if len(sorted_build_entries.filter_by(instance_id=instance.id).all()) is 0
+                      else sorted_build_entries.filter_by(instance_id=instance.id).first().state,
+                      action=None if len(sorted_build_entries.filter_by(instance_id=instance.id).all()) is 0
+                      else sorted_build_entries.filter_by(instance_id=instance.id).first().action
                       )
         for instance in instances
     ]

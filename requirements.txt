@@ -6,7 +6,6 @@ flask-migrate
 Docker >=3.0.0, <4
 git+https://github.com/JohnDing1995/roman.git@milestone0.3
 git+https://github.com/apluslms/flask-lti-login.git
-socketio
 aiohttp
 celery
 asynqp
@@ -17,3 +16,4 @@ Flask-Principal==0.4.0
 requests==2.22.0
 cryptography >= 1.4.0
 psycopg2
+python-socketio

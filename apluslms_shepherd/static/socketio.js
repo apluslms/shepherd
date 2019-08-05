@@ -1,8 +1,8 @@
 var socket = io('http://127.0.0.1:5001', {
-  transports: ['websocket'],  transportOptions: {
+transportOptions: {
     polling: {
       extraHeaders: {
-        'Access-Control-Allow-Origin': '*'
+        'Origin': 'http://127.0.0.1:5001'
       }
     }
   }

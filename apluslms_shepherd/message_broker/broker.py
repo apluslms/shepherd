@@ -2,14 +2,14 @@ import asynqp
 import socketio
 from aiohttp import web
 
-sio = socketio.AsyncServer(async_mode='aiohttp')
+sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins='*')
 app = web.Application()
 sio.attach(app)
 
 
 async def get_state():
     # connect to the RabbitMQ broker
-    connection = await asynqp.connect('172.17.0.2', 5672, username='guest', password='guest')
+    connection = await asynqp.connect('127.0.0.1', 5672, username='guest', password='guest')
 
     # Open a communications channel
     channel = await connection.open_channel()
