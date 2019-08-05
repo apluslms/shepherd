@@ -10,17 +10,17 @@ from apluslms_shepherd.extensions import db
 # For Group model and User model
 gm_table = db.Table('gm_table', db.Model.metadata,
                     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
-                    db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
+                    db.Column('user_id', db.String, db.ForeignKey('user.id'))
                     )
 # For Group model and Permission model
 gp_table = db.Table('gp_table', db.Model.metadata,
                     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
                     db.Column('permission_id', db.Integer, db.ForeignKey('group_permission.id'))
                     )
-# For Group model and CourseInstance model 
+# For Group model and CourseInstance model
 gc_table = db.Table('gc_table', db.Model.metadata,
                     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
-                    db.Column('course_instance_id', db.String, db.ForeignKey('course_instance.id'))
+                    db.Column('course_instance_id', db.Integer, db.ForeignKey('course_instance.id'))
                     )
 
 
@@ -101,7 +101,7 @@ class CreateCoursePerm(db.Model):
                                                         uselist=False, cascade='all,delete'))
     regexp = db.Column(db.Boolean, default=True)
     # The course naming rule (a regular expression)
-    pattern = db.Column(db.String(30))
+    pattern = db.Column(db.String(100))
 
     def __repr__(self):
         return "<Create Course Permission (group={0}, pattern={1})>,".format(self.group,

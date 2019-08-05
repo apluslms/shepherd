@@ -34,7 +34,7 @@ def gitlab():
                                                                                                   git_http_url,
                                                                                                   git_branch))
         instance = CourseInstance.query \
-            .filter((CourseInstance.git_origin == git_ssh_url) | (CourseInstance.git_origin == git_http_url)) \
+            .filter((CourseInstance.origin == git_ssh_url) | (CourseInstance.origin == git_http_url)) \
             .filter_by(secret_token=gitlab_token, branch=git_branch) \
             .first()
         if instance is None:
@@ -85,7 +85,7 @@ def github_pushed():
                                                                                                   git_http_url,
                                                                                                   git_branch))
         instance = CourseInstance.query \
-            .filter((CourseInstance.git_origin == git_ssh_url) | (CourseInstance.git_origin == git_http_url)) \
+            .filter((CourseInstance.origin == git_ssh_url) | (CourseInstance.origin == git_http_url)) \
             .filter_by(secret_token=token, branch=git_branch) \
             .first()
         if instance is None:

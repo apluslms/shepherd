@@ -63,10 +63,16 @@ def add_course(**kwargs):
             flash('Course key %s and instance key %s already exists.' % (
                 form.course_key.data.upper(), form.instance_key.data))
         else:
+            repository = GitRepository.query.filter_by(origin=form.origin.data).first()
+            if repository is None:
+                new_repository = GitRepository(origin=form.origin.data)
+                new_repository.save()
+                # Start generating key pair for this repository.
+                generate_deploy_key.apply_async(args=[DevelopmentConfig.REPO_KEYS_PATH, form.origin.data])
             new_course = CourseInstance(course_key=form.course_key.data.upper(),
                                         instance_key=form.instance_key.data,
                                         branch=form.branch.data,
-                                        git_origin=form.git_origin.data,
+                                        origin=form.origin.data,
                                         secret_token=None if form.secret_token.data == '' else form.secret_token.data,
                                         config_filename=None if form.config_filename.data == '' else form.secret_token.data,
                                         name=form.name.data)
@@ -74,17 +80,9 @@ def add_course(**kwargs):
             new_course.owners.append(owner_group)
             course_admin_perm = ManageCoursePerm(course_instance=new_course, group=owner_group,
                                                  type=CourseOwnerType.admin)
-
             db.session.add(new_course)
+            db.session.commit()
             db.session.add(course_admin_perm)
-            repository = GitRepository.query.filter(GitRepository.origin == form.git_origin.data).one_or_none()
-            if repository is None:
-                new_repository = GitRepository(origin=form.git_origin.data)
-                new_repository.save()
-                # Start generating key pair for this repository.
-                generate_deploy_key.apply_async(args=[DevelopmentConfig.REPO_KEYS_PATH, form.git_origin.data])
-            else:
-                new_course.git_repository = repository
             db.session.commit()
             flash('New course added.')
         return redirect('/courses/')
@@ -98,7 +96,7 @@ def add_course(**kwargs):
 def edit_course(course_key, instance_key, **kwargs):
     # Get course from db
     course = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key)
-    git_origin_prev = course.first().git_origin
+    origin_prev = course.first().origin
     form = CourseForm(request.form, obj=course.first())
     # Get the options of identity groups
     identity_groups = Group.query.filter(Group.members.any(id=current_user.id),
@@ -115,12 +113,12 @@ def edit_course(course_key, instance_key, **kwargs):
         if not course_perm.pattern_match(form.course_key.data.upper()):
             flash('The course key does not match the naming rule: {}'.format(course_perm.pattern))
             return redirect(url_for('.edit_course', course_key=course_key))
-        git_origin_new = form.git_origin.data
+        origin_new = form.origin.data
         course.update(dict(
             course_key=form.course_key.data.upper(),
             instance_key=form.instance_key.data,
             branch=form.instance_key.data,
-            git_origin=git_origin_new,
+            # origin=origin_new,
             secret_token=None if form.secret_token.data == '' else form.secret_token.data,
             config_filename=None if form.config_filename.data == '' else form.secret_token.data,
             name=form.name.data
@@ -129,17 +127,19 @@ def edit_course(course_key, instance_key, **kwargs):
         db.session.commit()
         logger.info('Course edited')
         # Check if has change on origin
-        if git_origin_new != git_origin_prev:
-            # Delete old, if old repo becomes an orphan repository.
-            if CourseInstance.query.filter_by(git_origin=git_origin_prev).one_or_none() is None:
-                logger.info(
-                    'This edit makes the repository %s becomes an orphan repository, cleaning this repository.' % git_origin_prev)
-                clean_unused_repo.delay(git_origin_prev)
+        if origin_new != origin_prev:
             # Create new, is this new repo is not in db yet.
-            if GitRepository.query.filter_by(origin=git_origin_new).one_or_none() is None:
+            if GitRepository.query.filter_by(origin=origin_new).one_or_none() is None:
                 logger.info('This new repository is not exists in database,add it to database')
-                GitRepository(origin=git_origin_new).save()
-                generate_deploy_key.apply_async(args=[DevelopmentConfig.REPO_KEYS_PATH, git_origin_new])
+                new_repo = GitRepository(origin=origin_new)
+                new_repo.save()
+                course.update(dict(origin=origin_new))
+                generate_deploy_key.apply_async(args=[DevelopmentConfig.REPO_KEYS_PATH, origin_new])
+            # Delete old, if old repo becomes an orphan repository.
+            if CourseInstance.query.filter_by(origin=origin_prev).one_or_none() is None:
+                logger.info(
+                    'This edit makes the repository %s becomes an orphan repository, cleaning this repository.' % origin_prev)
+                clean_unused_repo.delay(origin_prev)
         return redirect('/courses/')
     return render_template('courses/course_edit.html', form=form)
 
@@ -150,7 +150,7 @@ def edit_course(course_key, instance_key, **kwargs):
 @course_instance_admin_perm
 def del_course_instance(course_key, instance_key, **kwargs):
     course_instance = kwargs['course_instance']
-    repo = GitRepository.query.filter_by(origin=course_instance.git_origin).one_or_none()
+    repo = GitRepository.query.filter_by(origin=course_instance.origin).one_or_none()
     repo_number_before_del = 0
     if repo is None:
         logger.error("No matching repo in the database")
@@ -162,8 +162,8 @@ def del_course_instance(course_key, instance_key, **kwargs):
     if repo_number_before_del == 1:
         # start delete celery task
         logger.info(
-            'The repository %s becomes an orphan repository after deleting the course instance, cleaning this repository.' % course_instance.git_origin)
-        clean_unused_repo.delay(course_instance.git_origin)
+            'The repository %s becomes an orphan repository after deleting the course instance, cleaning this repository.' % course_instance.origin)
+        clean_unused_repo.delay(course_instance.origin)
     flash('Instance with key: ' + instance_key + ' belonging to course with key: ' + course_key + ' has been deleted.')
     return redirect('/courses/')
 

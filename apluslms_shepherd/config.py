@@ -31,7 +31,7 @@ class Config(object):
     }
     USE_SSH_FOR_GIT = True
     CELERY_RESULT_BACKEND = "db+sqlite:///" + BASE_DIR + "/result.db"
-    BROKER_URL = "amqp://guest:guest@172.17.0.2:5672"
+    BROKER_URL = "amqp://guest:guest@127.0.0.1:5672"
     CELERY_NAME = "test"
     CELERY_IMPORTS = ("apluslms_shepherd.celery_tasks.build",
                       "apluslms_shepherd.celery_tasks.repos"
@@ -40,7 +40,8 @@ class Config(object):
 
 
 class ProductionConfig(Config):
-    DATABASE_URI = 'mysql://user@localhost/shepherd'
+    SQLALCHEMY_DATABASE_URI = "postgresql:///apluslms_shepherd"
+    BROKER_URL = "amqp://guest:guest@127.0.0.1:5672"
 
 
 class DevelopmentConfig(Config):

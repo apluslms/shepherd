@@ -13,7 +13,7 @@ except ImportError:
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 
-from apluslms_shepherd.build.models import State
+from apluslms_shepherd.build.models import BuildState
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery
 from apluslms_shepherd.config import DevelopmentConfig
@@ -65,11 +65,11 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     log = "The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, instance_key)
     logger.info(log)
     ins = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first()
-    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], State.RUNNING,
+    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
                     log)
     number_list = get_current_build_number_list()
     log = "Current build task number of this instance in the queue:{}".format(number_list)
-    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], State.RUNNING,
+    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
                     log)
     try:
         if int(build_number) < max(number_list):
@@ -85,7 +85,7 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     cmd = [shell_script_path, base_path, course_key, instance_key, build_number, none_to_empty(ins.config_filename)]
     proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     o, e = proc.communicate()
-    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], State.RUNNING,
+    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
                     o.decode('ascii'))
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))

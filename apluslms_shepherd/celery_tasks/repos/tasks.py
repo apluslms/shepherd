@@ -57,6 +57,7 @@ def generate_deploy_key(key_path, git_origin):
     logger.info('Start generating file')
     final_path = os.path.join(key_path, quote(git_origin))
     private_key_path = os.path.join(final_path, "private.pem")
+    public_key_path = os.path.join(final_path, "public.pem")
     # Generate private key
     key = rsa.generate_private_key(
         backend=crypto_default_backend(),
@@ -72,15 +73,15 @@ def generate_deploy_key(key_path, git_origin):
         crypto_serialization.Encoding.OpenSSH,
         crypto_serialization.PublicFormat.OpenSSH
     )
-    logger.debug('Generated public key is %s', public_key.decode('utf-8'))
+    logger.info('Generated public key is %s', public_key.decode('utf-8'))
     repos.first().public_key = public_key.decode('utf-8')
     db.session.commit()
     # Write keys to the local
     if not os.path.exists(final_path):
-        os.makedirs(final_path)
+        os.makedirs(final_path, 0o777)
     with open(private_key_path, "wb") as f:
         f.write(private_key)
-    os.chmod(private_key_path, stat.S_IREAD)
+    os.chmod(private_key_path, 0o600)
     celery.add_periodic_task(10.0, validate_deploy_key.s(key_path, git_origin), name='validate_%s' % quote(git_origin))
     celery.send_task("apluslms_shepherd.celery_tasks.repos.tasks.validate_deploy_key", args=[key_path, git_origin])
     return 0
