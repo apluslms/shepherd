@@ -44,7 +44,8 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
            course_key, instance_key, build_number,
            os.path.join(DevelopmentConfig.REPO_KEYS_PATH, quote(url), 'private.pem')]
     proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            env=dict(os.environ, SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0"))
+                            env=dict(os.environ, SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0",
+                                     GIT_SSH_COMMAND=DevelopmentConfig.GIT_SSH_COMMAND))
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
