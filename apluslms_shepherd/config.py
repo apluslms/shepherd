@@ -35,7 +35,7 @@ class Config(object):
     CELERY_IMPORTS = ("apluslms_shepherd.celery_tasks.build",
                       "apluslms_shepherd.celery_tasks.repos"
                       )
-    COURSE_REPO_BASEPATH = BASE_DIR + "/../../shepherd_test_clone/"
+    COURSE_REPO_BASEPATH = BASE_DIR + "/../shepherd_test_clone/"
 
 
 class ProductionConfig(Config):
@@ -45,8 +45,9 @@ class DevelopmentConfig(Config):
     DEBUG = True
     BUILD_WEBHOOK_TOKEN = "Secret"
     BUILD_WEBHOOK_URL = "http://127.0.0.1:5000/webhooks/state/"
-    COURSE_DEPLOYMENT_PATH = Config.BASE_DIR + "/../../shepherd_deploy/"
-    REPO_KEYS_PATH = Config.BASE_DIR + "/../../shepherd_repo_keys/"
+    COURSE_DEPLOYMENT_PATH = Config.BASE_DIR + "/shepherd_deploy/"
+    REPO_KEYS_PATH = Config.BASE_DIR + "/../shepherd_repo_keys/"
+    GIT_SSH_COMMAND = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
 
 
 class TestingConfig(Config):

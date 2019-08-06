@@ -39,12 +39,13 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     logger.info('url:{}, branch:{} course_key:{} instance_key{}'.format(url, branch, course_key, instance_key))
     folder = quote(url).split('/')[-1]
     logger.info("Pulling from {}".format(url))
-    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'apluslms_shepherd/celery_tasks/shell_script/pull_bare.sh')
+    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/pull_bare.sh')
     cmd = [shell_script_path, base_path, folder, url, branch,
            course_key, instance_key, build_number,
            os.path.join(DevelopmentConfig.REPO_KEYS_PATH, quote(url), 'private.pem')]
     proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            env=dict(os.environ, SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0"))
+                            env=dict(os.environ, SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0",
+                                     GIT_SSH_COMMAND=DevelopmentConfig.GIT_SSH_COMMAND))
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
     logger.info('code: ' + str(proc.returncode))
@@ -80,7 +81,7 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
                 build_number)
     except (ValueError, TypeError):
         logger.error("Cannot compare current  build number with max number in the queue")
-    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'apluslms_shepherd/celery_tasks/shell_script/build_roman.sh')
+    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/build_roman.sh')
     none_to_empty = lambda s: '' if s is None else str(s)
     cmd = [shell_script_path, base_path, course_key, instance_key, build_number, none_to_empty(ins.config_filename)]
     proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
