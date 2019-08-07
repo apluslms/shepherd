@@ -66,9 +66,9 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
                     log)
     try:
         if int(build_number) < max(number_list):
-            print(
+            logger.warning(
                 "Already have newer version in the task queue, task with build number {} aborted.".format(build_number))
-            print("Current build numbers:{}".format(number_list))
+            logger.warning("Current build numbers:{}".format(number_list))
             return "-1|Already have newer version in the task queue, task with build number {} aborted.".format(
                 build_number)
     except (ValueError, TypeError):
@@ -100,8 +100,8 @@ def deploy(build_result, deploy_base_path, base_path, course_key, instance_key, 
     # Check is there has a newer version in the queue.If true, cancel the task and start cleaning
     number_list = get_current_build_number_list()
     if int(build_number) < max(number_list):
-        print("Already have newer version in the task queue, task with build number {} aborted.".format(build_number))
-        print("Current build numbers:{}".format(number_list))
+        logger.warning("Already have newer version in the task queue, task with build number {} aborted.".format(build_number))
+        logger.warning("Current build numbers:{}".format(number_list))
         return "-1|Newer version in the task queue, task with build number {} aborted. Cleaning the local repo" \
             .format(build_number)
     logger.info(
@@ -122,10 +122,10 @@ def clean(res, base_path, course_key, instance_key, build_number):
     """
     Clean the generated working tree.
     """
-    print('Cleaning repo')
+    logger.warning('Cleaning repo')
     path = os.path.join(base_path, 'builds', course_key, instance_key, build_number)
     try:
-        print("Local work tree of build number {} deleted".format(build_number))
+        logger.warning("Local work tree of build number {} deleted".format(build_number))
         shutil.rmtree(path)
         return res + '. Repo cleaned.'
     except (FileNotFoundError, IOError, OSError) as why:
@@ -137,5 +137,5 @@ def clean(res, base_path, course_key, instance_key, build_number):
 def error_handler(uuid):
     result = AsyncResult(uuid)
     exc = result.get(propagate=False)
-    print('Task {0} raised exception: {1!r}\n{2!r}'.format(
+    logger.warning('Task {0} raised exception: {1!r}\n{2!r}'.format(
         uuid, exc, result.traceback))
