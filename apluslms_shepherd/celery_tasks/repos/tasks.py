@@ -1,8 +1,6 @@
 import os
 import shutil
-import stat
 from datetime import datetime, timedelta
-from urllib.parse import quote
 
 from celery.utils.log import get_task_logger
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
@@ -10,7 +8,7 @@ from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from apluslms_shepherd import config
-from apluslms_shepherd.celery_tasks.repos.utils import verify_key_pair
+from apluslms_shepherd.celery_tasks.repos.utils import slugify, verify_key_pair
 from apluslms_shepherd.extensions import celery, db
 from apluslms_shepherd.repos.models import GitRepository
 
@@ -55,9 +53,8 @@ def generate_deploy_key(key_path, git_origin):
         logger.error("No match course find for this key generation, exiting...")
         return -1
     logger.info('Start generating file')
-    final_path = os.path.join(key_path, quote(git_origin))
+    final_path = os.path.join(key_path, slugify(git_origin))
     private_key_path = os.path.join(final_path, "private.pem")
-    public_key_path = os.path.join(final_path, "public.pem")
     # Generate private key
     key = rsa.generate_private_key(
         backend=crypto_default_backend(),
@@ -82,7 +79,8 @@ def generate_deploy_key(key_path, git_origin):
     with open(private_key_path, "wb") as f:
         f.write(private_key)
     os.chmod(private_key_path, 0o600)
-    celery.add_periodic_task(10.0, validate_deploy_key.s(key_path, git_origin), name='validate_%s' % quote(git_origin))
+    celery.add_periodic_task(10.0, validate_deploy_key.s(key_path, git_origin),
+                             name='validate_%s' % slugify(git_origin))
     celery.send_task("apluslms_shepherd.celery_tasks.repos.tasks.validate_deploy_key", args=[key_path, git_origin])
     return 0
 

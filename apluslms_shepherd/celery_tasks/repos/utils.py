@@ -1,7 +1,6 @@
 import os
 import subprocess
 from datetime import datetime
-from urllib.parse import quote
 
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 from cryptography.hazmat.primitives import serialization as crypto_serialization
@@ -10,7 +9,7 @@ from apluslms_shepherd.repos.models import GitRepository, State
 
 
 def verify_key_pair(key_path, git_origin, logger):
-    private_key_path = os.path.join(key_path, quote(git_origin), 'private.pem')
+    private_key_path = os.path.join(key_path, slugify(git_origin), 'private.pem')
     with open(private_key_path, "rb") as key_file:
         private_key = crypto_serialization.load_pem_private_key(
             key_file.read(),
@@ -48,3 +47,11 @@ def verify_key_pair(key_path, git_origin, logger):
     repo.state = State.VALID
     repo.save()
     return True
+
+
+def slugify(git_origin):
+    non_utf = ['@', '/', ':']
+    ret = git_origin.replace('_', '__')
+    for each in non_utf:
+        ret = ret.replace(each, '_')
+    return ret

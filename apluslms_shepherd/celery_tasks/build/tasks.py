@@ -1,9 +1,10 @@
 import os
 import shutil
 import subprocess
-from urllib.parse import quote
 
 from apluslms_shepherd.celery_tasks.build.signals import task_action_mapping
+from apluslms_shepherd.celery_tasks.build.utils import bare_clone
+from apluslms_shepherd.celery_tasks.repos.utils import slugify
 
 try:
     from subprocess import DEVNULL  # Python 3
@@ -37,20 +38,11 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     Clone bear repo to local, or update local one, generate working tree.
     """
     logger.info('url:{}, branch:{} course_key:{} instance_key{}'.format(url, branch, course_key, instance_key))
-    folder = quote(url).split('/')[-1]
     logger.info("Pulling from {}".format(url))
-    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/pull_bare.sh')
-    cmd = [shell_script_path, base_path, folder, url, branch,
-           course_key, instance_key, build_number,
-           os.path.join(DevelopmentConfig.REPO_KEYS_PATH, quote(url), 'private.pem')]
-    proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            env=dict(os.environ, SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0",
-                                     GIT_SSH_COMMAND=DevelopmentConfig.GIT_SSH_COMMAND))
-    o, e = proc.communicate()
-    logger.info('Output: ' + o.decode('ascii'))
-    logger.info('code: ' + str(proc.returncode))
-
-    return str(proc.returncode) + "|" + o.decode('ascii').rstrip('\n\r')
+    args = [base_path, url, course_key, instance_key, branch, build_number,
+            os.path.join(DevelopmentConfig.REPO_KEYS_PATH, slugify(url), 'private.pem')]
+    return_code = bare_clone(*args)
+    return str(return_code) + "|"
 
 
 @celery.task
