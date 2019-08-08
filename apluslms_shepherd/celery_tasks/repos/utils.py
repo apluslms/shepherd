@@ -33,7 +33,8 @@ def verify_key_pair(key_path, git_origin, logger):
         return False
     logger.info('Key pair of repository with url %s is validated', git_origin)
     logger.info('Validating key with remote git server.')
-    proc = subprocess.Popen(["ssh-agent", "sh", "-c", "ssh-add %s; ssh -T git@version.aalto.fi" % private_key_path],
+    proc = subprocess.Popen(["ssh", "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
+                             "-i", private_key_path, git_origin.split(':')[0]],
                             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     o, e = proc.communicate()
     logger.info('Output: ' + o.decode('ascii'))
