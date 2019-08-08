@@ -95,8 +95,15 @@ def validate_deploy_key(key_path, git_origin):
 def validate_deploy_key_scheduled(key_path):
     logger.info("Validation task started, Scanning all existing repo under %s", key_path)
     for each in GitRepository.query.all():
+        if each.last_validation is None:
+            logger.info("Found repository with url %s needs verification,"
+                        "Never validated",
+                        each.origin,
+                        )
+            res = verify_key_pair(key_path, each.origin, logger)
+            logger.warning(validate_logging_mapping[res])
         period = datetime.utcnow() - each.last_validation
-        if period > timedelta(days=0, hours=0, seconds=1):
+        if period > timedelta(days=0, hours=0, seconds=10):
             logger.info("Found repository with url %s needs verification,"
                         "last validation is %s days %s seconds ago",
                         each.origin,
