@@ -28,21 +28,21 @@ def clean_unused_repo(origin):
     repo_path = os.path.join(config.DevelopmentConfig.COURSE_REPO_BASEPATH, origin.split('/')[-1])
     if os.path.exists(repo_path):
         shutil.rmtree(repo_path)
-        logger.info("Local bare repo at %s is deleted" % repo_path)
+        logger.info("Local bare repo at %s is deleted", repo_path)
     else:
-        logger.warning("Cannot find local repo at %s. No build has been executed or error in filesystem" % repo_path)
+        logger.warning("Cannot find local repo at %s. No build has been executed or error in filesystem", repo_path)
     # Start deleting from database
     logger.info("Start cleaning database")
     repo_in_db = GitRepository.query.filter(GitRepository.origin == origin).one_or_none()
     private_key_path = repo_in_db.private_key_path
     if repo_in_db is None:
-        logger.warning("Cannot find entry with git origin %s in the database, task aborting" % origin)
+        logger.warning("Cannot find entry with git origin %s in the database, task aborting", origin)
         return 1
     else:
         db.session.delete(repo_in_db)
         db.session.commit()
         shutil.rmtree(private_key_path)
-        logger.warning("Database entry with origin: %s has been deleted" % origin)
+        logger.warning("Database entry with origin: %s has been deleted",  origin)
     return 0
 
 

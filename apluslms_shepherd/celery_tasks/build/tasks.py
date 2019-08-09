@@ -37,8 +37,8 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     """
     Clone bear repo to local, or update local one, generate working tree.
     """
-    logger.info('url:{}, branch:{} course_key:{} instance_key{}'.format(url, branch, course_key, instance_key))
-    logger.info("Pulling from {}".format(url))
+    logger.info('url:%s, branch:%s course_key:%s instance_key:%s', url, branch, course_key, instance_key)
+    logger.info("Pulling from %s", url)
     args = [base_path, url, course_key, instance_key, branch, build_number,
             os.path.join(DevelopmentConfig.REPO_KEYS_PATH, slugify(url), 'private.pem')]
     return_code = bare_clone(*args)
@@ -50,7 +50,7 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     """
     build the course material with roman
     """
-    logger.info("pull_repo result:" + pull_result)
+    logger.info("pull_repo result: %s", pull_result)
     # Check the result of last step
     if pull_result.split('|')[0] is not '0':
         logger.error('The clone task was failed, aborting the build task')
@@ -62,13 +62,13 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
                     log)
     number_list = get_current_build_number_list()
     log = "Current build task number of this instance in the queue:{}".format(number_list)
+    logger.info(log)
     update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
                     log)
     try:
         if int(build_number) < max(number_list):
             logger.warning(
-                "Already have newer version in the task queue, task with build number {} aborted.".format(build_number))
-            logger.warning("Current build numbers:{}".format(number_list))
+                "Already have newer version in the task queue, task with build number %s aborted.", build_number)
             return "-1|Already have newer version in the task queue, task with build number {} aborted.".format(
                 build_number)
     except (ValueError, TypeError):
@@ -80,8 +80,8 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     o, e = proc.communicate()
     update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
                     o.decode('ascii'))
-    logger.info('Output: ' + o.decode('ascii'))
-    logger.info('code: ' + str(proc.returncode))
+    logger.info('Output: %s', o.decode('ascii'))
+    logger.info('code: %s', proc.returncode)
     return str(proc.returncode) + "|" + "Build Succeed" if proc.returncode == 0 else str(
         proc.returncode) + "|" + "Build Failed"
 
@@ -93,26 +93,25 @@ def deploy(build_result, deploy_base_path, base_path, course_key, instance_key, 
     TODO: Support remote deploy location(Cloud .etc)
     """
     # Check the last step
-    logger.info("build_repo result{}".format(build_result))
+    logger.info("build_repo result %s", build_result)
     if build_result.split('|')[0] is not '0':
         logger.error('The build task was failed, aborting the deployment task')
         return '-1|The clone task was failed or aborted, aborting the build task'
     # Check is there has a newer version in the queue.If true, cancel the task and start cleaning
     number_list = get_current_build_number_list()
     if int(build_number) < max(number_list):
-        logger.warning("Already have newer version in the task queue, task with build number {} aborted.".format(build_number))
-        logger.warning("Current build numbers:{}".format(number_list))
+        logger.warning("Already have newer version in the task queue, task with build number %s aborted.", build_number)
         return "-1|Newer version in the task queue, task with build number {} aborted. Cleaning the local repo" \
             .format(build_number)
     logger.info(
-        "The repo has been build, deploying the course, course key:{}, branch:{}".format(course_key, instance_key))
+        "The repo has been build, deploying the course, course key: %s, branch: %s", course_key, instance_key)
     try:
         build_path = os.path.join(base_path, 'builds', course_key, instance_key, build_number, "_build")
         # deploy_files = os.listdir(build_path)
         deploy_path = os.path.join(deploy_base_path, course_key, instance_key, build_number)
         shutil.move(build_path, deploy_path)
     except (FileNotFoundError, OSError, IOError) as why:
-        logger.error('Error:' + why.strerror)
+        logger.error('Error: %', why.strerror)
         return '-1|Error when deploying files'
     return '0' + '|File successfully moved to deployment folder.'
 
@@ -125,11 +124,11 @@ def clean(res, base_path, course_key, instance_key, build_number):
     logger.warning('Cleaning repo')
     path = os.path.join(base_path, 'builds', course_key, instance_key, build_number)
     try:
-        logger.warning("Local work tree of build number {} deleted".format(build_number))
+        logger.warning("Local work tree of build number %s deleted", build_number)
         shutil.rmtree(path)
         return res + '. Repo cleaned.'
     except (FileNotFoundError, IOError, OSError) as why:
-        logger.info('Error:' + why.strerror)
+        logger.info('Error: %s', why.strerror)
         return '-1|Error when cleaning local worktree files,'
 
 
@@ -137,5 +136,4 @@ def clean(res, base_path, course_key, instance_key, build_number):
 def error_handler(uuid):
     result = AsyncResult(uuid)
     exc = result.get(propagate=False)
-    logger.warning('Task {0} raised exception: {1!r}\n{2!r}'.format(
-        uuid, exc, result.traceback))
+    logger.warning('Task %s raised exception: %s\n%s', uuid, exc, result.traceback)
