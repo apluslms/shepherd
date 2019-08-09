@@ -3,7 +3,7 @@ import shutil
 import subprocess
 
 from apluslms_shepherd.celery_tasks.build.signals import task_action_mapping
-from apluslms_shepherd.celery_tasks.build.utils import bare_clone
+from apluslms_shepherd.celery_tasks.build.utils import bare_clone, get_current_build_number_list, update_frontend
 from apluslms_shepherd.celery_tasks.repos.utils import slugify
 
 try:
@@ -18,8 +18,6 @@ from apluslms_shepherd.build.models import BuildState
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery
 from apluslms_shepherd.config import DevelopmentConfig
-
-from .helper import get_current_build_number_list, update_frontend
 
 logger = get_task_logger(__name__)
 

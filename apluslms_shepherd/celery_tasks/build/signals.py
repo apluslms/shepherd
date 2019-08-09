@@ -5,7 +5,7 @@ from celery.utils.log import get_task_logger
 from celery.worker.control import revoke
 
 from apluslms_shepherd.build.models import Build, BuildLog, BuildAction, BuildState
-from apluslms_shepherd.celery_tasks.build.helper import update_frontend
+from apluslms_shepherd.celery_tasks.build.utils import update_frontend
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery, db
 

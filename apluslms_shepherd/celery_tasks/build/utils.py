@@ -4,7 +4,24 @@ from urllib.parse import quote
 
 from celery.utils.log import get_task_logger
 
+from apluslms_shepherd import celery
+
 logger = get_task_logger(__name__)
+
+
+def get_current_build_number_list():
+    inspector = celery.control.inspect()
+    task_list = inspector.active()
+    task_build_number_list = []
+    for each_worker in task_list.values():
+        task_build_number_list = [int(eval(str(each_task['args']).replace('\r', '\\r').replace('\n', '\\n'))[-1]) for
+                                  each_task in each_worker]
+    return task_build_number_list
+
+
+def update_frontend(instance_id, build_number, action, state, log=None):
+    celery.send_task('apluslms_shepherd.celery_tasks.build.tasks.update_state', queue='celery_state',
+                     args=[instance_id, build_number, action.name, state.name, log])
 
 
 def bare_clone(base_path, origin, course, instance, branch, number, key_path):
@@ -48,7 +65,7 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path):
             return proc.returncode
         if not exists(repo_folder):
             logger.error('Cannot find cloned repo, terminated')
-            return -1
+            return 1
 
     # Generate worktree
     logger.info("Generating worktree.")
