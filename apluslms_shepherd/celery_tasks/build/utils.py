@@ -2,9 +2,14 @@ import subprocess
 from os.path import exists, join, isfile
 from urllib.parse import quote
 
+from apluslms_roman import ProjectConfig, Engine
+from apluslms_roman.configuration import ProjectConfigError
+from apluslms_roman.settings import GlobalSettings
+from apluslms_yamlidator.validator import ValidationError, render_error
 from celery.utils.log import get_task_logger
 
 from apluslms_shepherd import celery
+from apluslms_shepherd.build.models import BuildState, BuildAction
 
 logger = get_task_logger(__name__)
 
@@ -83,3 +88,51 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path):
         logger.error('Error in generating worktree, program terminated. Code:', str(proc.returncode))
         return proc.returncode
     return 0
+
+
+def roman_build(base_path, course_id, course_key, instance_key, build_number, config_filename=None):
+    source_path = join(base_path, 'builds', course_key, instance_key, build_number)
+    if not exists(source_path):
+        logger.error("Cannot find source file for building at %s", source_path)
+        return 1
+    # Get config
+    try:
+        project_config = ProjectConfig.find_from(source_path)
+    except ValidationError as e:
+        logger.error(render_error(e))
+        return 1
+    except ProjectConfigError as e:
+        logger.error('Invalid project configuration: %s', e)
+        return 1
+    # Get global settings
+    try:
+        global_settings = GlobalSettings.load(
+            config_filename if config_filename is not None else GlobalSettings.get_config_path(), allow_missing=True)
+    except ValidationError as e:
+        logger.error(render_error(e))
+        return 1
+    except OSError as e:
+        logger.error(str(e))
+        return 1
+    # Get engine
+    try:
+        engine = Engine(settings=global_settings)
+    except ImportError:
+        logger.error("Unable to find backend %s", str(global_settings))
+        return 1
+    builder = engine.create_builder(project_config)
+    if not project_config.steps:
+        logger.error("Nothing to build.")
+        return 1
+    try:
+        result = builder.build()
+    except KeyError as err:
+        logger.error("No step named %s", err.args[0])
+        return 1
+    except IndexError as err:
+        logger.error("Index %s is out of range. There are %d steps. Indexing begins ar 0.", err.args[0],
+                     len(project_config.steps))
+    logger.info(result)
+    update_frontend(course_id, build_number, BuildAction.BUILD, BuildState.FINISHED,
+                    str(result))
+    return result.code

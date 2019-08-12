@@ -1,9 +1,9 @@
 import os
 import shutil
-import subprocess
 
 from apluslms_shepherd.celery_tasks.build.signals import task_action_mapping
-from apluslms_shepherd.celery_tasks.build.utils import bare_clone, get_current_build_number_list, update_frontend
+from apluslms_shepherd.celery_tasks.build.utils import bare_clone, get_current_build_number_list, update_frontend, \
+    roman_build
 from apluslms_shepherd.celery_tasks.repos.utils import slugify
 
 try:
@@ -71,17 +71,9 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
                 build_number)
     except (ValueError, TypeError):
         logger.error("Cannot compare current  build number with max number in the queue")
-    shell_script_path = os.path.join(DevelopmentConfig.BASE_DIR, 'celery_tasks/shell_script/build_roman.sh')
-    none_to_empty = lambda s: '' if s is None else str(s)
-    cmd = [shell_script_path, base_path, course_key, instance_key, build_number, none_to_empty(ins.config_filename)]
-    proc = subprocess.Popen(cmd, stdin=DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    o, e = proc.communicate()
-    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
-                    o.decode('ascii'))
-    logger.info('Output: %s', o.decode('ascii'))
-    logger.info('code: %s', proc.returncode)
-    return str(proc.returncode) + "|" + "Build Succeed" if proc.returncode == 0 else str(
-        proc.returncode) + "|" + "Build Failed"
+    code = roman_build(base_path, ins.id, course_key, instance_key, build_number)
+    return str(code) + "|" + "Build Succeed" if code == 0 else str(
+        code) + "|" + "Build Failed"
 
 
 @celery.task
