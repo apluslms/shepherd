@@ -1,13 +1,11 @@
 import json
 
-from celery import chain
 from flask import Blueprint, request, abort
-from sqlalchemy import desc
 
 from apluslms_shepherd import config
-from apluslms_shepherd.build.models import Build
-from apluslms_shepherd.celery_tasks.build.tasks import pull_repo, build_repo, error_handler, clean, deploy
+from apluslms_shepherd.celery_tasks.build.tasks import pull_repo, build_repo, error_handler
 from apluslms_shepherd.courses.models import CourseInstance
+from apluslms_shepherd.webhooks.utils import schedule_build
 
 webhooks_bp = Blueprint('webhooks', __name__, url_prefix='/hooks/')
 
@@ -18,7 +16,6 @@ Only support push at moment
 
 @webhooks_bp.route('gitlab/', methods=['POST'])
 def gitlab():
-    base_path = config.DevelopmentConfig.COURSE_REPO_BASEPATH
     update_type = request.headers.get('X-Gitlab-Event')
     gitlab_token = request.headers.get('X-GitLab-Token')
     data = json.loads(request.data.decode('utf-8'))
@@ -43,20 +40,8 @@ def gitlab():
             use_url = git_ssh_url
         else:
             use_url = git_http_url
-
-            # Run task
-        # pull_s = pull_repo.s(base_path, use_url, git_branch, instance.course_key, instance.key)
-        current_build_number = 0 if Build.query.filter_by(instance_id=instance.id).count() is 0 \
-            else Build.query.filter_by(instance_id=instance.id).order_by(
-            desc(Build.number)).first().number
-        pull_s = pull_repo.s(base_path, use_url, git_branch, instance.course_key, instance.instance_key,
-                             str(current_build_number + 1))
-        build_s = build_repo.s(base_path, instance.course_key, instance.instance_key, str(current_build_number + 1))
-        deploy_s = deploy.s(config.DevelopmentConfig.COURSE_DEPLOYMENT_PATH, base_path, instance.course_key,
-                            instance.instance_key, str(current_build_number + 1))
-        clean_s = clean.s(base_path, instance.course_key,
-                          instance.instance_key, str(current_build_number + 1))
-        res = chain(pull_s, build_s, deploy_s, clean_s)()
+        # Run task
+        schedule_build(use_url, git_branch, instance)
     else:
         abort(400, "Invalid payload")
     return 'hi from a+'

@@ -36,6 +36,7 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     """
     Clone bear repo to local, or update local one, generate working tree.
     """
+    build_observer.enter_prepare()
     logger.info('url:%s, branch:%s course_key:%s instance_key:%s', url, branch, course_key, instance_key)
     logger.info("Pulling from %s", url)
     args = [base_path, url, course_key, instance_key, branch, build_number,
@@ -50,6 +51,7 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     build the course material with roman
     """
     logger.info("pull_repo result: %s", pull_result)
+    build_observer.enter_build()
     # Check the result of last step
     if pull_result.split('|')[0] is not '0':
         logger.error('The clone task was failed, aborting the build task')
@@ -115,6 +117,7 @@ def clean(res, base_path, course_key, instance_key, build_number):
     path = os.path.join(base_path, 'builds', course_key, instance_key, build_number)
     try:
         logger.warning("Local work tree of build number %s deleted", build_number)
+        build_observer.done()
         shutil.rmtree(path)
         return res + '. Repo cleaned.'
     except (FileNotFoundError, IOError, OSError) as why:

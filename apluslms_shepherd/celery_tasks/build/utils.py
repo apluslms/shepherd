@@ -9,7 +9,7 @@ from apluslms_yamlidator.validator import ValidationError, render_error
 from celery.utils.log import get_task_logger
 
 from apluslms_shepherd import celery
-from apluslms_shepherd.build.models import BuildAction, BuildState
+from apluslms_shepherd.build.models import BuildStep, BuildState
 from apluslms_shepherd.celery_tasks.build.observer import ShepherdObserver
 from apluslms_shepherd.courses.models import CourseInstance
 
@@ -56,7 +56,7 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path, ob
         proc = subprocess.run(['git', 'fetch', 'origin', branch + ':' + branch], env=env, cwd=repo_folder,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         logger.info(proc.stdout)
-        observer.state_update(instance_id, number, BuildAction.CLONE, BuildState.RUNNING,
+        observer.state_update(instance_id, number, BuildStep.CLONE, BuildState.RUNNING,
                               proc.stdout.decode('utf-8'))
         if proc.returncode != 0:
             logger.error('Error in fetching update, program terminated. Code:', str(proc.returncode))
@@ -66,7 +66,7 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path, ob
         proc = subprocess.run(['git', 'clone', '--bare', origin], env=env, cwd=base_path,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         logger.info(proc.stdout)
-        observer.state_update(instance_id, number, BuildAction.CLONE, BuildState.RUNNING,
+        observer.state_update(instance_id, number, BuildStep.CLONE, BuildState.RUNNING,
                               proc.stdout.decode('utf-8'))
         if proc.returncode != 0:
             logger.error('Error in cloning, program terminated. Code:', str(proc.returncode))
@@ -94,7 +94,7 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path, ob
 
 
 def roman_build(base_path, course_id, course_key, instance_key, build_number, config_filename=None):
-    shepherd_builder_observer = ShepherdObserver([course_id, build_number, BuildAction.BUILD.name, None, ""])
+    shepherd_builder_observer = ShepherdObserver([course_id, build_number, BuildStep.BUILD.name, None, ""])
     source_path = join(base_path, 'builds', course_key, instance_key, build_number)
     if not exists(source_path):
         logger.error("Cannot find source file for building at %s", source_path)
