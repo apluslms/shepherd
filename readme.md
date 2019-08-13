@@ -15,10 +15,12 @@ Define group model, grouping user by role, grant user different privileges accor
 ### Build
 Define build and buildlog model.
 ### Courses
-Define course and instance model, course management interface.
+Define course instance model, course management interface.
 ### Webhooks
 Handle push webhook in `GitHub` or `Gitlab`.
 ### Celery Tasks
-Define Build tasks, define automated pipeline(pull/clone->build->deploy->clean).
+* Define Build tasks, define automated pipeline (pull/clone->build->deploy->clean).
+* Define background task for deploy key pair generation/
+* Define the scheduled task for key validation.
 ### Message Broker
-Message broker for updating frontend display in realtime.
+Message broker for updating frontend statues display in realtime, and also routing realtime log output to frontend.
