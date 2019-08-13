@@ -2,9 +2,9 @@ import os
 import shutil
 
 from apluslms_shepherd.celery_tasks.build.signals import task_action_mapping
-from apluslms_shepherd.celery_tasks.build.utils import bare_clone, get_current_build_number_list, update_frontend, \
-    roman_build
+from apluslms_shepherd.celery_tasks.build.utils import bare_clone, get_current_build_number_list, roman_build
 from apluslms_shepherd.celery_tasks.repos.utils import slugify
+from .observer import ShepherdObserver
 
 try:
     from subprocess import DEVNULL  # Python 3
@@ -20,6 +20,7 @@ from apluslms_shepherd.extensions import celery
 from apluslms_shepherd.config import DevelopmentConfig
 
 logger = get_task_logger(__name__)
+build_observer = ShepherdObserver()
 
 
 @celery.task
@@ -38,7 +39,7 @@ def pull_repo(base_path, url, branch, course_key, instance_key, build_number):
     logger.info('url:%s, branch:%s course_key:%s instance_key:%s', url, branch, course_key, instance_key)
     logger.info("Pulling from %s", url)
     args = [base_path, url, course_key, instance_key, branch, build_number,
-            os.path.join(DevelopmentConfig.REPO_KEYS_PATH, slugify(url), 'private.pem')]
+            os.path.join(DevelopmentConfig.REPO_KEYS_PATH, slugify(url), 'private.pem'), build_observer]
     return_code = bare_clone(*args)
     return str(return_code) + "|"
 
@@ -53,16 +54,16 @@ def build_repo(pull_result, base_path, course_key, instance_key, build_number):
     if pull_result.split('|')[0] is not '0':
         logger.error('The clone task was failed, aborting the build task')
         return '-1|The clone task was failed, aborting the build task'
-    log = "The repo has been pulled, Building the course, course key:{}, branch:{}".format(course_key, instance_key)
+    log = "The repo has been pulled, Building the course, course key:{}, branch:{}\n".format(course_key, instance_key)
     logger.info(log)
     ins = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first()
-    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
-                    log)
+    build_observer.state_update(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
+                                log)
     number_list = get_current_build_number_list()
-    log = "Current build task number of this instance in the queue:{}".format(number_list)
+    log = "Current build task number of this instance in the queue:{}\n".format(number_list)
     logger.info(log)
-    update_frontend(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
-                    log)
+    build_observer.state_update(ins.id, build_number, task_action_mapping['build_repo'], BuildState.RUNNING,
+                                log)
     try:
         if int(build_number) < max(number_list):
             logger.warning(
@@ -97,7 +98,6 @@ def deploy(build_result, deploy_base_path, base_path, course_key, instance_key, 
         "The repo has been build, deploying the course, course key: %s, branch: %s", course_key, instance_key)
     try:
         build_path = os.path.join(base_path, 'builds', course_key, instance_key, build_number, "_build")
-        # deploy_files = os.listdir(build_path)
         deploy_path = os.path.join(deploy_base_path, course_key, instance_key, build_number)
         shutil.move(build_path, deploy_path)
     except (FileNotFoundError, OSError, IOError) as why:

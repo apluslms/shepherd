@@ -9,7 +9,9 @@ from apluslms_yamlidator.validator import ValidationError, render_error
 from celery.utils.log import get_task_logger
 
 from apluslms_shepherd import celery
-from apluslms_shepherd.build.models import BuildState, BuildAction
+from apluslms_shepherd.build.models import BuildAction, BuildState
+from apluslms_shepherd.celery_tasks.build.observer import ShepherdObserver
+from apluslms_shepherd.courses.models import CourseInstance
 
 logger = get_task_logger(__name__)
 
@@ -24,12 +26,7 @@ def get_current_build_number_list():
     return task_build_number_list
 
 
-def update_frontend(instance_id, build_number, action, state, log=None):
-    celery.send_task('apluslms_shepherd.celery_tasks.build.tasks.update_state', queue='celery_state',
-                     args=[instance_id, build_number, action.name, state.name, log])
-
-
-def bare_clone(base_path, origin, course, instance, branch, number, key_path):
+def bare_clone(base_path, origin, course, instance, branch, number, key_path, observer):
     """
     Clone orr update bare repo
     :param base_path:
@@ -39,9 +36,11 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path):
     :param instance: instance_key
     :param number: build_number
     :param key_path: path to private key
+    :param observer: observer instance
     :return: boolean, if is succeeded
     """
     has_private_key = isfile(key_path)
+    instance_id = CourseInstance.query.filter_by(course_key=course, instance_key=instance).first().id
     if has_private_key:
         logger.info("Private key detected on {}.".format(key_path))
         env = dict(SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0",
@@ -57,6 +56,8 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path):
         proc = subprocess.run(['git', 'fetch', 'origin', branch + ':' + branch], env=env, cwd=repo_folder,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         logger.info(proc.stdout)
+        observer.state_update(instance_id, number, BuildAction.CLONE, BuildState.RUNNING,
+                              proc.stdout.decode('utf-8'))
         if proc.returncode != 0:
             logger.error('Error in fetching update, program terminated. Code:', str(proc.returncode))
             return proc.returncode
@@ -65,6 +66,8 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path):
         proc = subprocess.run(['git', 'clone', '--bare', origin], env=env, cwd=base_path,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         logger.info(proc.stdout)
+        observer.state_update(instance_id, number, BuildAction.CLONE, BuildState.RUNNING,
+                              proc.stdout.decode('utf-8'))
         if proc.returncode != 0:
             logger.error('Error in cloning, program terminated. Code:', str(proc.returncode))
             return proc.returncode
@@ -91,6 +94,7 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path):
 
 
 def roman_build(base_path, course_id, course_key, instance_key, build_number, config_filename=None):
+    shepherd_builder_observer = ShepherdObserver([course_id, build_number, BuildAction.BUILD.name, None, ""])
     source_path = join(base_path, 'builds', course_key, instance_key, build_number)
     if not exists(source_path):
         logger.error("Cannot find source file for building at %s", source_path)
@@ -120,7 +124,7 @@ def roman_build(base_path, course_id, course_key, instance_key, build_number, co
     except ImportError:
         logger.error("Unable to find backend %s", str(global_settings))
         return 1
-    builder = engine.create_builder(project_config)
+    builder = engine.create_builder(project_config, shepherd_builder_observer)
     if not project_config.steps:
         logger.error("Nothing to build.")
         return 1
@@ -132,7 +136,4 @@ def roman_build(base_path, course_id, course_key, instance_key, build_number, co
     except IndexError as err:
         logger.error("Index %s is out of range. There are %d steps. Indexing begins ar 0.", err.args[0],
                      len(project_config.steps))
-    logger.info(result)
-    update_frontend(course_id, build_number, BuildAction.BUILD, BuildState.FINISHED,
-                    str(result))
     return result.code

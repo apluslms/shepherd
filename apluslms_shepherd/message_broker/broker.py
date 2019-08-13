@@ -28,7 +28,7 @@ async def get_state():
                 'current_action': received_message.json()[0][2],
                 'current_state': received_message.json()[0][3]})
 
-            await sio.emit(received_message.json()[0][0], {'log': received_message.json()[0][4]+'\n'})
+            await sio.emit(received_message.json()[0][0], {'log': received_message.json()[0][4]})
         except AttributeError:
             pass
 

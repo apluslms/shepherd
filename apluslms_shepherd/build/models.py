@@ -11,6 +11,7 @@ class BuildState(enum.Enum):
 
 
 class BuildAction(enum.Enum):
+    NONE = 0
     CLONE = 1
     BUILD = 2
     DEPLOY = 3
