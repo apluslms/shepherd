@@ -1,10 +1,10 @@
 import os
 import shutil
 
-from apluslms_shepherd.celery_tasks.build.signals import task_action_mapping
-from apluslms_shepherd.celery_tasks.build.utils import bare_clone, get_current_build_number_list, roman_build
-from apluslms_shepherd.celery_tasks.repos.utils import slugify
-from .observer import ShepherdObserver
+from apluslms_shepherd.build.tasks.signals import task_action_mapping
+from apluslms_shepherd.build.tasks.utils import bare_clone, get_current_build_number_list, roman_build
+from apluslms_shepherd.observer.observer import ShepherdObserver
+from apluslms_shepherd.repos.tasks.utils import slugify
 
 try:
     from subprocess import DEVNULL  # Python 3

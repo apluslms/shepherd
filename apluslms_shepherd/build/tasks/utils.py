@@ -10,8 +10,8 @@ from celery.utils.log import get_task_logger
 
 from apluslms_shepherd import celery
 from apluslms_shepherd.build.models import BuildStep, BuildState
-from apluslms_shepherd.celery_tasks.build.observer import ShepherdObserver
 from apluslms_shepherd.courses.models import CourseInstance
+from apluslms_shepherd.observer.observer import ShepherdObserver
 
 logger = get_task_logger(__name__)
 
