@@ -1,7 +1,7 @@
 import unittest
 from os.path import exists, join
 
-from apluslms_shepherd.celery_tasks.build.utils import bare_clone
+from apluslms_shepherd.build.tasks.utils import bare_clone
 from apluslms_shepherd.config import DevelopmentConfig
 
 case = [DevelopmentConfig.COURSE_REPO_BASEPATH, 'git@version.aalto.fi:dingr1/shepherdwebhookstesting.git',

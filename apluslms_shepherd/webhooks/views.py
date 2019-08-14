@@ -3,7 +3,7 @@ import json
 from flask import Blueprint, request, abort
 
 from apluslms_shepherd import config
-from apluslms_shepherd.celery_tasks.build.tasks import pull_repo, build_repo, error_handler
+from apluslms_shepherd.build.tasks.tasks import pull_repo, build_repo, error_handler
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.webhooks.utils import schedule_build
 

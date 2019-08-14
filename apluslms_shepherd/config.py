@@ -33,8 +33,8 @@ class Config(object):
     CELERY_RESULT_BACKEND = "db+sqlite:///" + BASE_DIR + "/result.db"
     BROKER_URL = "amqp://guest:guest@127.0.0.1:5672"
     CELERY_NAME = "test"
-    CELERY_IMPORTS = ("apluslms_shepherd.celery_tasks.build",
-                      "apluslms_shepherd.celery_tasks.repos"
+    CELERY_IMPORTS = ("apluslms_shepherd.build.tasks",
+                      "apluslms_shepherd.repos.tasks"
                       )
     COURSE_REPO_BASEPATH = BASE_DIR + "/../../shepherd_test_clone/"
 

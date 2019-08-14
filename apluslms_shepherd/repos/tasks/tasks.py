@@ -8,9 +8,9 @@ from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from apluslms_shepherd import config
-from apluslms_shepherd.celery_tasks.repos.utils import slugify, verify_key_pair
 from apluslms_shepherd.extensions import celery, db
 from apluslms_shepherd.repos.models import GitRepository
+from apluslms_shepherd.repos.tasks.utils import slugify, verify_key_pair
 
 logger = get_task_logger(__name__)
 

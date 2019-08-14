@@ -7,7 +7,6 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from apluslms_shepherd.auth.models import User
 from apluslms_shepherd.build.models import BuildLog
-from apluslms_shepherd.celery_tasks.repos.tasks import clean_unused_repo, generate_deploy_key
 from apluslms_shepherd.config import DevelopmentConfig
 from apluslms_shepherd.courses.forms import CourseForm
 from apluslms_shepherd.courses.models import CourseInstance, db
@@ -18,6 +17,7 @@ from apluslms_shepherd.groups.utils import group_slugify, PERMISSION_LIST, \
     role_permission, course_instance_create_perm, \
     course_instance_admin_perm
 from apluslms_shepherd.repos.models import GitRepository
+from apluslms_shepherd.repos.tasks.tasks import clean_unused_repo, generate_deploy_key
 
 course_bp = Blueprint('courses', __name__, url_prefix='/courses/')
 logger = logging.getLogger(__name__)

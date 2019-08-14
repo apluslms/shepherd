@@ -3,7 +3,7 @@ from sqlalchemy import desc
 
 from apluslms_shepherd import config
 from apluslms_shepherd.build.models import Build
-from apluslms_shepherd.celery_tasks.build.tasks import pull_repo, build_repo, clean, deploy
+from apluslms_shepherd.build.tasks.tasks import pull_repo, build_repo, clean, deploy
 
 
 def schedule_build(repository_url, branch, instance):

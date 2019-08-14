@@ -3,9 +3,9 @@ from celery.utils.log import get_task_logger
 from celery.worker.control import revoke
 
 from apluslms_shepherd.build.models import Build, BuildStep, BuildState
-from apluslms_shepherd.celery_tasks.build.observer import ShepherdObserver
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery
+from apluslms_shepherd.observer.observer import ShepherdObserver
 
 logger = get_task_logger(__name__)
 
@@ -19,7 +19,7 @@ build_observer = ShepherdObserver()
 
 
 # For some reason this func is not working if in signal.py. Other signal handling functions works fine
-@before_task_publish.connect(sender='apluslms_shepherd.celery_tasks.build.tasks.pull_repo')
+@before_task_publish.connect(sender='apluslms_shepherd.build.tasks.tasks.pull_repo')
 def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     """
     information about task are located in headers for task messages
@@ -44,6 +44,7 @@ def clone_task_before_publish(sender=None, headers=None, body=None, **kwargs):
     build_observer.update_database(ins.id, current_build_number, BuildStep.CLONE, BuildState.PUBLISH)
     logger.warning('clone_log')
     logger.warning('Task sent')
+    build_observer.enter_prepare()
     build_observer.state_update(ins.id, current_build_number, BuildStep.CLONE, BuildState.PUBLISH,
                                 "-------------------------------------------------New Build Start-------------------------------------------------\n "
                                 "Instance with course_key:{}, instance_key:{} entering task queue, this is build No.{} \n".format(
