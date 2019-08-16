@@ -8,8 +8,8 @@ main_bp = Blueprint('main', __name__)
 
 
 class FrontendBuild(object):
-    def __init__(self, instance_id, number, course_key, instance_key, step, state):
-        self.instance_id = instance_id
+    def __init__(self, course_id, number, course_key, instance_key, step, state):
+        self.course_id = course_id
         self.instance_key = instance_key
         self.course_key = course_key
         self.number = number
@@ -23,15 +23,15 @@ def main_page():
     instances = CourseInstance.query.all()
     sorted_build_entries = Build.query.order_by(Build.number.desc())
     newest_builds = [
-        FrontendBuild(instance_id=instance.id,
+        FrontendBuild(course_id=instance.id,
                       instance_key=instance.instance_key,
                       course_key=instance.course_key,
-                      number=0 if len(sorted_build_entries.filter_by(instance_id=instance.id).all()) is 0
-                      else sorted_build_entries.filter_by(instance_id=instance.id).first().number,
-                      state=None if len(sorted_build_entries.filter_by(instance_id=instance.id).all()) is 0
-                      else sorted_build_entries.filter_by(instance_id=instance.id).first().state,
-                      step=None if len(sorted_build_entries.filter_by(instance_id=instance.id).all()) is 0
-                      else sorted_build_entries.filter_by(instance_id=instance.id).first().step
+                      number=0 if len(sorted_build_entries.filter_by(course_id=instance.id).all()) is 0
+                      else sorted_build_entries.filter_by(course_id=instance.id).first().number,
+                      state=None if len(sorted_build_entries.filter_by(course_id=instance.id).all()) is 0
+                      else sorted_build_entries.filter_by(course_id=instance.id).first().state,
+                      step=None if len(sorted_build_entries.filter_by(course_id=instance.id).all()) is 0
+                      else sorted_build_entries.filter_by(course_id=instance.id).first().step
                       )
         for instance in instances
     ]

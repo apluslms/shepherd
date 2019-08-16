@@ -40,7 +40,7 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path, ob
     :return: boolean, if is succeeded
     """
     has_private_key = isfile(key_path)
-    instance_id = CourseInstance.query.filter_by(course_key=course, instance_key=instance).first().id
+    course_id = CourseInstance.query.filter_by(course_key=course, instance_key=instance).first().id
     if has_private_key:
         logger.info("Private key detected on {}.".format(key_path))
         env = dict(SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0",
@@ -56,7 +56,7 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path, ob
         proc = subprocess.run(['git', 'fetch', 'origin', branch + ':' + branch], env=env, cwd=repo_folder,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         logger.info(proc.stdout)
-        observer.state_update(instance_id, number, BuildStep.CLONE, BuildState.RUNNING,
+        observer.state_update(course_id, number, BuildStep.CLONE, BuildState.RUNNING,
                               proc.stdout.decode('utf-8'))
         if proc.returncode != 0:
             logger.error(proc.returncode, proc.stdout)
@@ -66,7 +66,7 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path, ob
         proc = subprocess.run(['git', 'clone', '--bare', origin], env=env, cwd=base_path,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         logger.info(proc.stdout)
-        observer.state_update(instance_id, number, BuildStep.CLONE, BuildState.RUNNING,
+        observer.state_update(course_id, number, BuildStep.CLONE, BuildState.RUNNING,
                               proc.stdout.decode('utf-8'))
         if proc.returncode != 0:
             logger.error('Error in cloning, program terminated. Code:', str(proc.returncode))

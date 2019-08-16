@@ -48,7 +48,7 @@ class ShepherdObserver(BuildObserver):
         if not data: data = type_.name.lower()
         self.stream.write(fmt.format(phase_s, str(data).rstrip()) + '\n')
 
-    def update_database(self, instance_id, number, step, state, log=None):
+    def update_database(self, course_id, number, step, state, log=None):
         now = datetime.utcnow()
         build_log = None
         build = None
@@ -60,11 +60,11 @@ class ShepherdObserver(BuildObserver):
         # early. In this case, we create the BuildLog and change the state in the Build table of Build task in this
         # function.
         if step == BuildStep.CLONE and state == BuildState.PUBLISH:
-            build = Build(instance_id=instance_id, start_time=now,
+            build = Build(course_id=course_id, start_time=now,
                           state=BuildState.PUBLISH,
                           step=BuildStep.CLONE, number=number)
             build_log = BuildLog(
-                instance_id=instance_id,
+                course_id=course_id,
                 start_time=now,
                 number=number,
                 step=BuildStep.CLONE,
@@ -73,22 +73,22 @@ class ShepherdObserver(BuildObserver):
         # We create new build log when it comes to next step
         elif state == BuildState.RUNNING and step != BuildStep.CLONE:
             build_log = BuildLog(
-                instance_id=instance_id,
+                course_id=course_id,
                 start_time=now,
                 number=number,
                 step=step,
                 log_text=log
             )
-            build = Build.query.filter_by(instance_id=instance_id, number=number).first()
+            build = Build.query.filter_by(course_id=course_id, number=number).first()
             build.state = state
             build.step = step
         # If task finished, set end time for BuildLog, if the current step is the last step,
         # set end time for Build as well
         elif state == BuildState.SUCCESS or BuildState.FAILED:
-            build = Build.query.filter_by(instance_id=instance_id,
+            build = Build.query.filter_by(course_id=course_id,
                                           number=number).first()
             # Get current build_log, filter condition "step" is different according to the task
-            build_log = BuildLog.query.filter_by(instance_id=instance_id,
+            build_log = BuildLog.query.filter_by(course_id=course_id,
                                                  number=number,
                                                  step=step).first()
             build.state = state
@@ -101,9 +101,9 @@ class ShepherdObserver(BuildObserver):
             db.session.add(build)
             db.session.commit()
             self.stream.write('Current state write to database: build id:{}, build number: {}, step: {}, state: {}'
-                              .format(instance_id, number, step.name, state.name))
+                              .format(course_id, number, step.name, state.name))
 
-    def state_update(self, instance_id, build_number, step, state, log=None):
+    def state_update(self, course_id, build_number, step, state, log=None):
         state_name = state.name if state is not None else None
-        state_list = [instance_id, build_number, step.name, state_name, log]
+        state_list = [course_id, build_number, step.name, state_name, log]
         self._message(self._phase, ShepherdMessage.STATE_UPDATE, step, state, state_list)

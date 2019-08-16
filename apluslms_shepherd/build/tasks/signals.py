@@ -114,10 +114,10 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
     logger.info('course_key:{}, instance_key:{}'.format(course_key, instance_key))
     with celery.app.app_context():
         # Get the instance id
-        instance_id = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first().id
+        course_id = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first().id
         # add end time for build entry and buildlog entry, change build state
         logger.warning('finished')
-        build = Build.query.filter_by(instance_id=instance_id,
+        build = Build.query.filter_by(course_id=course_id,
                                       number=current_build_number).first()
         # The state code is in the beginning, divided with main part by "|"
         log_text = retval['msg']
@@ -127,9 +127,9 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
             state = BuildState.CANCELED
         else:
             state = BuildState.FAILED
-        build_observer.update_database(instance_id, current_build_number, task_step_mapping[sender.__name__], state,
+        build_observer.update_database(course_id, current_build_number, task_step_mapping[sender.__name__], state,
                                        log_text)
-        build_observer.state_update(instance_id, current_build_number, task_step_mapping[sender.__name__],
+        build_observer.state_update(course_id, current_build_number, task_step_mapping[sender.__name__],
                                     build.state,
                                     log_text.replace('\\r', '\r').replace('\\n', '\n') + '\n')
         build_observer.step_succeeded(task_step_mapping[sender.__name__])
@@ -150,12 +150,12 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
     instance_key = kwargs['args'][-2]
     course_key = kwargs['args'][-3]
     with celery.app.app_context():
-        instance_id = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first().id
+        course_id = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first().id
 
         logger.warning('finished')
-        build_observer.update_database(instance_id, current_build_number, task_step_mapping[sender.__name__],
+        build_observer.update_database(course_id, current_build_number, task_step_mapping[sender.__name__],
                                        BuildState.SUCCESS, )
-        build_observer.state_update(instance_id, current_build_number, task_step_mapping[sender.__name__],
+        build_observer.state_update(course_id, current_build_number, task_step_mapping[sender.__name__],
                                     BuildState.FAILED,
                                     'Task {} is Failed.\n'.format(sender.__name__))
         build_observer.step_failed(task_step_mapping[sender.__name__])
