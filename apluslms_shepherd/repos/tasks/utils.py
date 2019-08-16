@@ -5,6 +5,7 @@ from datetime import datetime
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 
+from apluslms_shepherd.build.tasks.utils import slugify
 from apluslms_shepherd.repos.models import GitRepository, State
 
 
@@ -50,9 +51,3 @@ def verify_key_pair(key_path, git_origin, logger):
     return True
 
 
-def slugify(git_origin):
-    non_utf = ['@', '/', ':']
-    ret = git_origin.replace('_', '__')
-    for each in non_utf:
-        ret = ret.replace(each, '_')
-    return ret

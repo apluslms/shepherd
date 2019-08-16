@@ -1,21 +1,20 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 
-from apluslms_shepherd import db
-from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.build.models import Build
+from apluslms_shepherd.courses.models import CourseInstance
 
 main_bp = Blueprint('main', __name__)
 
 
 class FrontendBuild(object):
-    def __init__(self, instance_id, number, course_key, instance_key, action, state):
+    def __init__(self, instance_id, number, course_key, instance_key, step, state):
         self.instance_id = instance_id
         self.instance_key = instance_key
         self.course_key = course_key
         self.number = number
         self.current_state = None if state is None else state.name
-        self.current_action = None if action is None else action.name
+        self.current_step = None if step is None else step.name
 
 
 @main_bp.route('/', methods=['GET'])
@@ -31,8 +30,8 @@ def main_page():
                       else sorted_build_entries.filter_by(instance_id=instance.id).first().number,
                       state=None if len(sorted_build_entries.filter_by(instance_id=instance.id).all()) is 0
                       else sorted_build_entries.filter_by(instance_id=instance.id).first().state,
-                      action=None if len(sorted_build_entries.filter_by(instance_id=instance.id).all()) is 0
-                      else sorted_build_entries.filter_by(instance_id=instance.id).first().action
+                      step=None if len(sorted_build_entries.filter_by(instance_id=instance.id).all()) is 0
+                      else sorted_build_entries.filter_by(instance_id=instance.id).first().step
                       )
         for instance in instances
     ]

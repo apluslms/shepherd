@@ -3,19 +3,18 @@ from celery.utils.log import get_task_logger
 from celery.worker.control import revoke
 
 from apluslms_shepherd.build.models import Build, BuildStep, BuildState
+from apluslms_shepherd.build.tasks import build_observer
 from apluslms_shepherd.courses.models import CourseInstance
 from apluslms_shepherd.extensions import celery
-from apluslms_shepherd.observer.observer import ShepherdObserver
 
 logger = get_task_logger(__name__)
 
-task_action_mapping = {'build_repo': BuildStep.BUILD,
-                       'pull_repo': BuildStep.CLONE,
-                       'clean': BuildStep.CLEAN,
-                       'deploy': BuildStep.DEPLOY}
+task_step_mapping = {'build_repo': BuildStep.BUILD,
+                     'pull_repo': BuildStep.CLONE,
+                     'clean': BuildStep.CLEAN,
+                     'deploy': BuildStep.DEPLOY}
 
 build_tasks = ['pull_repo', 'build_repo', 'deploy', 'clean']
-build_observer = ShepherdObserver()
 
 
 # For some reason this func is not working if in signal.py. Other signal handling functions works fine
@@ -64,11 +63,11 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
     # using the task protocol version 2.
     if sender.__name__ not in build_tasks:
         return
-    if sender.__name__ == 'build_repo':
-        build_observer.enter_build()
-    elif sender.__name__ == 'pull_repo':
+    if sender.__name__ == 'pull_repo':
         build_observer.enter_prepare()
-    build_observer.step_running(task_action_mapping[sender.__name__])
+    else:
+        build_observer.enter_build()
+    build_observer.step_running(task_step_mapping[sender.__name__])
     logger.warning(sender.__name__ + ' pre_run')
     current_build_number = kwargs['args'][-1]
     instance_key = kwargs['args'][-2]
@@ -85,15 +84,15 @@ def task_prerun(task_id=None, sender=None, *args, **kwargs):
             logger.error('No such course instance inthe database')
             revoke(task_id, terminate=True)
             return
-        build_observer.update_database(ins.id, current_build_number, task_action_mapping[sender.__name__],
+        build_observer.update_database(ins.id, current_build_number, task_step_mapping[sender.__name__],
                                        BuildState.RUNNING)
         # Send the state to frontend
-        build_observer.state_update(ins.id, current_build_number, task_action_mapping[sender.__name__],
+        build_observer.state_update(ins.id, current_build_number, task_step_mapping[sender.__name__],
                                     BuildState.RUNNING,
                                     'Task {} for course_key:{}, instance_key:{} starts running\n'.format(
                                         sender.__name__, course_key,
                                         instance_key))
-        build_observer.step_running(task_action_mapping[sender.__name__])
+        build_observer.step_running(task_step_mapping[sender.__name__])
 
 
 @task_postrun.connect
@@ -121,19 +120,19 @@ def task_postrun(task_id=None, sender=None, state=None, retval=None, *args, **kw
         build = Build.query.filter_by(instance_id=instance_id,
                                       number=current_build_number).first()
         # The state code is in the beginning, divided with main part by "|"
-        if isinstance(retval, str):
-            log_text = retval
-            state = BuildState.SUCCESS if str(retval).split('|')[0] == '0' else BuildState.FAILED
+        log_text = retval['msg']
+        if retval['code'] == 0:
+            state = BuildState.SUCCESS
+        elif retval['code'] == 5:
+            state = BuildState.CANCELED
         else:
-            logger.warning('return is not str or int')
             state = BuildState.FAILED
-            log_text = str(retval) + '\n'
-        build_observer.update_database(instance_id, current_build_number, task_action_mapping[sender.__name__], state,
+        build_observer.update_database(instance_id, current_build_number, task_step_mapping[sender.__name__], state,
                                        log_text)
-        build_observer.state_update(instance_id, current_build_number, task_action_mapping[sender.__name__],
+        build_observer.state_update(instance_id, current_build_number, task_step_mapping[sender.__name__],
                                     build.state,
-                                    str(retval).replace('\\r', '\r').replace('\\n', '\n') + '\n')
-        build_observer.step_succeeded(task_action_mapping[sender.__name__])
+                                    log_text.replace('\\r', '\r').replace('\\n', '\n') + '\n')
+        build_observer.step_succeeded(task_step_mapping[sender.__name__])
 
 
 @task_failure.connect
@@ -154,9 +153,9 @@ def task_failure(task_id=None, sender=None, *args, **kwargs):
         instance_id = CourseInstance.query.filter_by(course_key=course_key, instance_key=instance_key).first().id
 
         logger.warning('finished')
-        build_observer.update_database(instance_id, current_build_number, task_action_mapping[sender.__name__],
+        build_observer.update_database(instance_id, current_build_number, task_step_mapping[sender.__name__],
                                        BuildState.SUCCESS, )
-        build_observer.state_update(instance_id, current_build_number, task_action_mapping[sender.__name__],
+        build_observer.state_update(instance_id, current_build_number, task_step_mapping[sender.__name__],
                                     BuildState.FAILED,
                                     'Task {} is Failed.\n'.format(sender.__name__))
-        build_observer.step_failed(task_action_mapping[sender.__name__])
+        build_observer.step_failed(task_step_mapping[sender.__name__])

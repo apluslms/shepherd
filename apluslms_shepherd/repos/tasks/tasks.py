@@ -8,9 +8,10 @@ from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from apluslms_shepherd import config
+from apluslms_shepherd.build.tasks.utils import slugify
 from apluslms_shepherd.extensions import celery, db
 from apluslms_shepherd.repos.models import GitRepository
-from apluslms_shepherd.repos.tasks.utils import slugify, verify_key_pair
+from apluslms_shepherd.repos.tasks.utils import verify_key_pair
 
 logger = get_task_logger(__name__)
 
@@ -81,7 +82,7 @@ def generate_deploy_key(key_path, git_origin):
     os.chmod(private_key_path, 0o600)
     celery.add_periodic_task(10.0, validate_deploy_key.s(key_path, git_origin),
                              name='validate_%s' % slugify(git_origin))
-    celery.send_task("apluslms_shepherd.celery_tasks.repos.tasks.validate_deploy_key", args=[key_path, git_origin])
+    celery.send_task("apluslms_shepherd.repos.tasks.tasks.validate_deploy_key", args=[key_path, git_origin])
     return 0
 
 
