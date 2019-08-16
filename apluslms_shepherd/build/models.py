@@ -9,8 +9,10 @@ class BuildState(enum.Enum):
     RUNNING = 2
     SUCCESS = 3
     FAILED = 4
+    CANCELED = 5
 
 
+# Roman step also included
 class BuildStep(enum.Enum):
     NONE = 0
     CLONE = 1
@@ -26,7 +28,7 @@ class Build(db.Model):
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
     state = db.Column(db.Enum(BuildState))
-    action = db.Column(db.Enum(BuildStep))
+    step = db.Column(db.Enum(BuildStep))
     instance = db.relationship('CourseInstance', backref=db.backref('builds', cascade="save-update, merge, "
                                                                                       "delete"))
 
@@ -35,7 +37,7 @@ class BuildLog(db.Model):
     """A single step in Build, i.e.: clone"""
     instance_id = db.Column(db.Integer, primary_key=True)
     number = db.Column(db.Integer, primary_key=True)
-    action = db.Column(db.Enum(BuildStep), primary_key=True)
+    step = db.Column(db.Enum(BuildStep), primary_key=True)
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
     log_text = db.Column(db.Text)

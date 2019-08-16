@@ -15,7 +15,7 @@
                         <th scope="col">Course Key</th>
                         <th scope="col">Instance Key</th>
                         <th scope="col">Build Number</th>
-                         <th scope="col">Action</th>
+                        <th scope="col">Shepherd Step</th>
                          <th scope="col">State</th>
                     </tr>
                     </thead>
@@ -25,7 +25,7 @@
                             <td>{{ ins.course_key }}</td>
                             <td>{{ ins.instance_key }}</td>
                             <td class="table-number" id="{{ ins.instance_id }}">{{ ins.number }}</td>
-                            <td class="table-action" id="{{ ins.instance_id }}">{{ ins.current_action }}</td>
+                            <td class="table-action" id="{{ ins.instance_id }}">{{ ins.current_step }}</td>
                             <td class="table-state" id="{{ ins.instance_id }}">{{ ins.current_state }}</td>
                         </tr>
 
