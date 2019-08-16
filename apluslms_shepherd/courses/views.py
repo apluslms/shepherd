@@ -157,7 +157,7 @@ def del_course_instance(course_key, instance_key, **kwargs):
     else:
         repo_number_before_del = repo.courses.count()
     db.session.delete(course_instance)
-    BuildLog.query.filter_by(instance_id=course_instance.id).delete()
+    BuildLog.query.filter_by(course_id=course_instance.id).delete()
     db.session.commit()
     if repo_number_before_del == 1:
         # start delete celery task

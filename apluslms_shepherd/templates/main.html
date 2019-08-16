@@ -21,12 +21,12 @@
                     </thead>
                     <tbody>
                     {% for ins in instances %}
-                        <tr onclick="window.location.href='/logs/{{ ins.instance_id }}/'">
+                        <tr onclick="window.location.href='/logs/{{ ins.course_id }}/'">
                             <td>{{ ins.course_key }}</td>
                             <td>{{ ins.instance_key }}</td>
-                            <td class="table-number" id="{{ ins.instance_id }}">{{ ins.number }}</td>
-                            <td class="table-action" id="{{ ins.instance_id }}">{{ ins.current_step }}</td>
-                            <td class="table-state" id="{{ ins.instance_id }}">{{ ins.current_state }}</td>
+                            <td class="table-number" id="{{ ins.course_id }}">{{ ins.number }}</td>
+                            <td class="table-action" id="{{ ins.course_id }}">{{ ins.current_step }}</td>
+                            <td class="table-state" id="{{ ins.course_id }}">{{ ins.current_state }}</td>
                         </tr>
 
                     {% endfor %}

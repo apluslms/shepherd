@@ -8,8 +8,8 @@ from apluslms_shepherd.build.tasks.tasks import pull_repo, build_repo, clean, de
 
 def schedule_build(repository_url, branch, instance):
     base_path = config.DevelopmentConfig.COURSE_REPO_BASEPATH
-    current_build_number = 0 if Build.query.filter_by(instance_id=instance.id).count() is 0 \
-        else Build.query.filter_by(instance_id=instance.id).order_by(
+    current_build_number = 0 if Build.query.filter_by(course_id=instance.id).count() is 0 \
+        else Build.query.filter_by(course_id=instance.id).order_by(
         desc(Build.number)).first().number
     pull_s = pull_repo.s(base_path, repository_url, branch, instance.course_key, instance.instance_key,
                          str(current_build_number + 1))

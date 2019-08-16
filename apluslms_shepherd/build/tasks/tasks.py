@@ -22,7 +22,7 @@ logger = get_task_logger(__name__)
 
 
 @celery.task
-def update_state(instance_id, build_number, state, action, log):
+def update_state(course_id, build_number, state, action, log):
     """
     Take the updated state to MQ, this task is not going to the worker
     """
