@@ -27,8 +27,7 @@ class Build(db.Model):
     number = db.Column(db.Integer, primary_key=True)
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
-    state = db.Column(db.Enum(BuildState))
-    step = db.Column(db.Enum(BuildStep))
+    result = db.Column(db.Enum(BuildState), default=0)
     instance = db.relationship('CourseInstance', backref=db.backref('builds', cascade="save-update, merge, "
                                                                                       "delete"))
 
@@ -39,7 +38,7 @@ class BuildLog(db.Model):
     number = db.Column(db.Integer, primary_key=True)
     step = db.Column(db.Enum(BuildStep), primary_key=True)
     roman_step = db.Column(db.String, primary_key=True, default="Roman is not running")
-    result = db.Column(db.Boolean)
+    result = db.Column(db.Enum(BuildState))
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
     log_text = db.Column(db.Text)

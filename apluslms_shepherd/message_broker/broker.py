@@ -23,12 +23,13 @@ async def get_state():
             print(received_message.json())  # get JSON from incoming messages easily
             received_message.ack()
             await sio.emit('update', {
-                'course_id': received_message.json()[0][0],
-                'build_number': received_message.json()[0][1],
-                'current_step': received_message.json()[0][2],
-                'current_state': received_message.json()[0][3]})
+                'course_id': received_message.json()[1]['course_id'],
+                'build_number': received_message.json()[1]['number'],
+                'current_step': received_message.json()[1]['step'],
+                'roman_step': received_message.json()[1]['roman_step'],
+                'current_state': received_message.json()[1]['state']})
 
-            await sio.emit(received_message.json()[0][0], {'log': received_message.json()[0][4]})
+            await sio.emit(received_message.json()[1]['course_id'], {'log': received_message.json()[1]['log']})
         except AttributeError:
             pass
 
