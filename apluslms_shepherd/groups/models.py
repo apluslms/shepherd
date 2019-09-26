@@ -13,7 +13,7 @@ from apluslms_shepherd.extensions import db
 # For Group model and User model
 gm_table = db.Table('gm_table', db.Model.metadata,
                     db.Column('group_id', db.Integer, db.ForeignKey('group.id')),
-                    db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
+                    db.Column('user_id', db.String, db.ForeignKey('user.id'))
                     )
 # For Group model and Permission model
 gp_table = db.Table('gp_table', db.Model.metadata,

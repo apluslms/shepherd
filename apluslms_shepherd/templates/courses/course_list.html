@@ -9,7 +9,6 @@
 {% block body %}
     <div class="container text-center">
         <div>User id:{{ user.id }}</div>
-        course_list.html
         <table class="text-center table">
             <caption>Courses</caption>
             <thead>
@@ -113,7 +112,7 @@
 
         $.ajax({
         type: 'GET',
-        url: "/courses/"+course_key+"/"+instance_key+"/obtain_jwt/",
+        url: "/courses/"+course_key+"/"+instance_key+"/obtain_jwt/"+"?return_error=true",
         dataType: 'JSON',
         success: function (data) {
             $("#jwt_token").html(data.jwt_token);
