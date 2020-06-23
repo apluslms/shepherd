@@ -10,8 +10,6 @@ from celery.utils.log import get_task_logger
 
 from apluslms_shepherd import celery
 from apluslms_shepherd.build.models import BuildStep, BuildState
-from apluslms_shepherd.courses.models import CourseInstance
-from apluslms_shepherd.observer.observer import ShepherdObserver
 
 logger = get_task_logger(__name__)
 
@@ -40,14 +38,15 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path, ob
     :return: boolean, if is succeeded
     """
     has_private_key = isfile(key_path)
-    course_id = CourseInstance.query.filter_by(course_key=course, instance_key=instance).first().id
     if has_private_key:
         logger.info("Private key detected on {}.".format(key_path))
+        observer.shepherd_msg(BuildStep.CLONE, BuildState.RUNNING,"Private key detected on {}.".format(key_path))
         env = dict(SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0",
                    GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i {}".format(
                        key_path))
     else:
         logger.info("Private key cannot be found.")
+        observer.shepherd_msg(BuildStep.CLONE, BuildState.RUNNING, "Private key cannot be found.")
         env = dict(SSH_ASKPASS="echo", GIT_TERMINAL_PROMPT="0")
     repo_folder = join(base_path, quote(origin).split('/')[-1])
     # Check is using clone or fetch
@@ -55,24 +54,29 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path, ob
         logger.info("Find local repo, update")
         proc = subprocess.run(['git', 'fetch', 'origin', branch + ':' + branch], env=env, cwd=repo_folder,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        logger.info(proc.stdout)
-        observer.state_update(course_id, number, BuildStep.CLONE, BuildState.RUNNING,
+        observer.shepherd_msg(BuildStep.CLONE, BuildState.RUNNING,
                               proc.stdout.decode('utf-8'))
         if proc.returncode != 0:
             logger.error(proc.returncode, proc.stdout)
+            observer.shepherd_msg(BuildStep.CLONE, BuildState.FAILED,
+                                  proc.stdout.decode('utf-8'))
             return proc.returncode
     else:
         logger.info('No local repo can be found, cloning from remote at ' + origin)
+        observer.shepherd_msg(BuildStep.CLONE, BuildState.RUNNING,
+                              'No local repo can be found, cloning from remote at %s' % origin)
         proc = subprocess.run(['git', 'clone', '--bare', origin], env=env, cwd=base_path,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         logger.info(proc.stdout)
-        observer.state_update(course_id, number, BuildStep.CLONE, BuildState.RUNNING,
+        observer.shepherd_msg(BuildStep.CLONE, BuildState.RUNNING,
                               proc.stdout.decode('utf-8'))
         if proc.returncode != 0:
             logger.error('Error in cloning, program terminated. Code:', str(proc.returncode))
+            observer.shepherd_msg(BuildStep.CLONE, BuildState.FAILED, 'Error in cloning, program terminated. Code: %s' % proc.returncode)
             return proc.returncode
         if not exists(repo_folder):
             logger.error('Cannot find cloned repo, terminated')
+            observer.shepherd_msg(BuildStep.CLONE, BuildState.FAILED, 'Cannot find cloned repo, terminated')
             return 1
 
     # Generate worktree
@@ -81,61 +85,94 @@ def bare_clone(base_path, origin, course, instance, branch, number, key_path, ob
     proc = subprocess.run(['git', 'worktree', 'add', '-f', worktree_path, branch], env=env, cwd=repo_folder,
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     logger.info(proc.stdout)
+    observer.shepherd_msg(BuildStep.CLONE, BuildState.RUNNING,
+                          proc.stdout.decode('utf-8'))
     if proc.returncode != 0:
         logger.error('Error in generating worktree, program terminated. Code:', str(proc.returncode))
         return proc.returncode
     proc = subprocess.run("git submodule init && git submodule update --depth 1", shell=True, stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT, cwd=worktree_path)
-    logger.info(proc.stdout)
+    observer.shepherd_msg(BuildStep.CLONE, BuildState.RUNNING,
+                          proc.stdout.decode('utf-8'))
     if proc.returncode != 0:
         logger.error('Error in generating worktree, program terminated. Code:', str(proc.returncode))
+        observer.shepherd_msg(BuildStep.CLONE, BuildState.FAILED,
+                              'Error in generating worktree, program terminated. Code: %s' % proc.returncode)
         return proc.returncode
     return 0
 
 
-def roman_build(base_path, course_id, course_key, instance_key, build_number, config_filename=None):
-    shepherd_builder_observer = ShepherdObserver([course_id, build_number, BuildStep.BUILD.name, None, ""])
+def roman_build(base_path, course_key, instance_key, build_number, observer, config_filename=None):
+    observer.enter_build()
     source_path = join(base_path, 'builds', course_key, instance_key, build_number)
     if not exists(source_path):
-        logger.error("Cannot find source file for building at %s", source_path)
+        log = "Cannot find source file for building at %s" % source_path
+        logger.error(log)
+        observer.shepherd_msg(BuildStep.BUILD, BuildState.FAILED,
+                              log)
         return 1
     # Get config
     try:
         project_config = ProjectConfig.find_from(source_path)
     except ValidationError as e:
+        log = render_error(e)
         logger.error(render_error(e))
+        observer.shepherd_msg(BuildStep.BUILD, BuildState.FAILED,
+                              log)
         return 1
     except ProjectConfigError as e:
+        log = render_error(e)
         logger.error('Invalid project configuration: %s', e)
+        observer.shepherd_msg(BuildStep.BUILD, BuildState.FAILED,
+                              log)
         return 1
     # Get global settings
     try:
         global_settings = GlobalSettings.load(
             config_filename if config_filename is not None else GlobalSettings.get_config_path(), allow_missing=True)
     except ValidationError as e:
+        log = render_error(e)
         logger.error(render_error(e))
+        observer.shepherd_msg(BuildStep.BUILD, BuildState.FAILED,
+                              log)
         return 1
     except OSError as e:
+        log = render_error(e)
         logger.error(str(e))
+        observer.shepherd_msg(BuildStep.BUILD, BuildState.FAILED,
+                              log)
         return 1
     # Get engine
     try:
         engine = Engine(settings=global_settings)
     except ImportError:
-        logger.error("Unable to find backend %s", str(global_settings))
+        log = "Unable to find backend %s"% global_settings
+        logger.error(log)
+        observer.shepherd_msg(BuildStep.BUILD, BuildState.FAILED,
+                              log)
         return 1
-    builder = engine.create_builder(project_config, shepherd_builder_observer)
+    builder = engine.create_builder(project_config, observer)
     if not project_config.steps:
-        logger.error("Nothing to build.")
+        log = "Nothing to build."
+        logger.error(log)
+        observer.shepherd_msg(BuildStep.BUILD, BuildState.FAILED,
+                              log)
         return 1
     try:
         result = builder.build()
-    except KeyError as err:
-        logger.error("No step named %s", err.args[0])
+    except KeyError as e:
+        log = "No step named %s", str(e.args[0])
+        logger.error(log)
+        observer.shepherd_msg(BuildStep.BUILD, BuildState.FAILED,
+                              log)
         return 1
-    except IndexError as err:
-        logger.error("Index %s is out of range. There are %d steps. Indexing begins ar 0.", err.args[0],
-                     len(project_config.steps))
+    except IndexError as e:
+        log = "Index %s is out of range. There are %d steps. Indexing begins ar 0."% (e.args[0], len(project_config.steps))
+        logger.error(log)
+        observer.shepherd_msg(BuildStep.BUILD, BuildState.FAILED,
+                              log)
+    observer.shepherd_msg(BuildStep.BUILD, BuildState.SUCCESS,
+                          "Roman build success")
     return result.code
 
 
